@@ -1,0 +1,64 @@
+.footer {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 1.05rem 0.8rem 1.15rem;
+  background: #d9d9d9;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.footer__actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.72rem;
+  flex-wrap: wrap;
+}
+
+.footer__button {
+  min-width: 98px;
+  padding: 0.44rem 0.78rem;
+  border-radius: 9px;
+  color: #ffffff;
+  font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+  font-size: 0.83rem;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  transition: transform 0.15s ease, filter 0.2s ease;
+}
+
+.footer__button:hover,
+.footer__button:focus-visible {
+  transform: translateY(-1px);
+  filter: brightness(0.92);
+  outline: none;
+}
+
+.footer__button--facebook {
+  background: #1d7be3;
+}
+
+.footer__button--instagram {
+  background: #ea3b76;
+}
+
+.footer__button--whatsapp {
+  background: #0da95a;
+}
+
+@media (max-width: 560px) {
+  .footer {
+    padding: 0.85rem 0.58rem 0.95rem;
+  }
+
+  .footer__actions {
+    gap: 0.5rem;
+  }
+
+  .footer__button {
+    min-width: 86px;
+    padding: 0.38rem 0.64rem;
+    font-size: 0.75rem;
+    border-radius: 8px;
+  }
+}
