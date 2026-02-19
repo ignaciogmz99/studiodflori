@@ -1,24 +1,38 @@
 import './navbar.css'
+import logo from './assets/logo.jpeg'
 
 function Navbar() {
   return (
-    <nav className="navbar">
-      <div className="navbar__logo">
-        <span className="navbar__logo-mark" aria-hidden="true" />
-        <span>Studio DFlori</span>
-      </div>
+    <nav className="navbar" aria-label="Barra principal">
+      <a className="navbar__brand" href="#" aria-label="Studio del Flori">
+        <span className="navbar__brand-icon-wrap">
+          <img className="navbar__logo-image" src={logo} alt="Logo de Studio del Flori" />
+        </span>
+        <span className="navbar__brand-text">studiodelflori</span>
+      </a>
 
-      <div className="navbar__actions">
-        <button className="navbar__button" type="button">
-          Contacto
-        </button>
-        <button className="navbar__button" type="button">
-          Quienes Somos
-        </button>
-        <button className="navbar__button" type="button">
-          Direccion
-        </button>
-      </div>
+      <ul className="navbar__menu">
+        <li>
+          <a className="navbar__link" href="#">
+            Tipo De Flor 
+          </a>
+        </li>
+        <li>
+          <a className="navbar__link" href="#">
+            Regalos 
+          </a>
+        </li>
+        <li>
+          <a className="navbar__link" href="#">
+            Contacto
+          </a>
+        </li>
+        <li>
+          <a className="navbar__link" href="#">
+            Ayuda 
+          </a>
+        </li>
+      </ul>
     </nav>
   )
 }
