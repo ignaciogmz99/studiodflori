@@ -1,5 +1,4 @@
 .navbar {
-  --navbar-message-font: "Palatino Linotype", "Book Antiqua", Palatino, serif;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -12,6 +11,7 @@
   border: 0;
   border-radius: 0;
   box-shadow: none;
+  flex-shrink: 0;
 }
 
 .navbar__brand {
@@ -42,9 +42,9 @@
 
 .navbar__brand-text {
   color: #f4edd9;
-  font-size: 1rem;
-  font-weight: 500;
-  font-family: var(--navbar-message-font);
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-family: var(--font-display);
   letter-spacing: 0.01em;
   text-transform: lowercase;
   white-space: nowrap;
@@ -71,7 +71,7 @@
   text-decoration: none;
   font-size: 0.8rem;
   font-weight: 600;
-  font-family: var(--navbar-message-font);
+  font-family: var(--font-ui);
   border-radius: 6px;
   white-space: nowrap;
   transition: color 0.2s ease, background 0.2s ease;
@@ -81,7 +81,7 @@
   border: 0;
   background: transparent;
   cursor: pointer;
-  font-family: var(--navbar-message-font);
+  font-family: var(--font-ui);
 }
 
 .navbar__link:hover,
@@ -111,7 +111,7 @@
   box-shadow: 0 22px 45px rgba(39, 24, 12, 0.28);
   padding: 0.85rem 1rem 0.95rem;
   color: #3f2d1e;
-  font-family: var(--navbar-message-font);
+  font-family: var(--font-ui);
   position: relative;
 }
 
@@ -130,8 +130,9 @@
 
 .navbar__panel-title {
   margin: 0 2rem 0.5rem 0;
-  font-size: 1.08rem;
+  font-size: 1.25rem;
   font-weight: 700;
+  font-family: var(--font-display);
 }
 
 .navbar__panel-heading {

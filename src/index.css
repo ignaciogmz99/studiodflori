@@ -1,3 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Nunito+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --font-ui: 'Nunito Sans', 'Segoe UI', sans-serif;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+}
+
 html,
 body,
 #root {
@@ -5,4 +12,9 @@ body,
   min-width: 320px;
   min-height: 100vh;
   overflow-y: hidden;
+}
+
+body {
+  font-family: var(--font-ui);
+  color: #2f2f2f;
 }

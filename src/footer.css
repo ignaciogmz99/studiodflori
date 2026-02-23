@@ -4,6 +4,7 @@
   padding: 1.05rem 0.8rem 1.15rem;
   background: #d9d9d9;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
 }
 
 .footer__actions {
@@ -19,9 +20,9 @@
   padding: 0.44rem 0.78rem;
   border-radius: 9px;
   color: #ffffff;
-  font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+  font-family: var(--font-ui);
   font-size: 0.83rem;
-  font-weight: 600;
+  font-weight: 700;
   text-align: center;
   text-decoration: none;
   transition: transform 0.15s ease, filter 0.2s ease;

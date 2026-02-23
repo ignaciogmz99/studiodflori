@@ -1,0 +1,13 @@
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  background: #e8e8e8;
+  padding: 0.9rem 1rem 1.25rem;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 0.8rem 0.75rem 1rem;
+  }
+}
