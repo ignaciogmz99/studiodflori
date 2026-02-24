@@ -104,12 +104,30 @@
 
 .flores-menu__name {
   margin: 0;
-  padding: 0.72rem 0.75rem;
+  padding: 0.72rem 0.75rem 0.2rem;
   font-family: var(--font-ui);
   font-size: 1rem;
   font-weight: 700;
   color: #353535;
   text-transform: capitalize;
+}
+
+.flores-menu__price {
+  margin: 0;
+  padding: 0 0.75rem 0.15rem;
+  font-family: var(--font-ui);
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #222;
+}
+
+.flores-menu__stock {
+  margin: 0;
+  padding: 0 0.75rem 0.75rem;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4a4a4a;
 }
 
 @media (max-width: 900px) {

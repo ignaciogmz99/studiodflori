@@ -1,4 +1,6 @@
+import { useEffect, useMemo, useState } from 'react'
 import './Flores_menu.css'
+import { supabase } from '../lib/supabaseClient'
 
 const assetModules = import.meta.glob('../assets/*/*.{png,jpg,jpeg,webp}', {
   eager: true,
@@ -25,7 +27,7 @@ const shelfProducts = Object.entries(assetModules).reduce((acc, [path, src]) => 
   return acc
 }, {})
 
-const products = Object.entries(shelfProducts)
+const localProducts = Object.entries(shelfProducts)
   .map(([name, images]) => {
     const sortedImages = images.sort((a, b) => a.file.localeCompare(b.file))
     const principalImage = sortedImages.find((image) => /^flor1\./i.test(image.file)) || sortedImages[0]
@@ -40,6 +42,61 @@ const products = Object.entries(shelfProducts)
   .sort((a, b) => a.name.localeCompare(b.name))
 
 function FloresMenu() {
+  const [inventoryById, setInventoryById] = useState({})
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadInventory() {
+      if (!supabase) {
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('productos')
+        .select('id, precio, stock, activo')
+
+      if (error) {
+        console.error('Error cargando inventario desde Supabase:', error.message)
+        return
+      }
+
+      if (!isMounted) {
+        return
+      }
+
+      const nextInventory = (data || []).reduce((acc, item) => {
+        if (item.activo === false) {
+          return acc
+        }
+
+        acc[item.id] = item
+        return acc
+      }, {})
+
+      setInventoryById(nextInventory)
+    }
+
+    loadInventory()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const products = useMemo(() => {
+    return localProducts.map((product) => {
+      const inventory = inventoryById[product.id]
+      const parsedPrice = inventory?.precio == null ? null : Number(inventory.precio)
+
+      return {
+        ...product,
+        price: Number.isNaN(parsedPrice) ? null : parsedPrice,
+        stock: inventory?.stock ?? null
+      }
+    })
+  }, [inventoryById])
+
   return (
     <section className="flores-menu" aria-label="Catalogo de flores y plantas">
       <div className="flores-menu__tabs-box">
@@ -70,6 +127,14 @@ function FloresMenu() {
               <img className="flores-menu__image" src={product.image} alt={product.name} loading="lazy" />
             </div>
             <p className="flores-menu__name">{product.name}</p>
+            <p className="flores-menu__price">
+              {typeof product.price === 'number' ? `$${product.price} MXN` : 'Precio no disponible'}
+            </p>
+            <p className="flores-menu__stock">
+              {typeof product.stock === 'number'
+                ? (product.stock > 0 ? `${product.stock} disponibles` : 'Agotado')
+                : 'Stock no disponible'}
+            </p>
           </article>
         ))}
       </div>
