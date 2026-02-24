@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import './Flores_menu.css'
 import { supabase } from '../lib/supabaseClient'
+import { useCart } from '../context/CartContext'
 
 const assetModules = import.meta.glob('../assets/*/*.{png,jpg,jpeg,webp}', {
   eager: true,
@@ -43,6 +44,7 @@ const localProducts = Object.entries(shelfProducts)
 
 function FloresMenu() {
   const [inventoryById, setInventoryById] = useState({})
+  const { addToCart } = useCart()
 
   useEffect(() => {
     let isMounted = true
@@ -135,6 +137,14 @@ function FloresMenu() {
                 ? (product.stock > 0 ? `${product.stock} disponibles` : 'Agotado')
                 : 'Stock no disponible'}
             </p>
+            <button
+              type="button"
+              className="flores-menu__add-button"
+              onClick={() => addToCart(product)}
+              disabled={typeof product.stock === 'number' && product.stock <= 0}
+            >
+              Agregar al carrito
+            </button>
           </article>
         ))}
       </div>
