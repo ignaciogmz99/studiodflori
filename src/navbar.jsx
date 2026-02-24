@@ -1,6 +1,7 @@
 import './navbar.css'
 import { useState } from 'react'
 import logo from './assets/logo_bien.jpg'
+import { useCart } from './context/CartContext'
 
 const panelContent = {
   regalos: {
@@ -22,6 +23,7 @@ const panelContent = {
 
 function Navbar() {
   const [activePanel, setActivePanel] = useState(null)
+  const { items, totalItems, totalPrice, addToCart, decreaseQuantity, removeFromCart, clearCart } = useCart()
 
   const handleOpen = (panelKey) => {
     setActivePanel((current) => (current === panelKey ? null : panelKey))
@@ -79,10 +81,65 @@ function Navbar() {
               Direccion
             </button>
           </li>
+          <li>
+            <button
+              type="button"
+              className="navbar__link navbar__link-button navbar__cart-button"
+              onClick={() => handleOpen('cart')}
+              aria-expanded={activePanel === 'cart'}
+            >
+              Carrito ({totalItems})
+            </button>
+          </li>
         </ul>
       </nav>
 
-      {selectedContent && (
+      {activePanel === 'cart' && (
+        <div className="navbar__panel-backdrop" onClick={handleClose}>
+          <section
+            className="navbar__panel"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Carrito de compras"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button type="button" className="navbar__panel-close" onClick={handleClose} aria-label="Cerrar">
+              x
+            </button>
+            <h2 className="navbar__panel-title">Carrito</h2>
+            {items.length === 0 && (
+              <p className="navbar__panel-text">Aun no agregas flores al carrito.</p>
+            )}
+            {items.length > 0 && (
+              <>
+                <ul className="navbar__cart-list">
+                  {items.map((item) => (
+                    <li className="navbar__cart-item" key={item.id}>
+                      <img className="navbar__cart-item-image" src={item.image} alt={item.name} />
+                      <div className="navbar__cart-item-main">
+                        <p className="navbar__cart-item-name">{item.name}</p>
+                        <p className="navbar__cart-item-price">${item.price} MXN</p>
+                        <div className="navbar__cart-item-controls">
+                          <button type="button" onClick={() => decreaseQuantity(item.id)}>-</button>
+                          <span>{item.quantity}</span>
+                          <button type="button" onClick={() => addToCart(item)}>+</button>
+                          <button type="button" onClick={() => removeFromCart(item.id)}>Quitar</button>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <p className="navbar__cart-total">Total: ${totalPrice.toFixed(2)} MXN</p>
+                <button type="button" className="navbar__cart-clear" onClick={clearCart}>
+                  Vaciar carrito
+                </button>
+              </>
+            )}
+          </section>
+        </div>
+      )}
+
+      {selectedContent && activePanel !== 'cart' && (
         <div className="navbar__panel-backdrop" onClick={handleClose}>
           <section
             className="navbar__panel"
