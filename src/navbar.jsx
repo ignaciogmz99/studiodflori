@@ -84,11 +84,17 @@ function Navbar() {
           <li>
             <button
               type="button"
-              className="navbar__link navbar__link-button navbar__cart-button"
+              className={`navbar__link navbar__link-button navbar__cart-button ${totalItems > 0 ? 'navbar__cart-button--alert' : ''}`}
               onClick={() => handleOpen('cart')}
               aria-expanded={activePanel === 'cart'}
+              aria-label={`Carrito con ${totalItems} producto${totalItems === 1 ? '' : 's'}`}
             >
-              Carrito ({totalItems})
+              Carrito
+              {totalItems > 0 && (
+                <span className="navbar__cart-badge" aria-hidden="true">
+                  {totalItems > 99 ? '99+' : totalItems}
+                </span>
+              )}
             </button>
           </li>
         </ul>
