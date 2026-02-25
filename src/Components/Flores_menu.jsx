@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import './Flores_menu.css'
 import { supabase } from '../lib/supabaseClient'
 import { useCart } from '../context/CartContext'
@@ -46,6 +46,11 @@ const localProducts = Object.entries(shelfProducts)
 function FloresMenu() {
   const [inventoryById, setInventoryById] = useState({})
   const [imageIndexByProduct, setImageIndexByProduct] = useState({})
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [sortByPrice, setSortByPrice] = useState('default')
+  const [minPrice, setMinPrice] = useState('')
+  const [maxPrice, setMaxPrice] = useState('')
+  const filtersDropdownRef = useRef(null)
   const { addToCart } = useCart()
 
   useEffect(() => {
@@ -88,6 +93,28 @@ function FloresMenu() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!isFilterOpen) {
+      return undefined
+    }
+
+    const handleOutsideClick = (event) => {
+      if (!filtersDropdownRef.current) {
+        return
+      }
+
+      if (!filtersDropdownRef.current.contains(event.target)) {
+        setIsFilterOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick)
+    }
+  }, [isFilterOpen])
+
   const products = useMemo(() => {
     return localProducts.map((product) => {
       const inventory = inventoryById[product.id]
@@ -105,6 +132,71 @@ function FloresMenu() {
       }
     })
   }, [inventoryById, imageIndexByProduct])
+
+  const filteredProducts = useMemo(() => {
+    const minValue = minPrice === '' ? null : Number(minPrice)
+    const maxValue = maxPrice === '' ? null : Number(maxPrice)
+    const hasMin = minValue != null && !Number.isNaN(minValue)
+    const hasMax = maxValue != null && !Number.isNaN(maxValue)
+    const lowerBound = hasMin && hasMax ? Math.min(minValue, maxValue) : minValue
+    const upperBound = hasMin && hasMax ? Math.max(minValue, maxValue) : maxValue
+
+    const filtered = products.filter((product) => {
+      const hasPrice = typeof product.price === 'number'
+
+      if (lowerBound != null) {
+        if (!hasPrice || product.price < lowerBound) {
+          return false
+        }
+      }
+
+      if (upperBound != null) {
+        if (!hasPrice || product.price > upperBound) {
+          return false
+        }
+      }
+
+      return true
+    })
+
+    if (sortByPrice === 'price-asc') {
+      return [...filtered].sort((a, b) => {
+        if (typeof a.price === 'number' && typeof b.price === 'number') {
+          return a.price - b.price
+        }
+
+        if (typeof a.price === 'number') {
+          return -1
+        }
+
+        if (typeof b.price === 'number') {
+          return 1
+        }
+
+        return a.name.localeCompare(b.name)
+      })
+    }
+
+    if (sortByPrice === 'price-desc') {
+      return [...filtered].sort((a, b) => {
+        if (typeof a.price === 'number' && typeof b.price === 'number') {
+          return b.price - a.price
+        }
+
+        if (typeof a.price === 'number') {
+          return -1
+        }
+
+        if (typeof b.price === 'number') {
+          return 1
+        }
+
+        return a.name.localeCompare(b.name)
+      })
+    }
+
+    return filtered
+  }, [maxPrice, minPrice, products, sortByPrice])
 
   const showPreviousImage = (product) => {
     setImageIndexByProduct((prev) => {
@@ -126,6 +218,12 @@ function FloresMenu() {
     })
   }
 
+  const resetFilters = () => {
+    setSortByPrice('default')
+    setMinPrice('')
+    setMaxPrice('')
+  }
+
   return (
     <section className="flores-menu" aria-label="Catalogo de flores y plantas">
       <div className="flores-menu__tabs-box">
@@ -145,12 +243,77 @@ function FloresMenu() {
       <h3 className="flores-menu__headline">Rosas a domicilio en Guadalajara con entrega rapida para expresar amor</h3>
 
       <div className="flores-menu__actions">
-        <button type="button" className="flores-menu__filter">Filtrar y ordenar</button>
-        <span className="flores-menu__count">{products.length} productos</span>
+        <div className="flores-menu__filters-dropdown" ref={filtersDropdownRef}>
+          <button
+            type="button"
+            className="flores-menu__filter"
+            onClick={() => setIsFilterOpen((prev) => !prev)}
+            aria-expanded={isFilterOpen}
+            aria-controls="flores-menu-filters"
+          >
+            Filtrar y ordenar
+          </button>
+          {isFilterOpen && (
+            <div className="flores-menu__filters-panel" id="flores-menu-filters">
+              <div className="flores-menu__filters-group">
+                <label className="flores-menu__filters-label" htmlFor="sort-by-price">
+                  Ordenar por precio
+                </label>
+                <select
+                  id="sort-by-price"
+                  className="flores-menu__filters-input"
+                  value={sortByPrice}
+                  onChange={(event) => setSortByPrice(event.target.value)}
+                >
+                  <option value="default">Sin orden</option>
+                  <option value="price-asc">Menor a mayor</option>
+                  <option value="price-desc">Mayor a menor</option>
+                </select>
+              </div>
+
+              <div className="flores-menu__filters-group">
+                <label className="flores-menu__filters-label" htmlFor="min-price">
+                  Precio minimo
+                </label>
+                <input
+                  id="min-price"
+                  className="flores-menu__filters-input"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="Ej: 500"
+                  value={minPrice}
+                  onChange={(event) => setMinPrice(event.target.value)}
+                />
+              </div>
+
+              <div className="flores-menu__filters-group">
+                <label className="flores-menu__filters-label" htmlFor="max-price">
+                  Precio maximo
+                </label>
+                <input
+                  id="max-price"
+                  className="flores-menu__filters-input"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="Ej: 2000"
+                  value={maxPrice}
+                  onChange={(event) => setMaxPrice(event.target.value)}
+                />
+              </div>
+
+              <button type="button" className="flores-menu__filters-clear" onClick={resetFilters}>
+                Limpiar
+              </button>
+            </div>
+          )}
+        </div>
+        <span className="flores-menu__count">{filteredProducts.length} productos</span>
       </div>
 
       <div className="flores-menu__shelf" aria-label="Estante de productos">
-        {products.map((product) => (
+        {filteredProducts.map((product) => (
           <article className="flores-menu__card" key={product.id}>
             <div className="flores-menu__image-wrap">
               <img className="flores-menu__image" src={product.image} alt={product.name} loading="lazy" />
