@@ -48,6 +48,7 @@ export function CartProvider({ children }) {
           name: product.name,
           image: product.image,
           price: typeof product.price === 'number' ? product.price : 0,
+          preparationHours: typeof product.preparationHours === 'number' ? product.preparationHours : 24,
           quantity: 1
         }
       ]
@@ -82,6 +83,16 @@ export function CartProvider({ children }) {
     return items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
   }, [items])
 
+  const estimatedPreparationHours = useMemo(() => {
+    return items.reduce((maxHours, item) => {
+      const itemHours = typeof item.preparationHours === 'number' && item.preparationHours > 0
+        ? item.preparationHours
+        : 24
+
+      return Math.max(maxHours, itemHours)
+    }, 0)
+  }, [items])
+
   const value = useMemo(() => ({
     items,
     addToCart,
@@ -89,8 +100,9 @@ export function CartProvider({ children }) {
     decreaseQuantity,
     clearCart,
     totalItems,
-    totalPrice
-  }), [items, totalItems, totalPrice])
+    totalPrice,
+    estimatedPreparationHours
+  }), [estimatedPreparationHours, items, totalItems, totalPrice])
 
   return (
     <CartContext.Provider value={value}>

@@ -21,9 +21,31 @@ const panelContent = {
   }
 }
 
+function formatPreparationTime(hours) {
+  if (!Number.isFinite(hours) || hours <= 0) {
+    return '24 h'
+  }
+
+  if (hours >= 24 && hours % 24 === 0) {
+    const days = hours / 24
+    return `${days} dia${days === 1 ? '' : 's'}`
+  }
+
+  return `${hours} h`
+}
+
 function Navbar() {
   const [activePanel, setActivePanel] = useState(null)
-  const { items, totalItems, totalPrice, addToCart, decreaseQuantity, removeFromCart, clearCart } = useCart()
+  const {
+    items,
+    totalItems,
+    totalPrice,
+    addToCart,
+    decreaseQuantity,
+    removeFromCart,
+    clearCart,
+    estimatedPreparationHours
+  } = useCart()
 
   const handleOpen = (panelKey) => {
     setActivePanel((current) => (current === panelKey ? null : panelKey))
@@ -125,6 +147,9 @@ function Navbar() {
                       <div className="navbar__cart-item-main">
                         <p className="navbar__cart-item-name">{item.name}</p>
                         <p className="navbar__cart-item-price">${item.price} MXN</p>
+                        <p className="navbar__cart-item-price">
+                          Listo en aprox: {formatPreparationTime(item.preparationHours)}
+                        </p>
                         <div className="navbar__cart-item-controls">
                           <button type="button" onClick={() => decreaseQuantity(item.id)}>-</button>
                           <span>{item.quantity}</span>
@@ -136,6 +161,9 @@ function Navbar() {
                   ))}
                 </ul>
                 <p className="navbar__cart-total">Total: ${totalPrice.toFixed(2)} MXN</p>
+                <p className="navbar__cart-total">
+                  Pedido listo aprox en: {formatPreparationTime(estimatedPreparationHours)}
+                </p>
                 <button type="button" className="navbar__cart-clear" onClick={clearCart}>
                   Vaciar carrito
                 </button>
