@@ -43,6 +43,47 @@ const localProducts = Object.entries(shelfProducts)
   .filter((item) => item.images.length > 0)
   .sort((a, b) => a.name.localeCompare(b.name))
 
+function resolvePreparationHours(inventory) {
+  if (!inventory) {
+    return 24
+  }
+
+  const directHours = Number(
+    inventory.tiempo_preparacion_horas
+    ?? inventory.preparacion_horas
+    ?? inventory.preparation_hours
+  )
+
+  if (Number.isFinite(directHours) && directHours > 0) {
+    return directHours
+  }
+
+  const days = Number(
+    inventory.tiempo_preparacion_dias
+    ?? inventory.preparacion_dias
+    ?? inventory.preparation_days
+  )
+
+  if (Number.isFinite(days) && days > 0) {
+    return days * 24
+  }
+
+  return 24
+}
+
+function formatPreparationTime(hours) {
+  if (!Number.isFinite(hours) || hours <= 0) {
+    return '24 h'
+  }
+
+  if (hours >= 24 && hours % 24 === 0) {
+    const days = hours / 24
+    return `${days} dia${days === 1 ? '' : 's'}`
+  }
+
+  return `${hours} h`
+}
+
 function FloresMenu() {
   const [inventoryById, setInventoryById] = useState({})
   const [imageIndexByProduct, setImageIndexByProduct] = useState({})
@@ -63,7 +104,7 @@ function FloresMenu() {
 
       const { data, error } = await supabase
         .from('productos')
-        .select('id, precio, stock, activo')
+        .select('*')
 
       if (error) {
         console.error('Error cargando inventario desde Supabase:', error.message)
@@ -128,7 +169,8 @@ function FloresMenu() {
         currentImageNumber: normalizedIndex + 1,
         totalImages: product.images.length,
         price: Number.isNaN(parsedPrice) ? null : parsedPrice,
-        stock: inventory?.stock ?? null
+        stock: inventory?.stock ?? null,
+        preparationHours: resolvePreparationHours(inventory)
       }
     })
   }, [inventoryById, imageIndexByProduct])
@@ -350,6 +392,7 @@ function FloresMenu() {
                 ? (product.stock > 0 ? `${product.stock} disponibles` : 'Agotado')
                 : 'Stock no disponible'}
             </p>
+            <p className="flores-menu__stock">Preparacion: {formatPreparationTime(product.preparationHours)}</p>
             <button
               type="button"
               className="flores-menu__add-button"
