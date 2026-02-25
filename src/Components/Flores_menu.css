@@ -78,8 +78,14 @@
 
 .flores-menu__shelf {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 0.85rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 1200px) {
+  .flores-menu__shelf {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .flores-menu__card {
@@ -90,9 +96,12 @@
 }
 
 .flores-menu__image-wrap {
+  position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
   background: #f4f4f4;
+  border-radius: 14px;
+  overflow: hidden;
 }
 
 .flores-menu__image {
@@ -100,6 +109,71 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  border-radius: 14px;
+}
+
+.flores-menu__image-nav {
+  position: absolute;
+  top: 50%;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 0;
+  border-radius: 999px;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.92);
+  color: #303030;
+  font-family: var(--font-ui);
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.flores-menu__image-nav--left {
+  left: 0.55rem;
+}
+
+.flores-menu__image-nav--right {
+  right: 0.55rem;
+}
+
+.flores-menu__image-counter {
+  position: absolute;
+  right: 0.55rem;
+  bottom: 0.55rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem;
+  background: rgba(36, 36, 36, 0.65);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.flores-menu__image-wrap:hover .flores-menu__image-nav,
+.flores-menu__image-wrap:hover .flores-menu__image-counter {
+  opacity: 1;
+}
+
+.flores-menu__image-wrap:hover .flores-menu__image-nav {
+  pointer-events: auto;
+}
+
+@media (hover: none) {
+  .flores-menu__image-nav,
+  .flores-menu__image-counter {
+    opacity: 1;
+  }
+
+  .flores-menu__image-nav {
+    pointer-events: auto;
+  }
 }
 
 .flores-menu__name {
@@ -154,6 +228,10 @@
     font-size: 1.55rem;
   }
 
+  .flores-menu__shelf {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .flores-menu__tab {
     font-size: 1rem;
   }
@@ -190,7 +268,7 @@
   }
 
   .flores-menu__shelf {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(1, minmax(0, 1fr));
     gap: 0.65rem;
   }
 }

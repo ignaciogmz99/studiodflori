@@ -31,19 +31,21 @@ const shelfProducts = Object.entries(assetModules).reduce((acc, [path, src]) => 
 const localProducts = Object.entries(shelfProducts)
   .map(([name, images]) => {
     const sortedImages = images.sort((a, b) => a.file.localeCompare(b.file))
-    const principalImage = sortedImages.find((image) => /^flor1\./i.test(image.file)) || sortedImages[0]
+    const principalIndex = sortedImages.findIndex((image) => /^flor1\./i.test(image.file))
 
     return {
       id: name,
       name: name.replace(/_/g, ' '),
-      image: principalImage?.src
+      images: sortedImages.map((image) => image.src),
+      principalIndex: principalIndex >= 0 ? principalIndex : 0
     }
   })
-  .filter((item) => Boolean(item.image))
+  .filter((item) => item.images.length > 0)
   .sort((a, b) => a.name.localeCompare(b.name))
 
 function FloresMenu() {
   const [inventoryById, setInventoryById] = useState({})
+  const [imageIndexByProduct, setImageIndexByProduct] = useState({})
   const { addToCart } = useCart()
 
   useEffect(() => {
@@ -90,14 +92,39 @@ function FloresMenu() {
     return localProducts.map((product) => {
       const inventory = inventoryById[product.id]
       const parsedPrice = inventory?.precio == null ? null : Number(inventory.precio)
+      const currentIndex = imageIndexByProduct[product.id] ?? product.principalIndex
+      const normalizedIndex = product.images.length ? ((currentIndex % product.images.length) + product.images.length) % product.images.length : 0
 
       return {
         ...product,
+        image: product.images[normalizedIndex],
+        currentImageNumber: normalizedIndex + 1,
+        totalImages: product.images.length,
         price: Number.isNaN(parsedPrice) ? null : parsedPrice,
         stock: inventory?.stock ?? null
       }
     })
-  }, [inventoryById])
+  }, [inventoryById, imageIndexByProduct])
+
+  const showPreviousImage = (product) => {
+    setImageIndexByProduct((prev) => {
+      const current = prev[product.id] ?? product.principalIndex
+      return {
+        ...prev,
+        [product.id]: current - 1
+      }
+    })
+  }
+
+  const showNextImage = (product) => {
+    setImageIndexByProduct((prev) => {
+      const current = prev[product.id] ?? product.principalIndex
+      return {
+        ...prev,
+        [product.id]: current + 1
+      }
+    })
+  }
 
   return (
     <section className="flores-menu" aria-label="Catalogo de flores y plantas">
@@ -127,6 +154,29 @@ function FloresMenu() {
           <article className="flores-menu__card" key={product.id}>
             <div className="flores-menu__image-wrap">
               <img className="flores-menu__image" src={product.image} alt={product.name} loading="lazy" />
+              {product.totalImages > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className="flores-menu__image-nav flores-menu__image-nav--left"
+                    onClick={() => showPreviousImage(product)}
+                    aria-label={`Ver imagen anterior de ${product.name}`}
+                  >
+                    &#8249;
+                  </button>
+                  <button
+                    type="button"
+                    className="flores-menu__image-nav flores-menu__image-nav--right"
+                    onClick={() => showNextImage(product)}
+                    aria-label={`Ver imagen siguiente de ${product.name}`}
+                  >
+                    &#8250;
+                  </button>
+                  <span className="flores-menu__image-counter" aria-hidden="true">
+                    {product.currentImageNumber}/{product.totalImages}
+                  </span>
+                </>
+              )}
             </div>
             <p className="flores-menu__name">{product.name}</p>
             <p className="flores-menu__price">
