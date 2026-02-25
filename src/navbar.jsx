@@ -44,7 +44,8 @@ function Navbar() {
     decreaseQuantity,
     removeFromCart,
     clearCart,
-    estimatedPreparationHours
+    estimatedPreparationHours,
+    openPaymentView
   } = useCart()
 
   const handleOpen = (panelKey) => {
@@ -164,9 +165,21 @@ function Navbar() {
                 <p className="navbar__cart-total">
                   Pedido listo aprox en: {formatPreparationTime(estimatedPreparationHours)}
                 </p>
-                <button type="button" className="navbar__cart-clear" onClick={clearCart}>
-                  Vaciar carrito
-                </button>
+                <div className="navbar__cart-actions">
+                  <button
+                    type="button"
+                    className="navbar__cart-clear"
+                    onClick={() => {
+                      openPaymentView()
+                      handleClose()
+                    }}
+                  >
+                    Pasar a pago
+                  </button>
+                  <button type="button" className="navbar__cart-clear" onClick={clearCart}>
+                    Vaciar carrito
+                  </button>
+                </div>
               </>
             )}
           </section>

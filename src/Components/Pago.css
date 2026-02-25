@@ -1,0 +1,110 @@
+.pago {
+  background: #f3f1ec;
+  border: 1px solid #ddd3c4;
+  border-radius: 14px;
+  padding: 1rem;
+  color: #3f2d1e;
+}
+
+.pago__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.pago__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.pago__back {
+  border: 0;
+  border-radius: 10px;
+  background: #7a5a3a;
+  color: #f4edd9;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 0.84rem;
+  padding: 0.45rem 0.7rem;
+  cursor: pointer;
+}
+
+.pago__empty {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.pago__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.pago__item {
+  display: grid;
+  grid-template-columns: 76px 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e3dccf;
+  border-radius: 10px;
+  padding: 0.55rem;
+}
+
+.pago__image {
+  width: 76px;
+  height: 76px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.pago__item-main {
+  min-width: 0;
+}
+
+.pago__name {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.pago__meta {
+  margin: 0.2rem 0 0;
+  font-size: 0.84rem;
+}
+
+.pago__subtotal {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.pago__total {
+  margin: 0.95rem 0 0;
+  font-size: 1rem;
+  font-weight: 800;
+  text-align: right;
+}
+
+@media (max-width: 700px) {
+  .pago__item {
+    grid-template-columns: 64px 1fr;
+  }
+
+  .pago__image {
+    width: 64px;
+    height: 64px;
+  }
+
+  .pago__subtotal {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+}
