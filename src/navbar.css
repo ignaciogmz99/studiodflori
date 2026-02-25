@@ -218,6 +218,12 @@
   font-weight: 700;
 }
 
+.navbar__cart-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
 .navbar__cart-clear {
   border: 0;
   border-radius: 10px;

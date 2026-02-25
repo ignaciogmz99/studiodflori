@@ -24,6 +24,7 @@ function readStoredCart() {
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState(() => readStoredCart())
+  const [isPaymentView, setIsPaymentView] = useState(false)
 
   useEffect(() => {
     window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
@@ -75,6 +76,14 @@ export function CartProvider({ children }) {
     setItems([])
   }
 
+  const openPaymentView = () => {
+    setIsPaymentView(true)
+  }
+
+  const closePaymentView = () => {
+    setIsPaymentView(false)
+  }
+
   const totalItems = useMemo(() => {
     return items.reduce((sum, item) => sum + item.quantity, 0)
   }, [items])
@@ -99,10 +108,13 @@ export function CartProvider({ children }) {
     removeFromCart,
     decreaseQuantity,
     clearCart,
+    isPaymentView,
+    openPaymentView,
+    closePaymentView,
     totalItems,
     totalPrice,
     estimatedPreparationHours
-  }), [estimatedPreparationHours, items, totalItems, totalPrice])
+  }), [estimatedPreparationHours, isPaymentView, items, totalItems, totalPrice])
 
   return (
     <CartContext.Provider value={value}>

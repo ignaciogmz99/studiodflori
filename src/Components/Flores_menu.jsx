@@ -71,17 +71,10 @@ function resolvePreparationHours(inventory) {
   return 24
 }
 
-function formatPreparationTime(hours) {
-  if (!Number.isFinite(hours) || hours <= 0) {
-    return '24 h'
-  }
-
-  if (hours >= 24 && hours % 24 === 0) {
-    const days = hours / 24
-    return `${days} dia${days === 1 ? '' : 's'}`
-  }
-
-  return `${hours} h`
+function getDeliveryLabel(hours) {
+  return Number(hours) === 24
+    ? 'Preparacion: 24 horas'
+    : 'Entrega inmediata'
 }
 
 function FloresMenu() {
@@ -392,7 +385,7 @@ function FloresMenu() {
                 ? (product.stock > 0 ? `${product.stock} disponibles` : 'Agotado')
                 : 'Stock no disponible'}
             </p>
-            <p className="flores-menu__stock">Preparacion: {formatPreparationTime(product.preparationHours)}</p>
+            <p className="flores-menu__stock">{getDeliveryLabel(product.preparationHours)}</p>
             <button
               type="button"
               className="flores-menu__add-button"
