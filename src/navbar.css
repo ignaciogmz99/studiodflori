@@ -85,7 +85,9 @@
 }
 
 .navbar__cart-button {
+  position: relative;
   border: 1px solid rgba(244, 237, 217, 0.35);
+  padding-right: 1.35rem;
 }
 
 .navbar__link:hover,
@@ -324,3 +326,27 @@
     font-size: 0.78rem;
   }
 }
+
+.navbar__cart-button--alert {
+  border-color: rgba(244, 237, 217, 0.35);
+  box-shadow: none;
+}
+
+.navbar__cart-badge {
+  position: absolute;
+  top: -0.42rem;
+  right: -0.42rem;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  padding: 0 0.22rem;
+  background: #ff2b4f;
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 0.66rem;
+  font-weight: 800;
+  line-height: 1.15rem;
+  text-align: center;
+  box-shadow: 0 0 0 2px #7a5a3a;
+}
+
