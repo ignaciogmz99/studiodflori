@@ -38,6 +38,21 @@
   font-size: 0.92rem;
 }
 
+.pago__checkout-grid {
+  margin-top: 0.9rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 0.9rem;
+  align-items: start;
+}
+
+.pago__items {
+  background: #fff9f0;
+  border: 1px solid #dfd6c8;
+  border-radius: 10px;
+  padding: 0.85rem;
+}
+
 .pago__list {
   list-style: none;
   margin: 0;
@@ -80,8 +95,7 @@
 }
 
 .pago__delivery {
-  margin-top: 0.9rem;
-  margin-bottom: 1rem;
+  margin: 0;
   padding: 0.85rem;
   border: 1px solid #dfd6c8;
   border-radius: 10px;
@@ -151,6 +165,10 @@
 }
 
 @media (max-width: 700px) {
+  .pago__checkout-grid {
+    grid-template-columns: 1fr;
+  }
+
   .pago__delivery-grid {
     grid-template-columns: 1fr;
   }
