@@ -124,6 +124,23 @@
   cursor: default;
 }
 
+.top-menu__field--city {
+  cursor: default;
+}
+
+.top-menu__city-select {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  min-width: 0;
+  width: 100%;
+  font-family: var(--font-ui);
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #30343a;
+  cursor: pointer;
+}
+
 .top-menu__time-select {
   border: 0;
   background: transparent;
@@ -170,6 +187,10 @@
   }
 
   .top-menu__time-select {
+    font-size: 0.85rem;
+  }
+
+  .top-menu__city-select {
     font-size: 0.85rem;
   }
 }

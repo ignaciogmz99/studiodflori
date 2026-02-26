@@ -4,6 +4,7 @@ import { es } from 'date-fns/locale'
 import 'react-datepicker/dist/react-datepicker.css'
 import './Top_menu.css'
 import { useCart } from '../context/CartContext'
+import { DELIVERY_CITIES } from '../constants/deliveryCities'
 
 const OPEN_HOUR = 10
 const CLOSE_HOUR = 19
@@ -123,7 +124,9 @@ function TopMenu() {
   const {
     estimatedPreparationHours,
     setSelectedDeliveryDate,
-    setSelectedDeliveryTime
+    setSelectedDeliveryTime,
+    selectedDeliveryCity,
+    setSelectedDeliveryCity
   } = useCart()
   const earliestDeliveryDateTime = useMemo(
     () => resolveEarliestDate(estimatedPreparationHours),
@@ -164,11 +167,20 @@ function TopMenu() {
     <section className="top-menu" aria-label="Destino de entrega">
       <h2 className="top-menu__title">Enviar a:</h2>
 
-      <button type="button" className="top-menu__field" aria-label="Seleccionar ciudad de entrega">
+      <div className="top-menu__field top-menu__field--city" aria-label="Seleccionar ciudad de entrega">
         <span className="top-menu__icon" aria-hidden="true">
         </span>
-        <span className="top-menu__text">Guadalajara</span>
-      </button>
+        <select
+          className="top-menu__city-select"
+          value={selectedDeliveryCity}
+          onChange={(event) => setSelectedDeliveryCity(event.target.value)}
+          aria-label="Elegir ciudad de entrega"
+        >
+          {DELIVERY_CITIES.map((city) => (
+            <option key={city} value={city}>{city}</option>
+          ))}
+        </select>
+      </div>
 
       <div className="top-menu__field top-menu__field--date" aria-label="Seleccionar fecha de entrega">
         <span className="top-menu__icon" aria-hidden="true" />
