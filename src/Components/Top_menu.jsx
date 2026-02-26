@@ -1,4 +1,4 @@
-import { forwardRef, useMemo, useState } from 'react'
+import { forwardRef, useEffect, useMemo, useState } from 'react'
 import DatePicker from 'react-datepicker'
 import { es } from 'date-fns/locale'
 import 'react-datepicker/dist/react-datepicker.css'
@@ -45,6 +45,13 @@ function formatSlot(totalMinutes) {
   const hours = Math.floor(totalMinutes / 60)
   const minutes = totalMinutes % 60
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+}
+
+function formatISODate(dateValue) {
+  const year = dateValue.getFullYear()
+  const month = String(dateValue.getMonth() + 1).padStart(2, '0')
+  const day = String(dateValue.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 function buildTimeSlots(selectedDate, earliestDateTime) {
@@ -113,7 +120,11 @@ const DateTrigger = forwardRef(function DateTrigger({ value, onClick }, ref) {
 })
 
 function TopMenu() {
-  const { estimatedPreparationHours } = useCart()
+  const {
+    estimatedPreparationHours,
+    setSelectedDeliveryDate,
+    setSelectedDeliveryTime
+  } = useCart()
   const earliestDeliveryDateTime = useMemo(
     () => resolveEarliestDate(estimatedPreparationHours),
     [estimatedPreparationHours]
@@ -143,6 +154,11 @@ function TopMenu() {
     (slot) => slot.value === deliveryTime && !slot.disabled
   )
   const effectiveDeliveryTime = selectedTimeIsEnabled ? deliveryTime : firstEnabledTime
+
+  useEffect(() => {
+    setSelectedDeliveryDate(formatISODate(effectiveDeliveryDate))
+    setSelectedDeliveryTime(effectiveDeliveryTime)
+  }, [effectiveDeliveryDate, effectiveDeliveryTime, setSelectedDeliveryDate, setSelectedDeliveryTime])
 
   return (
     <section className="top-menu" aria-label="Destino de entrega">
