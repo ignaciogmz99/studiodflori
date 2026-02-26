@@ -25,6 +25,8 @@ function readStoredCart() {
 export function CartProvider({ children }) {
   const [items, setItems] = useState(() => readStoredCart())
   const [isPaymentView, setIsPaymentView] = useState(false)
+  const [selectedDeliveryDate, setSelectedDeliveryDate] = useState('')
+  const [selectedDeliveryTime, setSelectedDeliveryTime] = useState('')
 
   useEffect(() => {
     window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
@@ -111,10 +113,22 @@ export function CartProvider({ children }) {
     isPaymentView,
     openPaymentView,
     closePaymentView,
+    selectedDeliveryDate,
+    selectedDeliveryTime,
+    setSelectedDeliveryDate,
+    setSelectedDeliveryTime,
     totalItems,
     totalPrice,
     estimatedPreparationHours
-  }), [estimatedPreparationHours, isPaymentView, items, totalItems, totalPrice])
+  }), [
+    estimatedPreparationHours,
+    isPaymentView,
+    items,
+    selectedDeliveryDate,
+    selectedDeliveryTime,
+    totalItems,
+    totalPrice
+  ])
 
   return (
     <CartContext.Provider value={value}>

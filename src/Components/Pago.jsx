@@ -1,8 +1,39 @@
 import './Pago.css'
 import { useCart } from '../context/CartContext'
 
+const MIN_LEAD_HOURS = 3
+
+function resolveEarliestDate(preparationHours) {
+  const safeHours = Number.isFinite(preparationHours) && preparationHours > 0
+    ? Math.max(preparationHours, MIN_LEAD_HOURS)
+    : MIN_LEAD_HOURS
+  const now = new Date()
+  const earliest = new Date(now.getTime() + (safeHours * 60 * 60 * 1000))
+  earliest.setHours(0, 0, 0, 0)
+  return earliest
+}
+
+function formatDeliveryDate(dateValue) {
+  return new Intl.DateTimeFormat('es-MX', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long'
+  }).format(dateValue)
+}
+
 function Pago() {
-  const { items, totalPrice, closePaymentView } = useCart()
+  const {
+    items,
+    totalPrice,
+    closePaymentView,
+    estimatedPreparationHours,
+    selectedDeliveryDate,
+    selectedDeliveryTime
+  } = useCart()
+  const minDeliveryDate = resolveEarliestDate(estimatedPreparationHours)
+  const deliveryDate = selectedDeliveryDate
+    ? new Date(`${selectedDeliveryDate}T00:00:00`)
+    : minDeliveryDate
 
   return (
     <section className="pago" aria-label="Resumen de pago">
@@ -12,6 +43,14 @@ function Pago() {
           Volver al catalogo
         </button>
       </header>
+
+      <p className="pago__meta">
+        Fecha de entrega: {formatDeliveryDate(deliveryDate)}
+        {selectedDeliveryDate ? '' : ' (minima)'}
+      </p>
+      <p className="pago__meta">
+        Horario: {selectedDeliveryTime || 'Sin horario seleccionado'}
+      </p>
 
       {items.length === 0 && (
         <p className="pago__empty">Tu carrito esta vacio.</p>
