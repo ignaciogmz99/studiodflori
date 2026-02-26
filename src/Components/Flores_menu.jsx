@@ -380,11 +380,12 @@ function FloresMenu() {
             <p className="flores-menu__price">
               {typeof product.price === 'number' ? `$${product.price} MXN` : 'Precio no disponible'}
             </p>
-            <p className="flores-menu__stock">
-              {typeof product.stock === 'number'
-                ? (product.stock > 0 ? `${product.stock} disponibles` : 'Agotado')
-                : 'Stock no disponible'}
-            </p>
+            {typeof product.stock !== 'number' && (
+              <p className="flores-menu__stock">Stock no disponible</p>
+            )}
+            {typeof product.stock === 'number' && product.stock <= 0 && (
+              <p className="flores-menu__stock">Agotado</p>
+            )}
             <p className="flores-menu__stock">{getDeliveryLabel(product.preparationHours)}</p>
             <button
               type="button"
