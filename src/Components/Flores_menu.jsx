@@ -74,7 +74,7 @@ function resolvePreparationHours(inventory) {
 function getDeliveryLabel(hours) {
   return Number(hours) === 24
     ? 'Preparacion: 24 horas'
-    : 'Entrega inmediata'
+    : 'Entrega hoy'
 }
 
 function FloresMenu() {

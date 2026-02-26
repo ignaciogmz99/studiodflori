@@ -79,6 +79,63 @@
   font-size: 0.84rem;
 }
 
+.pago__delivery {
+  margin-top: 0.9rem;
+  margin-bottom: 1rem;
+  padding: 0.85rem;
+  border: 1px solid #dfd6c8;
+  border-radius: 10px;
+  background: #fff9f0;
+}
+
+.pago__delivery-title {
+  margin: 0 0 0.65rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.pago__delivery-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.pago__field {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.pago__field--wide {
+  grid-column: 1 / -1;
+}
+
+.pago__field-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.pago__field-input {
+  width: 100%;
+  border: 1px solid #d8cfbf;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.5rem 0.6rem;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  color: #2e2e2e;
+  box-sizing: border-box;
+}
+
+.pago__field-textarea {
+  resize: vertical;
+}
+
+.pago__warning {
+  margin: 0.65rem 0 0;
+  font-size: 0.82rem;
+  color: #933b27;
+}
+
 .pago__subtotal {
   margin: 0;
   font-size: 0.9rem;
@@ -94,6 +151,10 @@
 }
 
 @media (max-width: 700px) {
+  .pago__delivery-grid {
+    grid-template-columns: 1fr;
+  }
+
   .pago__item {
     grid-template-columns: 64px 1fr;
   }

@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { DELIVERY_CITIES } from '../constants/deliveryCities'
 
 const CartContext = createContext(null)
 const CART_STORAGE_KEY = 'studiodflori_cart_v1'
@@ -27,6 +28,7 @@ export function CartProvider({ children }) {
   const [isPaymentView, setIsPaymentView] = useState(false)
   const [selectedDeliveryDate, setSelectedDeliveryDate] = useState('')
   const [selectedDeliveryTime, setSelectedDeliveryTime] = useState('')
+  const [selectedDeliveryCity, setSelectedDeliveryCity] = useState(DELIVERY_CITIES[0])
 
   useEffect(() => {
     window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
@@ -115,8 +117,10 @@ export function CartProvider({ children }) {
     closePaymentView,
     selectedDeliveryDate,
     selectedDeliveryTime,
+    selectedDeliveryCity,
     setSelectedDeliveryDate,
     setSelectedDeliveryTime,
+    setSelectedDeliveryCity,
     totalItems,
     totalPrice,
     estimatedPreparationHours
@@ -125,6 +129,7 @@ export function CartProvider({ children }) {
     isPaymentView,
     items,
     selectedDeliveryDate,
+    selectedDeliveryCity,
     selectedDeliveryTime,
     totalItems,
     totalPrice
