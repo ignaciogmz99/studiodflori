@@ -1,0 +1,142 @@
+.tarjeta {
+  background: #f3f1ec;
+  border: 1px solid #ddd3c4;
+  border-radius: 14px;
+  padding: 1rem;
+  color: #3f2d1e;
+}
+
+.tarjeta__header {
+  margin-bottom: 0.75rem;
+}
+
+.tarjeta__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.tarjeta__meta {
+  margin: 0 0 0.9rem;
+  font-size: 0.92rem;
+}
+
+.tarjeta__secure-note {
+  margin: 0 0 0.45rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #d7ccb8;
+  border-radius: 8px;
+  background: #fffaf1;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #3e3328;
+}
+
+.tarjeta__brands {
+  margin: 0 0 0.6rem;
+}
+
+.tarjeta__brands-label {
+  display: inline-block;
+  margin-bottom: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #4a3a2c;
+}
+
+.tarjeta__brands-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.tarjeta__brand {
+  border: 1px solid #d8cfbf;
+  border-radius: 999px;
+  background: #fff;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #3b3128;
+}
+
+.tarjeta__summary {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.tarjeta__summary-text {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.tarjeta__field {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.tarjeta__field--wide {
+  grid-column: 1 / -1;
+}
+
+.tarjeta__label {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.tarjeta__input {
+  width: 100%;
+  border: 1px solid #d8cfbf;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.55rem 0.65rem;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  color: #2e2e2e;
+  box-sizing: border-box;
+}
+
+.tarjeta__actions {
+  margin-top: 0.95rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.tarjeta__button {
+  border: 0;
+  border-radius: 10px;
+  background: #6f4a2e;
+  color: #f6efe2;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 0.55rem 0.95rem;
+  cursor: pointer;
+}
+
+.tarjeta__button--secondary {
+  background: #b9a58d;
+  color: #2d2419;
+}
+
+.tarjeta__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tarjeta__error {
+  margin: 0.7rem 0 0;
+  font-size: 0.82rem;
+  color: #933b27;
+}
+
+@media (max-width: 700px) {
+  .tarjeta__actions {
+    flex-wrap: wrap;
+  }
+}

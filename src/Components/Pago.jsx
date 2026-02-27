@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import './Pago.css'
 import { useCart } from '../context/CartContext'
 import { DELIVERY_CITIES } from '../constants/deliveryCities'
@@ -32,16 +32,11 @@ function Pago() {
     selectedDeliveryDate,
     selectedDeliveryTime,
     selectedDeliveryCity,
-    setSelectedDeliveryCity
+    setSelectedDeliveryCity,
+    deliveryDetails,
+    setDeliveryDetails,
+    openCardView
   } = useCart()
-  const [deliveryContact, setDeliveryContact] = useState({
-    fullName: '',
-    phone: '',
-    streetAddress: '',
-    neighborhood: '',
-    postalCode: '',
-    specialInstructions: ''
-  })
   const minDeliveryDate = resolveEarliestDate(estimatedPreparationHours)
   const deliveryDate = selectedDeliveryDate
     ? new Date(`${selectedDeliveryDate}T00:00:00`)
@@ -53,11 +48,19 @@ function Pago() {
 
   const handleDeliveryContactChange = (event) => {
     const { name, value } = event.target
-    setDeliveryContact((current) => ({
+    setDeliveryDetails((current) => ({
       ...current,
       [name]: value
     }))
   }
+  const isDeliveryFormValid = Boolean(
+    deliveryDetails.fullName.trim()
+    && deliveryDetails.phone.trim()
+    && deliveryDetails.streetAddress.trim()
+    && deliveryDetails.neighborhood.trim()
+    && deliveryDetails.postalCode.trim()
+    && cityIsSupported
+  )
 
   return (
     <section className="pago" aria-label="Resumen de pago">
@@ -85,7 +88,7 @@ function Pago() {
                 className="pago__field-input"
                 type="text"
                 name="fullName"
-                value={deliveryContact.fullName}
+                value={deliveryDetails.fullName}
                 onChange={handleDeliveryContactChange}
                 placeholder="Nombre y apellido"
                 autoComplete="name"
@@ -97,7 +100,7 @@ function Pago() {
                 className="pago__field-input"
                 type="tel"
                 name="phone"
-                value={deliveryContact.phone}
+                value={deliveryDetails.phone}
                 onChange={handleDeliveryContactChange}
                 placeholder="33 1234 5678"
                 autoComplete="tel"
@@ -109,7 +112,7 @@ function Pago() {
                 className="pago__field-input"
                 type="text"
                 name="streetAddress"
-                value={deliveryContact.streetAddress}
+                value={deliveryDetails.streetAddress}
                 onChange={handleDeliveryContactChange}
                 placeholder="Ej. Av. Mexico 1234"
                 autoComplete="street-address"
@@ -121,7 +124,7 @@ function Pago() {
                 className="pago__field-input"
                 type="text"
                 name="neighborhood"
-                value={deliveryContact.neighborhood}
+                value={deliveryDetails.neighborhood}
                 onChange={handleDeliveryContactChange}
                 placeholder="Ej. Americana"
               />
@@ -132,7 +135,7 @@ function Pago() {
                 className="pago__field-input"
                 type="text"
                 name="postalCode"
-                value={deliveryContact.postalCode}
+                value={deliveryDetails.postalCode}
                 onChange={handleDeliveryContactChange}
                 placeholder="Ej. 44100"
                 autoComplete="postal-code"
@@ -157,7 +160,7 @@ function Pago() {
               <textarea
                 className="pago__field-input pago__field-textarea"
                 name="specialInstructions"
-                value={deliveryContact.specialInstructions}
+                value={deliveryDetails.specialInstructions}
                 onChange={handleDeliveryContactChange}
                 placeholder="Ej. Departamento 4B, tocar interfon 12, entregar en recepcion."
                 rows={3}
@@ -169,6 +172,16 @@ function Pago() {
               Solo realizamos entregas en Guadalajara, Zapopan, Tlaquepaque y Tonala.
             </p>
           )}
+          <div className="pago__actions">
+            <button
+              type="button"
+              className="pago__next"
+              onClick={openCardView}
+              disabled={!isDeliveryFormValid || items.length === 0}
+            >
+              Siguiente
+            </button>
+          </div>
         </section>
 
         <section className="pago__items" aria-label="Resumen del carrito">
