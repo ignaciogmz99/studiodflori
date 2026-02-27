@@ -26,9 +26,18 @@ function readStoredCart() {
 export function CartProvider({ children }) {
   const [items, setItems] = useState(() => readStoredCart())
   const [isPaymentView, setIsPaymentView] = useState(false)
+  const [isCardView, setIsCardView] = useState(false)
   const [selectedDeliveryDate, setSelectedDeliveryDate] = useState('')
   const [selectedDeliveryTime, setSelectedDeliveryTime] = useState('')
   const [selectedDeliveryCity, setSelectedDeliveryCity] = useState(DELIVERY_CITIES[0])
+  const [deliveryDetails, setDeliveryDetails] = useState({
+    fullName: '',
+    phone: '',
+    streetAddress: '',
+    neighborhood: '',
+    postalCode: '',
+    specialInstructions: ''
+  })
 
   useEffect(() => {
     window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
@@ -81,10 +90,20 @@ export function CartProvider({ children }) {
   }
 
   const openPaymentView = () => {
+    setIsCardView(false)
     setIsPaymentView(true)
   }
 
+  const openCardView = () => {
+    setIsCardView(true)
+  }
+
+  const backToPaymentForm = () => {
+    setIsCardView(false)
+  }
+
   const closePaymentView = () => {
+    setIsCardView(false)
     setIsPaymentView(false)
   }
 
@@ -113,19 +132,26 @@ export function CartProvider({ children }) {
     decreaseQuantity,
     clearCart,
     isPaymentView,
+    isCardView,
     openPaymentView,
+    openCardView,
+    backToPaymentForm,
     closePaymentView,
     selectedDeliveryDate,
     selectedDeliveryTime,
     selectedDeliveryCity,
+    deliveryDetails,
     setSelectedDeliveryDate,
     setSelectedDeliveryTime,
     setSelectedDeliveryCity,
+    setDeliveryDetails,
     totalItems,
     totalPrice,
     estimatedPreparationHours
   }), [
     estimatedPreparationHours,
+    deliveryDetails,
+    isCardView,
     isPaymentView,
     items,
     selectedDeliveryDate,
