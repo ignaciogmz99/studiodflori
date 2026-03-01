@@ -37,6 +37,30 @@
   margin: 0 0 0.6rem;
 }
 
+.tarjeta__provider-switch {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0 0 0.7rem;
+}
+
+.tarjeta__provider-option {
+  border: 1px solid #cdbca6;
+  border-radius: 999px;
+  background: #fff;
+  color: #4a3a2c;
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+}
+
+.tarjeta__provider-option--active {
+  background: #6f4a2e;
+  border-color: #6f4a2e;
+  color: #f6efe2;
+}
+
 .tarjeta__brands-label {
   display: inline-block;
   margin-bottom: 0.35rem;
@@ -103,8 +127,82 @@
 .tarjeta__actions {
   margin-top: 0.95rem;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   gap: 0.55rem;
+}
+
+.tarjeta__brick {
+  margin-top: 0.9rem;
+  border: 1px solid #d8cfbf;
+  border-radius: 10px;
+  padding: 0.75rem;
+  background: #fff;
+}
+
+.tarjeta__stripe-wrap {
+  margin-top: 0.9rem;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.tarjeta__stripe-brick {
+  border: 1px solid #d7ccb8;
+  border-radius: 12px;
+  background: #fff;
+  padding: 1.1rem;
+  display: grid;
+  gap: 0.95rem;
+}
+
+.tarjeta__stripe-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.tarjeta__stripe-title {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #2d2419;
+}
+
+.tarjeta__stripe-brands {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  gap: 0.45rem;
+}
+
+.tarjeta__stripe-brand {
+  min-width: 40px;
+  text-align: center;
+  border: 1px solid #d9d0c1;
+  border-radius: 6px;
+  background: #fff;
+  padding: 0.22rem 0.42rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #3c3328;
+}
+
+.tarjeta__stripe-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.tarjeta__stripe-input {
+  border: 1px solid #cfc5b6;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.8rem 0.8rem;
+  min-height: 54px;
+  box-sizing: border-box;
 }
 
 .tarjeta__button {
@@ -135,8 +233,24 @@
   color: #933b27;
 }
 
+.tarjeta__success {
+  margin: 0.7rem 0 0;
+  font-size: 0.82rem;
+  color: #1f6d44;
+}
+
+.tarjeta__loading {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #4a3a2c;
+}
+
 @media (max-width: 700px) {
   .tarjeta__actions {
     flex-wrap: wrap;
+  }
+
+  .tarjeta__stripe-row {
+    grid-template-columns: 1fr;
   }
 }
