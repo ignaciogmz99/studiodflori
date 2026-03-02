@@ -4,6 +4,10 @@ import { useCart } from '../context/CartContext'
 import { defaultPaymentProvider, getPaymentProvider, paymentProviders } from './payments'
 import PaymentProviderBoundary from './payments/PaymentProviderBoundary'
 
+function onlyDigits(value) {
+  return String(value || '').replace(/\D/g, '')
+}
+
 function Tarjeta() {
   const {
     items,
@@ -28,6 +32,17 @@ function Tarjeta() {
     [paymentProvider]
   )
 
+  const normalizedDeliveryDetails = useMemo(() => {
+    const phoneCountryCode = deliveryDetails.phoneCountryCode || '+52'
+    const phoneDigits = onlyDigits(deliveryDetails.phone)
+
+    return {
+      ...deliveryDetails,
+      phoneCountryCode,
+      phone: phoneDigits ? `${phoneCountryCode}${phoneDigits}` : ''
+    }
+  }, [deliveryDetails])
+
   const SelectedPaymentComponent = selectedProvider.Component
 
   const paymentSharedProps = {
@@ -37,7 +52,7 @@ function Tarjeta() {
     payableAmount,
     items,
     customerEmail,
-    deliveryDetails,
+    deliveryDetails: normalizedDeliveryDetails,
     selectedDeliveryCity,
     selectedDeliveryDate,
     selectedDeliveryTime,

@@ -140,6 +140,12 @@
   box-sizing: border-box;
 }
 
+.pago__phone-row {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 0.5rem;
+}
+
 .pago__field-textarea {
   resize: vertical;
 }
@@ -205,8 +211,13 @@
     height: 64px;
   }
 
+  .pago__phone-row {
+    grid-template-columns: 1fr;
+  }
+
   .pago__subtotal {
     grid-column: 1 / -1;
     text-align: left;
   }
 }
+
