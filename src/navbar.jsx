@@ -17,7 +17,9 @@ const panelContent = {
   direccion: {
     title: 'Direccion',
     heading: 'Ubicacion',
-    text: 'Estamos preparando la direccion final del local para compartirla aqui con mapa y referencia exacta.'
+    text: 'Avenida Paseo de la Arboleda 2500, Guadalajara, Mexico, 44530',
+    mapLabel: 'Ver en Google Maps',
+    mapUrl: 'https://l.facebook.com/l.php?u=https%3A%2F%2Fwww.bing.com%2Fmaps%2Fdefault.aspx%3Fv%3D2%26pc%3DFACEBK%26mid%3D8100%26where1%3DAvenida%2520Paseo%2520de%2520la%2520Arboleda%25202500%252C%2520Guadalajara%252C%2520Mexico%252C%252044530%26FORM%3DFBKPL1%26mkt%3Des-MX%26fbclid%3DIwZXh0bgNhZW0CMTAAYnJpZBExUXY0bmZ2bE50U3hvYldVOXNydGMGYXBwX2lkEDIyMjAzOTE3ODgyMDA4OTIAAR5syCoDjfoavI3v-h0tViv4RzReD36doNPlYde5HIyhVzsZvdI1XJoDRrutrg_aem_JVaSkhFyQ5mjZrVxigAT_Q&h=AT6uZhjNnNoI6bHwkMnERxi0cXGjaXbR__AZ8-ixekjHbzV_PAplPlDc8wCblRJxYYAG9XOZBhQWj46sgKROyozcMlZkSYqIvqPTzGOkarc8CF0UVg4jvLYJqyKa3SzE5w'
   }
 }
 
@@ -201,6 +203,16 @@ function Navbar() {
             <h2 className="navbar__panel-title">{selectedContent.title}</h2>
             <h3 className="navbar__panel-heading">{selectedContent.heading}</h3>
             <p className="navbar__panel-text">{selectedContent.text}</p>
+            {selectedContent.mapUrl && (
+              <a
+                className="navbar__panel-link"
+                href={selectedContent.mapUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {selectedContent.mapLabel || 'Abrir mapa'}
+              </a>
+            )}
           </section>
         </div>
       )}

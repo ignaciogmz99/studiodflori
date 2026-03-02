@@ -1,6 +1,6 @@
 import './footer.css'
 
-const FACEBOOK_URL = 'https://facebook.com/tu-pagina'
+const FACEBOOK_URL = 'https://www.facebook.com/share/1HVJZRXdDL/?mibextid=wwXIfr'
 const INSTAGRAM_URL = 'https://www.instagram.com/studiodeifiori?igsh=Zzlja3ZmeGg1Y3Bv&utm_source=qr'
 const WHATSAPP_URL = 'https://wa.me/5213312345678?text=Hola%20quiero%20hacer%20un%20pedido'
 

@@ -163,7 +163,10 @@ function StripePayment({
         }
       }
 
-      stripeCardNumberRef.current = stripeElementsRef.current.create('cardNumber', baseStyle)
+      stripeCardNumberRef.current = stripeElementsRef.current.create('cardNumber', {
+        ...baseStyle,
+        disableLink: true
+      })
       stripeCardExpiryRef.current = stripeElementsRef.current.create('cardExpiry', baseStyle)
       stripeCardCvcRef.current = stripeElementsRef.current.create('cardCvc', baseStyle)
 
@@ -235,6 +238,7 @@ function StripePayment({
       setIsStripePaying(true)
       setErrorMessage('')
       setPaymentMessage('')
+      const isStorePickup = deliveryDetails.fulfillmentType === 'pickup'
 
       const createIntentResponse = await fetch(`${apiBaseUrl}/api/stripe/create-payment-intent`, {
         method: 'POST',
@@ -251,10 +255,14 @@ function StripePayment({
             email: customerEmail
           },
           delivery: {
-            city: selectedDeliveryCity,
+            fulfillmentType: deliveryDetails.fulfillmentType || 'delivery',
+            city: isStorePickup ? null : selectedDeliveryCity,
             date: selectedDeliveryDate,
             time: selectedDeliveryTime,
-            streetAddress: deliveryDetails.streetAddress
+            streetAddress: isStorePickup ? null : deliveryDetails.streetAddress,
+            neighborhood: isStorePickup ? null : deliveryDetails.neighborhood,
+            postalCode: isStorePickup ? null : deliveryDetails.postalCode,
+            specialInstructions: deliveryDetails.specialInstructions
           }
         })
       })
