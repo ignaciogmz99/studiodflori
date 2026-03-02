@@ -42,7 +42,7 @@
 
 .navbar__brand-text {
   color: #f4edd9;
-  font-size: 1.15rem;
+  font-size: 1.28rem;
   font-weight: 700;
   font-family: var(--font-display);
   letter-spacing: 0.01em;
@@ -69,7 +69,7 @@
   padding: 0.48rem 0.52rem;
   color: #f4edd9;
   text-decoration: none;
-  font-size: 0.8rem;
+  font-size: 0.95rem;
   font-weight: 600;
   font-family: var(--font-ui);
   border-radius: 6px;
@@ -151,6 +151,20 @@
   margin: 0;
   font-size: 0.82rem;
   line-height: 1.4;
+}
+
+.navbar__panel-link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1d6fe8;
+  text-decoration: none;
+}
+
+.navbar__panel-link:hover,
+.navbar__panel-link:focus-visible {
+  text-decoration: underline;
 }
 
 .navbar__cart-list {
@@ -238,11 +252,11 @@
 
 @media (max-width: 1100px) {
   .navbar__brand-text {
-    font-size: 0.88rem;
+    font-size: 1.02rem;
   }
 
   .navbar__link {
-    font-size: 0.75rem;
+    font-size: 0.88rem;
     padding: 0.42rem 0.44rem;
   }
 }
@@ -263,7 +277,7 @@
   }
 
   .navbar__brand-text {
-    font-size: 0.82rem;
+    font-size: 0.95rem;
   }
 
   .navbar__menu {
@@ -275,7 +289,7 @@
   }
 
   .navbar__link {
-    font-size: 0.74rem;
+    font-size: 0.84rem;
     padding: 0.38rem 0.44rem;
   }
 
@@ -301,7 +315,7 @@
   }
 
   .navbar__brand-text {
-    font-size: 0.78rem;
+    font-size: 0.9rem;
   }
 
   .navbar__menu {
@@ -310,7 +324,7 @@
   }
 
   .navbar__link {
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     padding: 0.32rem 0.4rem;
   }
 

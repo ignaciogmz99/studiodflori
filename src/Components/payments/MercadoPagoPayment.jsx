@@ -166,6 +166,7 @@ function MercadoPagoPayment({
               setErrorMessage('')
               setPaymentMessage('')
               const currentPayload = payloadRef.current
+              const isStorePickup = currentPayload.deliveryDetails.fulfillmentType === 'pickup'
               const response = await fetch(`${apiBaseUrl}/api/mercadopago/process-payment`, {
                 method: 'POST',
                 headers: {
@@ -181,12 +182,13 @@ function MercadoPagoPayment({
                     email: currentPayload.customerEmail
                   },
                   delivery: {
-                    city: currentPayload.selectedDeliveryCity,
+                    fulfillmentType: currentPayload.deliveryDetails.fulfillmentType || 'delivery',
+                    city: isStorePickup ? null : currentPayload.selectedDeliveryCity,
                     date: currentPayload.selectedDeliveryDate,
                     time: currentPayload.selectedDeliveryTime,
-                    streetAddress: currentPayload.deliveryDetails.streetAddress,
-                    neighborhood: currentPayload.deliveryDetails.neighborhood,
-                    postalCode: currentPayload.deliveryDetails.postalCode,
+                    streetAddress: isStorePickup ? null : currentPayload.deliveryDetails.streetAddress,
+                    neighborhood: isStorePickup ? null : currentPayload.deliveryDetails.neighborhood,
+                    postalCode: isStorePickup ? null : currentPayload.deliveryDetails.postalCode,
                     specialInstructions: currentPayload.deliveryDetails.specialInstructions
                   }
                 })

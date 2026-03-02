@@ -13,6 +13,10 @@ const PHONE_COUNTRY_CODES = [
   { value: '+57', label: '+57 COL' },
   { value: '+51', label: '+51 PER' }
 ]
+const FULFILLMENT_OPTIONS = [
+  { value: 'delivery', label: 'Entrega a domicilio' },
+  { value: 'pickup', label: 'Recoger en tienda' }
+]
 
 function resolveEarliestDate(preparationHours) {
   const safeHours = Number.isFinite(preparationHours) && preparationHours > 0
@@ -59,6 +63,8 @@ function Pago() {
     [selectedDeliveryCity]
   )
   const phoneCountryCode = deliveryDetails.phoneCountryCode || '+52'
+  const fulfillmentType = deliveryDetails.fulfillmentType || 'delivery'
+  const isStorePickup = fulfillmentType === 'pickup'
   const phoneDigits = useMemo(
     () => onlyDigits(deliveryDetails.phone),
     [deliveryDetails.phone]
@@ -86,10 +92,15 @@ function Pago() {
   const isDeliveryFormValid = Boolean(
     deliveryDetails.fullName.trim()
     && isPhoneValid
-    && deliveryDetails.streetAddress.trim()
-    && deliveryDetails.neighborhood.trim()
-    && deliveryDetails.postalCode.trim()
-    && cityIsSupported
+    && (
+      isStorePickup
+      || (
+        deliveryDetails.streetAddress.trim()
+        && deliveryDetails.neighborhood.trim()
+        && deliveryDetails.postalCode.trim()
+        && cityIsSupported
+      )
+    )
   )
 
   return (
@@ -112,6 +123,20 @@ function Pago() {
         <section className="pago__delivery" aria-label="Informacion de entrega">
           <h3 className="pago__delivery-title">Informacion para entregar tu pedido</h3>
           <div className="pago__delivery-grid">
+            <label className="pago__field">
+              <span className="pago__field-label">Tipo de entrega</span>
+              <select
+                className="pago__field-input"
+                name="fulfillmentType"
+                value={fulfillmentType}
+                onChange={handleDeliveryContactChange}
+                aria-label="Seleccionar tipo de entrega"
+              >
+                {FULFILLMENT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </label>
             <label className="pago__field">
               <span className="pago__field-label">Nombre completo</span>
               <input
@@ -150,55 +175,59 @@ function Pago() {
                 />
               </div>
             </label>
-            <label className="pago__field pago__field--wide">
-              <span className="pago__field-label">Calle y numero</span>
-              <input
-                className="pago__field-input"
-                type="text"
-                name="streetAddress"
-                value={deliveryDetails.streetAddress}
-                onChange={handleDeliveryContactChange}
-                placeholder="Ej. Av. Mexico 1234"
-                autoComplete="street-address"
-              />
-            </label>
-            <label className="pago__field">
-              <span className="pago__field-label">Colonia</span>
-              <input
-                className="pago__field-input"
-                type="text"
-                name="neighborhood"
-                value={deliveryDetails.neighborhood}
-                onChange={handleDeliveryContactChange}
-                placeholder="Ej. Americana"
-              />
-            </label>
-            <label className="pago__field">
-              <span className="pago__field-label">Codigo postal</span>
-              <input
-                className="pago__field-input"
-                type="text"
-                name="postalCode"
-                value={deliveryDetails.postalCode}
-                onChange={handleDeliveryContactChange}
-                placeholder="Ej. 44100"
-                autoComplete="postal-code"
-                inputMode="numeric"
-              />
-            </label>
-            <label className="pago__field">
-              <span className="pago__field-label">Ciudad</span>
-              <select
-                className="pago__field-input"
-                value={selectedDeliveryCity}
-                onChange={(event) => setSelectedDeliveryCity(event.target.value)}
-                aria-label="Seleccionar ciudad de entrega"
-              >
-                {DELIVERY_CITIES.map((city) => (
-                  <option key={city} value={city}>{city}</option>
-                ))}
-              </select>
-            </label>
+            {!isStorePickup && (
+              <>
+                <label className="pago__field pago__field--wide">
+                  <span className="pago__field-label">Calle y numero</span>
+                  <input
+                    className="pago__field-input"
+                    type="text"
+                    name="streetAddress"
+                    value={deliveryDetails.streetAddress}
+                    onChange={handleDeliveryContactChange}
+                    placeholder="Ej. Av. Mexico 1234"
+                    autoComplete="street-address"
+                  />
+                </label>
+                <label className="pago__field">
+                  <span className="pago__field-label">Colonia</span>
+                  <input
+                    className="pago__field-input"
+                    type="text"
+                    name="neighborhood"
+                    value={deliveryDetails.neighborhood}
+                    onChange={handleDeliveryContactChange}
+                    placeholder="Ej. Americana"
+                  />
+                </label>
+                <label className="pago__field">
+                  <span className="pago__field-label">Codigo postal</span>
+                  <input
+                    className="pago__field-input"
+                    type="text"
+                    name="postalCode"
+                    value={deliveryDetails.postalCode}
+                    onChange={handleDeliveryContactChange}
+                    placeholder="Ej. 44100"
+                    autoComplete="postal-code"
+                    inputMode="numeric"
+                  />
+                </label>
+                <label className="pago__field">
+                  <span className="pago__field-label">Ciudad</span>
+                  <select
+                    className="pago__field-input"
+                    value={selectedDeliveryCity}
+                    onChange={(event) => setSelectedDeliveryCity(event.target.value)}
+                    aria-label="Seleccionar ciudad de entrega"
+                  >
+                    {DELIVERY_CITIES.map((city) => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </select>
+                </label>
+              </>
+            )}
             <label className="pago__field pago__field--wide">
               <span className="pago__field-label">Instrucciones especiales</span>
               <textarea
@@ -214,7 +243,7 @@ function Pago() {
           {!isPhoneValid && (
             <p className="pago__warning">Ingresa un telefono valido de 10 digitos con el prefijo seleccionado.</p>
           )}
-          {!cityIsSupported && (
+          {!isStorePickup && !cityIsSupported && (
             <p className="pago__warning">
               Solo realizamos entregas en Guadalajara, Zapopan, Tlaquepaque y Tonala.
             </p>
