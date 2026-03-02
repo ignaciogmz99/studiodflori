@@ -4,6 +4,15 @@ import { useCart } from '../context/CartContext'
 import { DELIVERY_CITIES } from '../constants/deliveryCities'
 
 const MIN_LEAD_HOURS = 3
+const PHONE_COUNTRY_CODES = [
+  { value: '+52', label: '+52 MEX' },
+  { value: '+1', label: '+1 EUA/CAN' },
+  { value: '+34', label: '+34 ESP' },
+  { value: '+54', label: '+54 ARG' },
+  { value: '+56', label: '+56 CHL' },
+  { value: '+57', label: '+57 COL' },
+  { value: '+51', label: '+51 PER' }
+]
 
 function resolveEarliestDate(preparationHours) {
   const safeHours = Number.isFinite(preparationHours) && preparationHours > 0
@@ -21,6 +30,10 @@ function formatDeliveryDate(dateValue) {
     day: 'numeric',
     month: 'long'
   }).format(dateValue)
+}
+
+function onlyDigits(value) {
+  return String(value || '').replace(/\D/g, '')
 }
 
 function Pago() {
@@ -45,17 +58,34 @@ function Pago() {
     () => DELIVERY_CITIES.includes(selectedDeliveryCity),
     [selectedDeliveryCity]
   )
+  const phoneCountryCode = deliveryDetails.phoneCountryCode || '+52'
+  const phoneDigits = useMemo(
+    () => onlyDigits(deliveryDetails.phone),
+    [deliveryDetails.phone]
+  )
+  const isPhoneCountryCodeValid = PHONE_COUNTRY_CODES.some((code) => code.value === phoneCountryCode)
+  const isPhoneValid = isPhoneCountryCodeValid && phoneDigits.length === 10
 
   const handleDeliveryContactChange = (event) => {
     const { name, value } = event.target
+
+    if (name === 'phone') {
+      setDeliveryDetails((current) => ({
+        ...current,
+        phone: onlyDigits(value).slice(0, 10)
+      }))
+      return
+    }
+
     setDeliveryDetails((current) => ({
       ...current,
       [name]: value
     }))
   }
+
   const isDeliveryFormValid = Boolean(
     deliveryDetails.fullName.trim()
-    && deliveryDetails.phone.trim()
+    && isPhoneValid
     && deliveryDetails.streetAddress.trim()
     && deliveryDetails.neighborhood.trim()
     && deliveryDetails.postalCode.trim()
@@ -94,17 +124,31 @@ function Pago() {
                 autoComplete="name"
               />
             </label>
-            <label className="pago__field">
+            <label className="pago__field pago__field--wide">
               <span className="pago__field-label">Telefono</span>
-              <input
-                className="pago__field-input"
-                type="tel"
-                name="phone"
-                value={deliveryDetails.phone}
-                onChange={handleDeliveryContactChange}
-                placeholder="33 1234 5678"
-                autoComplete="tel"
-              />
+              <div className="pago__phone-row">
+                <select
+                  className="pago__field-input"
+                  name="phoneCountryCode"
+                  value={phoneCountryCode}
+                  onChange={handleDeliveryContactChange}
+                  aria-label="Prefijo telefonico"
+                >
+                  {PHONE_COUNTRY_CODES.map((code) => (
+                    <option key={code.value} value={code.value}>{code.label}</option>
+                  ))}
+                </select>
+                <input
+                  className="pago__field-input"
+                  type="tel"
+                  name="phone"
+                  value={deliveryDetails.phone}
+                  onChange={handleDeliveryContactChange}
+                  placeholder="3312345678"
+                  autoComplete="tel-national"
+                  inputMode="numeric"
+                />
+              </div>
             </label>
             <label className="pago__field pago__field--wide">
               <span className="pago__field-label">Calle y numero</span>
@@ -167,6 +211,9 @@ function Pago() {
               />
             </label>
           </div>
+          {!isPhoneValid && (
+            <p className="pago__warning">Ingresa un telefono valido de 10 digitos con el prefijo seleccionado.</p>
+          )}
           {!cityIsSupported && (
             <p className="pago__warning">
               Solo realizamos entregas en Guadalajara, Zapopan, Tlaquepaque y Tonala.
@@ -215,3 +262,5 @@ function Pago() {
 }
 
 export default Pago
+
+

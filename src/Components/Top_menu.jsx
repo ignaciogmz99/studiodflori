@@ -23,19 +23,19 @@ function formatDeliveryDate(dateValue) {
   }).format(dateValue)
 }
 
+function startOfDay(dateValue) {
+  const nextDate = new Date(dateValue)
+  nextDate.setHours(0, 0, 0, 0)
+  return nextDate
+}
+
 function resolveEarliestDate(preparationHours) {
   const safeHours = Number.isFinite(preparationHours) && preparationHours > 0
     ? Math.max(preparationHours, MIN_LEAD_HOURS)
     : MIN_LEAD_HOURS
   const now = new Date()
-  const earliest = new Date(now.getTime() + (safeHours * 60 * 60 * 1000))
-  return earliest
-}
 
-function startOfDay(dateValue) {
-  const nextDate = new Date(dateValue)
-  nextDate.setHours(0, 0, 0, 0)
-  return nextDate
+  return new Date(now.getTime() + (safeHours * 60 * 60 * 1000))
 }
 
 function isSunday(dateValue) {
@@ -218,3 +218,4 @@ function TopMenu() {
 }
 
 export default TopMenu
+

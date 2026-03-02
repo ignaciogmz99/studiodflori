@@ -32,6 +32,7 @@ export function CartProvider({ children }) {
   const [selectedDeliveryCity, setSelectedDeliveryCity] = useState(DELIVERY_CITIES[0])
   const [deliveryDetails, setDeliveryDetails] = useState({
     fullName: '',
+    phoneCountryCode: '+52',
     phone: '',
     streetAddress: '',
     neighborhood: '',
