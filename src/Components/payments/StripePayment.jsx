@@ -295,7 +295,13 @@ function StripePayment({
       const status = result.paymentIntent?.status
       if (status === 'succeeded') {
         setPaymentMessage('Pago aprobado. Tu pedido fue registrado correctamente.')
-        onPaymentApproved?.()
+        onPaymentApproved?.({
+          provider: 'stripe',
+          paymentId: result.paymentIntent?.id || '',
+          approvedAt: new Date().toISOString(),
+          amount: payableAmount,
+          currency: String(result.paymentIntent?.currency || 'mxn').toUpperCase()
+        })
         return
       }
 

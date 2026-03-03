@@ -67,6 +67,18 @@ async function logMercadoPagoCredentialContext() {
 app.use(cors({
   origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173'
 }))
+
+app.use(
+  '/api/webhooks/stripe',
+  express.raw({ type: 'application/json' }),
+  createStripeWebhookRouter({
+    stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    resendApiKey: process.env.RESEND_API_KEY,
+    orderNotificationFromEmail: process.env.ORDER_NOTIFICATION_FROM_EMAIL,
+    orderNotificationToEmail: process.env.ORDER_NOTIFICATION_TO_EMAIL
+  })
+)
+
 app.use(express.json())
 
 app.get('/api/health', (_req, res) => {
@@ -80,7 +92,6 @@ app.use('/api/mercadopago', createMercadoPagoRouter({
 }))
 app.use('/api/stripe', createStripeRouter({ stripeSecretKey }))
 app.use('/api/webhooks/mercadopago', createMercadoPagoWebhookRouter())
-app.use('/api/webhooks/stripe', createStripeWebhookRouter())
 
 app.listen(port, async () => {
   console.log(`Servidor MP activo en http://localhost:${port}`)

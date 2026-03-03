@@ -43,6 +43,9 @@ const localProducts = Object.entries(shelfProducts)
   .filter((item) => item.images.length > 0)
   .sort((a, b) => a.name.localeCompare(b.name))
 
+const OPEN_HOUR = 10
+const CLOSE_HOUR = 19
+
 function resolvePreparationHours(inventory) {
   if (!inventory) {
     return 24
@@ -72,9 +75,26 @@ function resolvePreparationHours(inventory) {
 }
 
 function getDeliveryLabel(hours) {
-  return Number(hours) === 24
-    ? 'Preparacion: 24 horas'
-    : 'Entrega hoy'
+  const parsedHours = Number(hours)
+  const preparationHours = Number.isFinite(parsedHours) && parsedHours > 0 ? parsedHours : 24
+
+  if (preparationHours >= 24) {
+    return 'Preparacion: 24 horas'
+  }
+
+  const now = new Date()
+  const currentHour = now.getHours()
+  const isWithinDeliveryWindow = currentHour >= OPEN_HOUR && currentHour < CLOSE_HOUR
+  const earliestReadyAt = new Date(now.getTime() + (preparationHours * 60 * 60 * 1000))
+  const cutoffToday = new Date(now)
+  cutoffToday.setHours(CLOSE_HOUR, 0, 0, 0)
+  const isSameDay = earliestReadyAt.toDateString() === now.toDateString()
+
+  if (isWithinDeliveryWindow && isSameDay && earliestReadyAt <= cutoffToday) {
+    return 'Hoy sale'
+  }
+
+  return 'Mañana'
 }
 
 function FloresMenu() {
