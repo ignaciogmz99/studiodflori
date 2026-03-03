@@ -156,16 +156,23 @@ function Tarjeta() {
     cursorY += 14
 
     drawSectionTitle('Entrega')
-    drawCard(fulfillmentType !== 'Recoger en tienda' ? 130 : 88)
+    drawCard(fulfillmentType !== 'Recoger en tienda' ? 148 : 106)
     writeLine(`Tipo: ${fulfillmentType}`)
+    writeLine(`Recibe: ${receiptData.deliveryDetails?.recipientType === 'other'
+      ? (receiptData.deliveryDetails?.recipientName || 'Otra persona')
+      : 'El comprador'}`)
     writeLine(`Fecha de entrega: ${receiptData.selectedDeliveryDate || 'N/A'}`)
-    writeLine(`Horario: ${receiptData.selectedDeliveryTime || 'N/A'}`)
+    writeLine(`Horario deseado: ${receiptData.selectedDeliveryTime || 'N/A'}`)
 
     if (fulfillmentType !== 'Recoger en tienda') {
       writeLine(`Ciudad: ${receiptData.selectedDeliveryCity || 'N/A'}`)
       writeLine(`Direccion: ${receiptData.deliveryDetails?.streetAddress || 'N/A'}`)
       writeLine(`Colonia: ${receiptData.deliveryDetails?.neighborhood || 'N/A'}`)
       writeLine(`Codigo postal: ${receiptData.deliveryDetails?.postalCode || 'N/A'}`)
+    }
+
+    if (receiptData.deliveryDetails?.flowerMessage) {
+      writeLine(`Mensaje para la flor: ${receiptData.deliveryDetails.flowerMessage}`)
     }
 
     if (receiptData.deliveryDetails?.specialInstructions) {

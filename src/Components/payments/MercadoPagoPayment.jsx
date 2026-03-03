@@ -186,9 +186,14 @@ function MercadoPagoPayment({
                     city: isStorePickup ? null : currentPayload.selectedDeliveryCity,
                     date: currentPayload.selectedDeliveryDate,
                     time: currentPayload.selectedDeliveryTime,
+                    recipientType: currentPayload.deliveryDetails.recipientType || 'self',
+                    recipientName: currentPayload.deliveryDetails.recipientType === 'other'
+                      ? currentPayload.deliveryDetails.recipientName
+                      : null,
                     streetAddress: isStorePickup ? null : currentPayload.deliveryDetails.streetAddress,
                     neighborhood: isStorePickup ? null : currentPayload.deliveryDetails.neighborhood,
                     postalCode: isStorePickup ? null : currentPayload.deliveryDetails.postalCode,
+                    flowerMessage: currentPayload.deliveryDetails.flowerMessage,
                     specialInstructions: currentPayload.deliveryDetails.specialInstructions
                   }
                 })

@@ -35,10 +35,13 @@ export function CartProvider({ children }) {
     fullName: '',
     phoneCountryCode: '+52',
     phone: '',
+    recipientType: 'self',
+    recipientName: '',
     streetAddress: '',
     neighborhood: '',
     postalCode: '',
-    specialInstructions: ''
+    specialInstructions: '',
+    flowerMessage: ''
   })
 
   useEffect(() => {
