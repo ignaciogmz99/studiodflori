@@ -259,9 +259,12 @@ function StripePayment({
             city: isStorePickup ? null : selectedDeliveryCity,
             date: selectedDeliveryDate,
             time: selectedDeliveryTime,
+            recipientType: deliveryDetails.recipientType || 'self',
+            recipientName: deliveryDetails.recipientType === 'other' ? deliveryDetails.recipientName : null,
             streetAddress: isStorePickup ? null : deliveryDetails.streetAddress,
             neighborhood: isStorePickup ? null : deliveryDetails.neighborhood,
             postalCode: isStorePickup ? null : deliveryDetails.postalCode,
+            flowerMessage: deliveryDetails.flowerMessage,
             specialInstructions: deliveryDetails.specialInstructions
           }
         })

@@ -26,7 +26,7 @@ function Footer() {
         >
           Instagram
         </a>
-        <a
+        {/* <a
           className="footer__button footer__button--whatsapp"
           href={WHATSAPP_URL}
           target="_blank"
@@ -34,7 +34,7 @@ function Footer() {
           aria-label="WhatsApp"
         >
           WhatsApp
-        </a>
+        </a> */}
       </div>
     </footer>
   )

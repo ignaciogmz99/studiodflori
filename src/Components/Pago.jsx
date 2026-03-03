@@ -17,6 +17,10 @@ const FULFILLMENT_OPTIONS = [
   { value: 'delivery', label: 'Entrega a domicilio' },
   { value: 'pickup', label: 'Recoger en tienda' }
 ]
+const RECIPIENT_OPTIONS = [
+  { value: 'self', label: 'Lo recibo yo' },
+  { value: 'other', label: 'Lo recibe otra persona' }
+]
 
 function resolveEarliestDate(preparationHours) {
   const safeHours = Number.isFinite(preparationHours) && preparationHours > 0
@@ -64,7 +68,9 @@ function Pago() {
   )
   const phoneCountryCode = deliveryDetails.phoneCountryCode || '+52'
   const fulfillmentType = deliveryDetails.fulfillmentType || 'delivery'
+  const recipientType = deliveryDetails.recipientType || 'self'
   const isStorePickup = fulfillmentType === 'pickup'
+  const isRecipientOther = recipientType === 'other'
   const phoneDigits = useMemo(
     () => onlyDigits(deliveryDetails.phone),
     [deliveryDetails.phone]
@@ -82,6 +88,21 @@ function Pago() {
       }))
       return
     }
+    if (name === 'flowerMessage') {
+      setDeliveryDetails((current) => ({
+        ...current,
+        flowerMessage: String(value || '').slice(0, 250)
+      }))
+      return
+    }
+    if (name === 'recipientType') {
+      setDeliveryDetails((current) => ({
+        ...current,
+        recipientType: value,
+        recipientName: value === 'self' ? '' : current.recipientName
+      }))
+      return
+    }
 
     setDeliveryDetails((current) => ({
       ...current,
@@ -92,6 +113,7 @@ function Pago() {
   const isDeliveryFormValid = Boolean(
     deliveryDetails.fullName.trim()
     && isPhoneValid
+    && (!isRecipientOther || deliveryDetails.recipientName.trim())
     && (
       isStorePickup
       || (
@@ -117,7 +139,7 @@ function Pago() {
         {selectedDeliveryDate ? '' : ' (minima)'}
       </p>
       <p className="pago__meta">
-        Horario: {selectedDeliveryTime || 'Sin horario seleccionado'}
+        Horario deseado: {selectedDeliveryTime || 'Sin horario seleccionado'}
       </p>
       <div className="pago__checkout-grid">
         <section className="pago__delivery" aria-label="Informacion de entrega">
@@ -149,6 +171,35 @@ function Pago() {
                 autoComplete="name"
               />
             </label>
+            <label className="pago__field pago__field--wide">
+              <span className="pago__field-label">¿Quien recibe el pedido?</span>
+              <p className="pago__field-note">Puedes recibirlo tu o enviarlo a quien desees.</p>
+              <select
+                className="pago__field-input"
+                name="recipientType"
+                value={recipientType}
+                onChange={handleDeliveryContactChange}
+                aria-label="Seleccionar quien recibe el pedido"
+              >
+                {RECIPIENT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            {isRecipientOther && (
+              <label className="pago__field pago__field--wide">
+                <span className="pago__field-label">Nombre de quien recibe</span>
+                <input
+                  className="pago__field-input"
+                  type="text"
+                  name="recipientName"
+                  value={deliveryDetails.recipientName || ''}
+                  onChange={handleDeliveryContactChange}
+                  placeholder="Nombre de la persona que recibe"
+                  autoComplete="off"
+                />
+              </label>
+            )}
             <label className="pago__field pago__field--wide">
               <span className="pago__field-label">Telefono</span>
               <div className="pago__phone-row">
@@ -229,6 +280,18 @@ function Pago() {
               </>
             )}
             <label className="pago__field pago__field--wide">
+              <span className="pago__field-label">Mensaje para la flor (opcional)</span>
+              <textarea
+                className="pago__field-input pago__field-textarea"
+                name="flowerMessage"
+                value={deliveryDetails.flowerMessage || ''}
+                onChange={handleDeliveryContactChange}
+                placeholder="Ej. Feliz aniversario, te amo."
+                maxLength={250}
+                rows={2}
+              />
+            </label>
+            <label className="pago__field pago__field--wide">
               <span className="pago__field-label">Instrucciones especiales</span>
               <textarea
                 className="pago__field-input pago__field-textarea"
@@ -242,6 +305,9 @@ function Pago() {
           </div>
           {!isPhoneValid && (
             <p className="pago__warning">Ingresa un telefono valido de 10 digitos con el prefijo seleccionado.</p>
+          )}
+          {isRecipientOther && !deliveryDetails.recipientName.trim() && (
+            <p className="pago__warning">Ingresa el nombre de quien recibe para continuar.</p>
           )}
           {!isStorePickup && !cityIsSupported && (
             <p className="pago__warning">
