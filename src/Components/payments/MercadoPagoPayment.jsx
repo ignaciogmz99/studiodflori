@@ -201,7 +201,13 @@ function MercadoPagoPayment({
 
               if (payload.status === 'approved') {
                 setPaymentMessage('Pago aprobado. Tu pedido fue registrado correctamente.')
-                onPaymentApproved?.()
+                onPaymentApproved?.({
+                  provider: 'mercadopago',
+                  paymentId: payload?.id || '',
+                  approvedAt: new Date().toISOString(),
+                  amount: payableAmount,
+                  currency: 'MXN'
+                })
                 return
               }
 

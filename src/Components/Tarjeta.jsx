@@ -3,9 +3,19 @@ import './Tarjeta.css'
 import { useCart } from '../context/CartContext'
 import { defaultPaymentProvider, getPaymentProvider, paymentProviders } from './payments'
 import PaymentProviderBoundary from './payments/PaymentProviderBoundary'
+import logoBien from '../assets/logo_bien.jpg'
 
 function onlyDigits(value) {
   return String(value || '').replace(/\D/g, '')
+}
+
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => resolve(image)
+    image.onerror = () => reject(new Error(`No se pudo cargar imagen: ${url}`))
+    image.src = url
+  })
 }
 
 function Tarjeta() {
@@ -26,6 +36,7 @@ function Tarjeta() {
   const payableAmount = Number(totalPrice.toFixed(2))
   const [paymentProvider, setPaymentProvider] = useState(defaultPaymentProvider)
   const [customerEmail, setCustomerEmail] = useState('')
+  const [receiptData, setReceiptData] = useState(null)
 
   const selectedProvider = useMemo(
     () => getPaymentProvider(paymentProvider),
@@ -45,6 +56,147 @@ function Tarjeta() {
 
   const SelectedPaymentComponent = selectedProvider.Component
 
+  const handlePaymentApproved = (approvedPayload = {}) => {
+    const now = new Date()
+    const basePayload = {
+      provider: paymentProvider,
+      paymentId: '',
+      approvedAt: now.toISOString(),
+      amount: payableAmount,
+      currency: 'MXN',
+      items,
+      customerEmail,
+      deliveryDetails: normalizedDeliveryDetails,
+      selectedDeliveryCity,
+      selectedDeliveryDate,
+      selectedDeliveryTime
+    }
+
+    setReceiptData({
+      ...basePayload,
+      ...approvedPayload
+    })
+    clearCart()
+  }
+
+  const downloadReceiptPdf = async () => {
+    if (!receiptData) {
+      return
+    }
+
+    const { jsPDF } = await import('jspdf')
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' })
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const marginX = 34
+    const contentWidth = pageWidth - (marginX * 2)
+    let cursorY = 38
+
+    const drawSectionTitle = (title) => {
+      doc.setFillColor(122, 90, 58)
+      doc.roundedRect(marginX, cursorY, contentWidth, 24, 6, 6, 'F')
+      doc.setTextColor(246, 239, 226)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(11)
+      doc.text(String(title), marginX + 10, cursorY + 16)
+      cursorY += 34
+      doc.setTextColor(46, 46, 46)
+    }
+
+    const writeLine = (text, options = {}) => {
+      const fontSize = options.fontSize || 10.5
+      const maxWidth = options.maxWidth || (contentWidth - 16)
+      doc.setFont('helvetica', options.bold ? 'bold' : 'normal')
+      doc.setFontSize(fontSize)
+      const lines = doc.splitTextToSize(String(text || ''), maxWidth)
+      doc.text(lines, marginX + 8, cursorY)
+      cursorY += (lines.length * (fontSize + 3))
+    }
+
+    const drawCard = (height) => {
+      doc.setFillColor(255, 249, 240)
+      doc.setDrawColor(223, 214, 200)
+      doc.roundedRect(marginX, cursorY - 14, contentWidth, height, 8, 8, 'FD')
+    }
+
+    try {
+      const logoImage = await loadImage(logoBien)
+      doc.addImage(logoImage, 'JPEG', marginX, cursorY, 52, 52)
+    } catch {
+      // If logo cannot load for any reason, continue with textual header.
+    }
+
+    doc.setTextColor(63, 45, 30)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(17)
+    doc.text('Comprobante de pago', marginX + 62, cursorY + 20)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(11)
+    doc.text('Studio dei Fiori', marginX + 62, cursorY + 38)
+    cursorY += 66
+
+    const fulfillmentType = receiptData.deliveryDetails?.fulfillmentType === 'pickup'
+      ? 'Recoger en tienda'
+      : 'Entrega a domicilio'
+    const orderNumber = `SDF-${String(receiptData.paymentId || Date.now()).slice(-10).toUpperCase()}`
+
+    drawSectionTitle('Pago confirmado')
+    drawCard(104)
+    writeLine(`No. de orden: ${orderNumber}`, { bold: true })
+    writeLine(`Folio de pago: ${receiptData.paymentId || 'N/A'}`)
+    writeLine(`Proveedor: ${receiptData.provider || 'N/A'}`)
+    writeLine(`Fecha: ${new Date(receiptData.approvedAt || Date.now()).toLocaleString('es-MX')}`)
+    writeLine(`Total pagado: $${Number(receiptData.amount || 0).toFixed(2)} ${receiptData.currency || 'MXN'}`)
+    cursorY += 14
+
+    drawSectionTitle('Datos del cliente')
+    drawCard(72)
+    writeLine(`Nombre: ${receiptData.deliveryDetails?.fullName || 'N/A'}`)
+    writeLine(`Telefono: ${receiptData.deliveryDetails?.phone || 'N/A'}`)
+    writeLine(`Email: ${receiptData.customerEmail || 'N/A'}`)
+    cursorY += 14
+
+    drawSectionTitle('Entrega')
+    drawCard(fulfillmentType !== 'Recoger en tienda' ? 130 : 88)
+    writeLine(`Tipo: ${fulfillmentType}`)
+    writeLine(`Fecha de entrega: ${receiptData.selectedDeliveryDate || 'N/A'}`)
+    writeLine(`Horario: ${receiptData.selectedDeliveryTime || 'N/A'}`)
+
+    if (fulfillmentType !== 'Recoger en tienda') {
+      writeLine(`Ciudad: ${receiptData.selectedDeliveryCity || 'N/A'}`)
+      writeLine(`Direccion: ${receiptData.deliveryDetails?.streetAddress || 'N/A'}`)
+      writeLine(`Colonia: ${receiptData.deliveryDetails?.neighborhood || 'N/A'}`)
+      writeLine(`Codigo postal: ${receiptData.deliveryDetails?.postalCode || 'N/A'}`)
+    }
+
+    if (receiptData.deliveryDetails?.specialInstructions) {
+      writeLine(`Instrucciones: ${receiptData.deliveryDetails.specialInstructions}`)
+    }
+    cursorY += 14
+
+    drawSectionTitle('Productos')
+    const products = receiptData.items || []
+    drawCard(Math.max(70, 26 + (products.length * 18)))
+    products.forEach((item) => {
+      const quantity = Number(item?.quantity || 0)
+      const price = Number(item?.price || 0)
+      writeLine(`- ${item?.name || 'Producto'} x${quantity} - $${(price * quantity).toFixed(2)} MXN`)
+    })
+
+    const pageHeight = doc.internal.pageSize.getHeight()
+    const footerY = pageHeight - 58
+    doc.setDrawColor(223, 214, 200)
+    doc.line(marginX, footerY - 14, marginX + contentWidth, footerY - 14)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    doc.setTextColor(86, 68, 50)
+    doc.text('Comprobante digital de Studio D Flori. Conserva este documento para cualquier aclaracion.', marginX, footerY)
+    doc.text('Horario de atencion: Lunes a Sabado de 9:00 a 18:00. WhatsApp: +52 33 1025 9546', marginX, footerY + 12)
+    doc.text(`Emitido: ${new Date().toLocaleString('es-MX')}`, marginX, footerY + 24)
+
+    const safePaymentId = String(receiptData.paymentId || 'sin-folio').replace(/[^a-zA-Z0-9-_]/g, '')
+    doc.save(`comprobante-${safePaymentId}.pdf`)
+  }
+
   const paymentSharedProps = {
     apiBaseUrl,
     mpPublicKey,
@@ -56,7 +208,7 @@ function Tarjeta() {
     selectedDeliveryCity,
     selectedDeliveryDate,
     selectedDeliveryTime,
-    onPaymentApproved: clearCart
+    onPaymentApproved: handlePaymentApproved
   }
 
   return (
@@ -111,6 +263,11 @@ function Tarjeta() {
       </PaymentProviderBoundary>
 
       <div className="tarjeta__actions">
+        {receiptData && (
+          <button type="button" className="tarjeta__button" onClick={downloadReceiptPdf}>
+            Descargar comprobante PDF
+          </button>
+        )}
         <button type="button" className="tarjeta__button tarjeta__button--secondary" onClick={backToPaymentForm}>
           Volver
         </button>

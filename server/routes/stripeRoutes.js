@@ -2,6 +2,11 @@ import { Router } from 'express'
 
 export function createStripeRouter({ stripeSecretKey }) {
   const router = Router()
+  const MAX_METADATA_LENGTH = 500
+
+  function toMetadataValue(value) {
+    return String(value ?? '').trim().slice(0, MAX_METADATA_LENGTH)
+  }
 
   router.post('/create-payment-intent', async (req, res) => {
     try {
@@ -28,13 +33,31 @@ export function createStripeRouter({ stripeSecretKey }) {
       params.append('currency', String(currency || 'mxn').toLowerCase())
       params.append('automatic_payment_methods[enabled]', 'true')
       params.append('description', 'Pedido Studio D Flori')
-      params.append('metadata[customer_name]', String(customer?.fullName || ''))
-      params.append('metadata[customer_phone]', String(customer?.phone || ''))
-      params.append('metadata[delivery_city]', String(delivery?.city || ''))
-      params.append('metadata[delivery_address]', String(delivery?.streetAddress || ''))
-      params.append('metadata[delivery_date]', String(delivery?.date || ''))
-      params.append('metadata[delivery_time]', String(delivery?.time || ''))
+      params.append('metadata[customer_name]', toMetadataValue(customer?.fullName))
+      params.append('metadata[customer_phone]', toMetadataValue(customer?.phone))
+      params.append('metadata[customer_email]', toMetadataValue(customer?.email))
+      params.append('metadata[fulfillment_type]', toMetadataValue(delivery?.fulfillmentType || 'delivery'))
+      params.append('metadata[delivery_city]', toMetadataValue(delivery?.city))
+      params.append('metadata[delivery_address]', toMetadataValue(delivery?.streetAddress))
+      params.append('metadata[delivery_neighborhood]', toMetadataValue(delivery?.neighborhood))
+      params.append('metadata[delivery_postal_code]', toMetadataValue(delivery?.postalCode))
+      params.append('metadata[delivery_notes]', toMetadataValue(delivery?.specialInstructions))
+      params.append('metadata[delivery_date]', toMetadataValue(delivery?.date))
+      params.append('metadata[delivery_time]', toMetadataValue(delivery?.time))
       params.append('metadata[cart_items_count]', String(Array.isArray(items) ? items.length : 0))
+      params.append(
+        'metadata[cart_items_summary]',
+        toMetadataValue(
+          (Array.isArray(items) ? items : [])
+            .map((item) => `${item?.name || 'Producto'} x${Number(item?.quantity) || 1}`)
+            .join(' | ')
+        )
+      )
+
+      const receiptEmail = String(customer?.email || '').trim()
+      if (receiptEmail) {
+        params.append('receipt_email', receiptEmail)
+      }
 
       const response = await fetch('https://api.stripe.com/v1/payment_intents', {
         method: 'POST',

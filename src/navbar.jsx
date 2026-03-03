@@ -12,7 +12,7 @@ const panelContent = {
   contacto: {
     title: 'Contacto',
     heading: 'Habla con nosotros',
-    text: 'Escribenos para pedidos, cotizaciones o dudas sobre disponibilidad. Horario de atencion: Lunes a Sabado de 9:00 a 18:00.'
+    text: 'Escribenos para pedidos, cotizaciones o dudas sobre disponibilidad. WhatsApp: +52 33 1025 9546. Horario de atencion: Lunes a Sabado de 9:00 a 18:00.'
   },
   direccion: {
     title: 'Direccion',
@@ -63,11 +63,11 @@ function Navbar() {
   return (
     <>
       <nav className="navbar" aria-label="Barra principal">
-        <a className="navbar__brand" href="#" aria-label="Studio del Flori">
+        <a className="navbar__brand" href="#" aria-label="Studio dei Fiori">
           <span className="navbar__brand-icon-wrap">
-            <img className="navbar__logo-image" src={logo} alt="Logo de Studio del Flori" />
+            <img className="navbar__logo-image" src={logo} alt="Logo de Studio dei Fiori" />
           </span>
-          <span className="navbar__brand-text"> Studiod'flori</span>
+          <span className="navbar__brand-text">Studio dei Fiori</span>
         </a>
 
         <ul className="navbar__menu">
