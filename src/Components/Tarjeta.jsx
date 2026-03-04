@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import './Tarjeta.css'
 import { useCart } from '../context/CartContext'
 import { defaultPaymentProvider, getPaymentProvider, paymentProviders } from './payments'
@@ -37,6 +37,9 @@ function Tarjeta() {
   const [paymentProvider, setPaymentProvider] = useState(defaultPaymentProvider)
   const [customerEmail, setCustomerEmail] = useState('')
   const [receiptData, setReceiptData] = useState(null)
+  const orderIdRef = useRef(
+    `ord_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`
+  )
 
   const selectedProvider = useMemo(
     () => getPaymentProvider(paymentProvider),
@@ -59,6 +62,7 @@ function Tarjeta() {
   const handlePaymentApproved = (approvedPayload = {}) => {
     const now = new Date()
     const basePayload = {
+      orderId: orderIdRef.current,
       provider: paymentProvider,
       paymentId: '',
       approvedAt: now.toISOString(),
@@ -205,6 +209,7 @@ function Tarjeta() {
   }
 
   const paymentSharedProps = {
+    orderId: orderIdRef.current,
     apiBaseUrl,
     mpPublicKey,
     stripePublishableKey,

@@ -229,7 +229,7 @@ function Pago() {
             {!isStorePickup && (
               <>
                 <label className="pago__field pago__field--wide">
-                  <span className="pago__field-label">Calle y numero</span>
+                  <span className="pago__field-label">Calle y numero de entrega</span>
                   <input
                     className="pago__field-input"
                     type="text"

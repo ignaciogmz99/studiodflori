@@ -1,5 +1,10 @@
+/* global Buffer */
 import { Router } from 'express'
 import crypto from 'node:crypto'
+import {
+  buildWhatsAppReceiptMessage,
+  sendWhatsAppBusinessMessage
+} from '../../services/whatsappBusinessService.js'
 
 const DEFAULT_WEBHOOK_TOLERANCE_SECONDS = 300
 
@@ -146,7 +151,13 @@ export function createStripeWebhookRouter({
   stripeWebhookSecret,
   resendApiKey,
   orderNotificationFromEmail,
-  orderNotificationToEmail
+  orderNotificationToEmail,
+  whatsappAccessToken,
+  whatsappPhoneNumberId,
+  whatsappRecipient,
+  whatsappTemplateName,
+  whatsappTemplateLanguageCode,
+  whatsappApiVersion
 } = {}) {
   const router = Router()
 
@@ -176,6 +187,7 @@ export function createStripeWebhookRouter({
 
       if (eventType === 'payment_intent.succeeded') {
         const paymentIntent = event?.data?.object || {}
+        const metadata = paymentIntent?.metadata || {}
         const { text, html } = buildOrderEmailContent(paymentIntent)
         const recipient = String(orderNotificationToEmail || '').trim()
         const sender = String(orderNotificationFromEmail || '').trim()
@@ -193,6 +205,40 @@ export function createStripeWebhookRouter({
           console.log('[Stripe webhook] email enviado', { recipient, paymentIntentId: paymentIntent?.id })
         } else {
           console.warn('[Stripe webhook] faltan variables para envio de email (RESEND_API_KEY, ORDER_NOTIFICATION_FROM_EMAIL, ORDER_NOTIFICATION_TO_EMAIL)')
+        }
+
+        const whatsappText = buildWhatsAppReceiptMessage({
+          provider: 'Stripe',
+          paymentId: paymentIntent?.id,
+          orderId: metadata.order_id,
+          amountInMinor: paymentIntent?.amount_received || paymentIntent?.amount,
+          currency: paymentIntent?.currency || 'MXN',
+          customerName: metadata.customer_name,
+          customerPhone: metadata.customer_phone,
+          customerEmail: metadata.customer_email || paymentIntent?.receipt_email,
+          deliveryType: String(metadata.fulfillment_type || 'delivery').toLowerCase() === 'pickup'
+            ? 'Recoger en tienda'
+            : 'Entrega a domicilio',
+          deliveryDate: metadata.delivery_date,
+          deliveryTime: metadata.delivery_time,
+          deliveryCity: metadata.delivery_city
+        })
+
+        try {
+          await sendWhatsAppBusinessMessage({
+            whatsappAccessToken,
+            whatsappPhoneNumberId,
+            whatsappRecipient,
+            whatsappTemplateName,
+            whatsappTemplateLanguageCode,
+            whatsappApiVersion,
+            textBody: whatsappText
+          })
+          console.log('[Stripe webhook] WhatsApp enviado', {
+            paymentIntentId: paymentIntent?.id
+          })
+        } catch (error) {
+          console.warn('[Stripe webhook] fallo envio por WhatsApp:', error?.message || error)
         }
       }
 
