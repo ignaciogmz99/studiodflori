@@ -53,6 +53,7 @@ async function safeUnmountBrick(controller) {
 }
 
 function MercadoPagoPayment({
+  orderId,
   apiBaseUrl,
   mpPublicKey,
   payableAmount,
@@ -173,8 +174,8 @@ function MercadoPagoPayment({
                   'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
+                  orderId,
                   ...cardFormData,
-                  transaction_amount: payableAmount,
                   items: currentPayload.items,
                   customer: {
                     fullName: currentPayload.deliveryDetails.fullName,
@@ -257,6 +258,7 @@ function MercadoPagoPayment({
     mpSdkReady,
     mpPublicKey,
     apiBaseUrl,
+    orderId,
     items,
     payableAmount,
     onPaymentApproved

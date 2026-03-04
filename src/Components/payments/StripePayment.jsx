@@ -65,6 +65,7 @@ function ensureStripeSdk() {
 }
 
 function StripePayment({
+  orderId,
   apiBaseUrl,
   stripePublishableKey,
   payableAmount,
@@ -246,6 +247,7 @@ function StripePayment({
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
+          orderId,
           amount: payableAmount,
           currency: 'mxn',
           items,

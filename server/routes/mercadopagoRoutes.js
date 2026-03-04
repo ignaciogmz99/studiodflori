@@ -1,8 +1,27 @@
+/* global process */
 import { Router } from 'express'
 import { Preference, Payment } from 'mercadopago'
+import crypto from 'node:crypto'
+import {
+  buildOrderFingerprint,
+  buildTrustedOrderFromClientItems,
+  validateOrderId
+} from '../services/trustedOrderService.js'
+
+const ORDER_TTL_MS = 30 * 60 * 1000
+const paymentByOrderId = new Map()
 
 export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckoutMode }) {
   const router = Router()
+
+  function cleanupExpiredOrders() {
+    const now = Date.now()
+    for (const [orderId, entry] of paymentByOrderId.entries()) {
+      if (!entry?.expiresAt || entry.expiresAt <= now) {
+        paymentByOrderId.delete(orderId)
+      }
+    }
+  }
 
   router.post('/create-preference', async (req, res) => {
     try {
@@ -11,20 +30,19 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
       }
 
       const {
+        orderId,
         items,
         customer,
         delivery
       } = req.body || {}
 
-      if (!Array.isArray(items) || items.length === 0) {
-        return res.status(400).json({ error: 'No hay productos para procesar el pago' })
-      }
-
-      const mappedItems = items
+      const normalizedOrderId = validateOrderId(orderId)
+      const trustedOrder = await buildTrustedOrderFromClientItems(items)
+      const mappedItems = trustedOrder.items
         .map((item) => ({
-          title: String(item.name || 'Producto floral'),
-          quantity: Math.max(1, Number(item.quantity) || 1),
-          unit_price: Math.max(0, Number(item.price) || 0),
+          title: item.name,
+          quantity: item.quantity,
+          unit_price: item.unitPrice,
           currency_id: 'MXN'
         }))
         .filter((item) => item.unit_price > 0)
@@ -47,8 +65,10 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
             ? { email: payerEmail }
             : undefined,
           metadata: {
+            order_id: normalizedOrderId,
             customer_name: String(customer?.fullName || ''),
             customer_phone: String(customer?.phone || ''),
+            fulfillment_type: String(delivery?.fulfillmentType || 'delivery'),
             delivery_city: String(delivery?.city || ''),
             delivery_address: String(delivery?.streetAddress || ''),
             delivery_postal_code: String(delivery?.postalCode || ''),
@@ -71,6 +91,7 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
         : (response.init_point || response.sandbox_init_point)
 
       return res.json({
+        orderId: normalizedOrderId,
         preferenceId: response.id,
         checkoutUrl,
         useSandboxCheckout,
@@ -78,6 +99,12 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
         sandboxInitPoint: response.sandbox_init_point
       })
     } catch (error) {
+      if (String(error?.message || '').toLowerCase().includes('invalido')
+        || String(error?.message || '').toLowerCase().includes('no hay productos')
+        || String(error?.message || '').toLowerCase().includes('producto invalido')
+      ) {
+        return res.status(400).json({ error: error.message })
+      }
       console.error('Error creando preferencia de Mercado Pago:', error)
       return res.status(500).json({
         error: error?.message || 'No se pudo iniciar el pago con Mercado Pago'
@@ -92,10 +119,10 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
       }
 
       const {
+        orderId,
         token,
         issuer_id,
         payment_method_id,
-        transaction_amount,
         installments,
         payer,
         customer,
@@ -103,10 +130,34 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
         items
       } = req.body || {}
 
-      const amount = Number(transaction_amount)
-      if (!token || !payment_method_id || !Number.isFinite(amount) || amount <= 0) {
+      cleanupExpiredOrders()
+      const normalizedOrderId = validateOrderId(orderId)
+      const trustedOrder = await buildTrustedOrderFromClientItems(items)
+      if (!token || !payment_method_id || !Number.isFinite(trustedOrder.amount) || trustedOrder.amount <= 0) {
         return res.status(400).json({ error: 'Faltan datos para procesar el pago' })
       }
+
+      const fingerprint = buildOrderFingerprint({
+        orderId: normalizedOrderId,
+        items: trustedOrder.items
+      })
+      const existing = paymentByOrderId.get(normalizedOrderId)
+      if (existing) {
+        if (existing.fingerprint !== fingerprint) {
+          return res.status(409).json({ error: 'La orden ya existe con un carrito distinto. Recarga la pagina.' })
+        }
+        if (existing.status === 'processing') {
+          return res.status(409).json({ error: 'Esta orden ya se esta procesando. Espera unos segundos.' })
+        }
+        return res.status(200).json(existing.response)
+      }
+
+      paymentByOrderId.set(normalizedOrderId, {
+        fingerprint,
+        status: 'processing',
+        response: null,
+        expiresAt: Date.now() + ORDER_TTL_MS
+      })
 
       const payment = new Payment(mpClient)
       const response = await payment.create({
@@ -114,7 +165,7 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
           token: String(token),
           issuer_id: issuer_id ? String(issuer_id) : undefined,
           payment_method_id: String(payment_method_id),
-          transaction_amount: Number(amount.toFixed(2)),
+          transaction_amount: Number(trustedOrder.amount.toFixed(2)),
           installments: Number(installments) > 0 ? Number(installments) : 1,
           description: 'Pedido Studio D Flori',
           payer: {
@@ -122,8 +173,10 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
             identification: payer?.identification || undefined
           },
           metadata: {
+            order_id: normalizedOrderId,
             customer_name: String(customer?.fullName || ''),
             customer_phone: String(customer?.phone || ''),
+            fulfillment_type: String(delivery?.fulfillmentType || 'delivery'),
             delivery_city: String(delivery?.city || ''),
             delivery_address: String(delivery?.streetAddress || ''),
             delivery_postal_code: String(delivery?.postalCode || ''),
@@ -131,17 +184,42 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
             delivery_notes: String(delivery?.specialInstructions || ''),
             delivery_date: String(delivery?.date || ''),
             delivery_time: String(delivery?.time || ''),
-            cart_items_count: Array.isArray(items) ? items.length : 0
+            cart_items_count: trustedOrder.items.length
           }
+        },
+        requestOptions: {
+          idempotencyKey: crypto
+            .createHash('sha256')
+            .update(`mp:${fingerprint}`)
+            .digest('hex')
         }
       })
 
-      return res.status(200).json({
+      const responsePayload = {
         id: response.id,
         status: response.status,
         status_detail: response.status_detail
+      }
+
+      paymentByOrderId.set(normalizedOrderId, {
+        fingerprint,
+        status: 'completed',
+        response: responsePayload,
+        expiresAt: Date.now() + ORDER_TTL_MS
       })
+
+      return res.status(200).json(responsePayload)
     } catch (error) {
+      const normalizedOrderId = String(req.body?.orderId || '').trim()
+      if (normalizedOrderId) {
+        paymentByOrderId.delete(normalizedOrderId)
+      }
+      if (String(error?.message || '').toLowerCase().includes('invalido')
+        || String(error?.message || '').toLowerCase().includes('no hay productos')
+        || String(error?.message || '').toLowerCase().includes('producto invalido')
+      ) {
+        return res.status(400).json({ error: error.message })
+      }
       console.error('Error procesando pago con Mercado Pago:', error)
       return res.status(500).json({
         error: error?.cause?.[0]?.description || error?.message || 'No se pudo procesar el pago'

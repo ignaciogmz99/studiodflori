@@ -64,18 +64,59 @@ async function logMercadoPagoCredentialContext() {
   }
 }
 
+function createMemoryRateLimiter({ windowMs, maxRequests }) {
+  const hits = new Map()
+
+  return (req, res, next) => {
+    const now = Date.now()
+    const key = `${req.ip}:${req.path}`
+    const current = hits.get(key)
+
+    if (!current || current.resetAt <= now) {
+      hits.set(key, { count: 1, resetAt: now + windowMs })
+      return next()
+    }
+
+    if (current.count >= maxRequests) {
+      const retryAfterSeconds = Math.ceil((current.resetAt - now) / 1000)
+      res.setHeader('Retry-After', String(Math.max(1, retryAfterSeconds)))
+      return res.status(429).json({ error: 'Demasiadas solicitudes. Intenta de nuevo en unos segundos.' })
+    }
+
+    current.count += 1
+    hits.set(key, current)
+    return next()
+  }
+}
+
+const paymentsRateLimiter = createMemoryRateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 30
+})
+const webhooksRateLimiter = createMemoryRateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 120
+})
+
 app.use(cors({
   origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173'
 }))
 
 app.use(
   '/api/webhooks/stripe',
+  webhooksRateLimiter,
   express.raw({ type: 'application/json' }),
   createStripeWebhookRouter({
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
     resendApiKey: process.env.RESEND_API_KEY,
     orderNotificationFromEmail: process.env.ORDER_NOTIFICATION_FROM_EMAIL,
-    orderNotificationToEmail: process.env.ORDER_NOTIFICATION_TO_EMAIL
+    orderNotificationToEmail: process.env.ORDER_NOTIFICATION_TO_EMAIL,
+    whatsappAccessToken: process.env.WHATSAPP_BUSINESS_ACCESS_TOKEN,
+    whatsappPhoneNumberId: process.env.WHATSAPP_BUSINESS_PHONE_NUMBER_ID,
+    whatsappRecipient: process.env.WHATSAPP_BUSINESS_TO,
+    whatsappTemplateName: process.env.WHATSAPP_BUSINESS_TEMPLATE_NAME,
+    whatsappTemplateLanguageCode: process.env.WHATSAPP_BUSINESS_TEMPLATE_LANGUAGE || 'es_MX',
+    whatsappApiVersion: process.env.WHATSAPP_BUSINESS_API_VERSION || 'v22.0'
   })
 )
 
@@ -85,13 +126,22 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true })
 })
 
-app.use('/api/mercadopago', createMercadoPagoRouter({
+app.use('/api/mercadopago', paymentsRateLimiter, createMercadoPagoRouter({
   mpClient,
   mercadopagoToken,
   mpCheckoutMode
 }))
-app.use('/api/stripe', createStripeRouter({ stripeSecretKey }))
-app.use('/api/webhooks/mercadopago', createMercadoPagoWebhookRouter())
+app.use('/api/stripe', paymentsRateLimiter, createStripeRouter({ stripeSecretKey }))
+app.use('/api/webhooks/mercadopago', webhooksRateLimiter, createMercadoPagoWebhookRouter({
+  mpWebhookSecret: process.env.MP_WEBHOOK_SECRET,
+  mercadopagoToken,
+  whatsappAccessToken: process.env.WHATSAPP_BUSINESS_ACCESS_TOKEN,
+  whatsappPhoneNumberId: process.env.WHATSAPP_BUSINESS_PHONE_NUMBER_ID,
+  whatsappRecipient: process.env.WHATSAPP_BUSINESS_TO,
+  whatsappTemplateName: process.env.WHATSAPP_BUSINESS_TEMPLATE_NAME,
+  whatsappTemplateLanguageCode: process.env.WHATSAPP_BUSINESS_TEMPLATE_LANGUAGE || 'es_MX',
+  whatsappApiVersion: process.env.WHATSAPP_BUSINESS_API_VERSION || 'v22.0'
+}))
 
 app.listen(port, async () => {
   console.log(`Servidor MP activo en http://localhost:${port}`)
