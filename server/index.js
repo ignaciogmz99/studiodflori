@@ -16,6 +16,7 @@ const mercadopagoToken = process.env.MERCADO_PAGO_ACCESS_TOKEN
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY
 const mpCheckoutMode = String(process.env.MP_CHECKOUT_MODE || '').trim().toLowerCase()
 
+// Warn early when critical credentials are missing.
 if (!mercadopagoToken) {
   console.error('Falta MERCADO_PAGO_ACCESS_TOKEN en server/.env')
 }
@@ -64,6 +65,8 @@ async function logMercadoPagoCredentialContext() {
   }
 }
 
+// Lightweight in-memory rate limiter (per ip + path).
+// Good enough for a single instance; for multi-instance use Redis/shared storage.
 function createMemoryRateLimiter({ windowMs, maxRequests }) {
   const hits = new Map()
 
@@ -98,10 +101,12 @@ const webhooksRateLimiter = createMemoryRateLimiter({
   maxRequests: 120
 })
 
+// Allow frontend origin configured in env.
 app.use(cors({
   origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173'
 }))
 
+// Stripe webhook must read raw body to verify signature exactly as received.
 app.use(
   '/api/webhooks/stripe',
   webhooksRateLimiter,
@@ -120,6 +125,7 @@ app.use(
   })
 )
 
+// Normal JSON parser for the rest of API routes.
 app.use(express.json())
 
 app.get('/api/health', (_req, res) => {
@@ -145,5 +151,6 @@ app.use('/api/webhooks/mercadopago', webhooksRateLimiter, createMercadoPagoWebho
 
 app.listen(port, async () => {
   console.log(`Servidor MP activo en http://localhost:${port}`)
+  // Optional context logging to verify token owner/test mode at startup.
   await logMercadoPagoCredentialContext()
 })

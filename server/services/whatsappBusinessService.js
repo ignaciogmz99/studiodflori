@@ -44,6 +44,7 @@ export function buildWhatsAppReceiptMessage({
   deliveryTime,
   deliveryCity
 } = {}) {
+  // Stripe reports minor units; MP usually reports major units.
   const resolvedAmount = Number.isFinite(Number(amount))
     ? Number(amount)
     : toMajorAmountFromMinor(amountInMinor)
@@ -102,6 +103,7 @@ export async function sendWhatsAppBusinessMessage({
         to: recipient,
         type: 'text',
         text: {
+          // Meta API hard limit for text body is 4096 chars.
           preview_url: false,
           body: String(textBody || '').slice(0, 4096)
         }

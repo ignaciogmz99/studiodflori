@@ -58,6 +58,7 @@ function verifyStripeSignature({ rawBody, signatureHeader, webhookSecret, tolera
   }
 
   const nowInSeconds = Math.floor(Date.now() / 1000)
+  // Basic replay window check.
   if (Math.abs(nowInSeconds - timestamp) > toleranceSeconds) {
     throw new Error('Firma de Stripe expirada')
   }
@@ -162,6 +163,7 @@ export function createStripeWebhookRouter({
   const router = Router()
 
   router.use((req, _res, next) => {
+    // The route is mounted with express.raw; force Buffer to avoid signature mismatch.
     if (!Buffer.isBuffer(req.body)) {
       req.body = Buffer.from('')
     }
@@ -238,6 +240,7 @@ export function createStripeWebhookRouter({
             paymentIntentId: paymentIntent?.id
           })
         } catch (error) {
+          // Notification failures should not fail webhook ack to Stripe.
           console.warn('[Stripe webhook] fallo envio por WhatsApp:', error?.message || error)
         }
       }

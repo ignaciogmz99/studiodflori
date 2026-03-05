@@ -11,6 +11,7 @@ const INTENT_TTL_MS = 30 * 60 * 1000
 export function createStripeRouter({ stripeSecretKey }) {
   const router = Router()
   const MAX_METADATA_LENGTH = 500
+  // In-memory cache to keep intent idempotency during a short window.
   const intentByOrderId = new Map()
 
   function toMetadataValue(value) {
@@ -41,6 +42,7 @@ export function createStripeRouter({ stripeSecretKey }) {
 
       cleanupExpiredIntents()
       const normalizedOrderId = validateOrderId(orderId)
+      // Build a server-trusted cart: prices come from Supabase, not from client payload.
       const trustedOrder = await buildTrustedOrderFromClientItems(items)
       if (!Number.isFinite(trustedOrder.amount) || trustedOrder.amount <= 0) {
         return res.status(400).json({ error: 'Monto invalido para Stripe' })
@@ -52,9 +54,11 @@ export function createStripeRouter({ stripeSecretKey }) {
 
       const existingIntent = intentByOrderId.get(normalizedOrderId)
       if (existingIntent) {
+        // Same order id but different cart is treated as conflict.
         if (existingIntent.fingerprint !== fingerprint) {
           return res.status(409).json({ error: 'La orden ya existe con un carrito distinto. Recarga la pagina.' })
         }
+        // Return existing intent to keep frontend retries safe.
         return res.status(200).json({
           clientSecret: existingIntent.clientSecret,
           paymentIntentId: existingIntent.paymentIntentId,
@@ -99,6 +103,7 @@ export function createStripeRouter({ stripeSecretKey }) {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${stripeSecretKey}`,
+          // Stripe-level idempotency key derived from stable order fingerprint.
           'Idempotency-Key': crypto
             .createHash('sha256')
             .update(`stripe:${fingerprint}`)

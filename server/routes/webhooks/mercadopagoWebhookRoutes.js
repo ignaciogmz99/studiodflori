@@ -106,6 +106,7 @@ export function createMercadoPagoWebhookRouter({
 
       const shouldCheckPayment = topic === 'payment' || req.body?.type === 'payment'
       if (shouldCheckPayment && dataId) {
+        // Always verify latest payment state directly in MP API.
         const payment = await fetchMercadoPagoPaymentById({
           paymentId: dataId,
           accessToken: mercadopagoToken
@@ -148,6 +149,7 @@ export function createMercadoPagoWebhookRouter({
               paymentId: payment?.id || dataId
             })
           } catch (error) {
+            // Keep webhook response successful even if notification failed.
             console.warn('[MP webhook] fallo envio por WhatsApp:', error?.message || error)
           }
         }

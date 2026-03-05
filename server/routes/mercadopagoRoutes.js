@@ -9,6 +9,7 @@ import {
 } from '../services/trustedOrderService.js'
 
 const ORDER_TTL_MS = 30 * 60 * 1000
+// In-memory order state to reduce duplicate charges on retries.
 const paymentByOrderId = new Map()
 
 export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckoutMode }) {
@@ -37,6 +38,7 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
       } = req.body || {}
 
       const normalizedOrderId = validateOrderId(orderId)
+      // Prices are recalculated from trusted catalog data.
       const trustedOrder = await buildTrustedOrderFromClientItems(items)
       const mappedItems = trustedOrder.items
         .map((item) => ({
@@ -132,6 +134,7 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
 
       cleanupExpiredOrders()
       const normalizedOrderId = validateOrderId(orderId)
+      // Never trust client-side totals for payment amount.
       const trustedOrder = await buildTrustedOrderFromClientItems(items)
       if (!token || !payment_method_id || !Number.isFinite(trustedOrder.amount) || trustedOrder.amount <= 0) {
         return res.status(400).json({ error: 'Faltan datos para procesar el pago' })
@@ -188,6 +191,7 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
           }
         },
         requestOptions: {
+          // Mercado Pago SDK idempotency key to deduplicate retries upstream.
           idempotencyKey: crypto
             .createHash('sha256')
             .update(`mp:${fingerprint}`)
