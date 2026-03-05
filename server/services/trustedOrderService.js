@@ -34,6 +34,7 @@ function normalizeClientItems(items) {
     if (!id) {
       continue
     }
+    // Clamp quantity to avoid abusive values while keeping checkout resilient.
     const quantity = Math.max(1, Math.min(MAX_QTY_PER_ITEM, Number(item?.quantity) || 1))
     quantityById.set(id, (quantityById.get(id) || 0) + quantity)
   }
@@ -81,6 +82,7 @@ async function fetchProductsByIds(productIds) {
 
 export function validateOrderId(orderId) {
   const normalized = String(orderId || '').trim()
+  // Restrict format to avoid malformed ids and easy abuse vectors.
   const isValid = /^[a-zA-Z0-9_-]{16,80}$/.test(normalized)
   if (!isValid) {
     throw new Error('orderId invalido')
@@ -112,6 +114,7 @@ export async function buildTrustedOrderFromClientItems(rawItems) {
     const product = productMap.get(item.id)
     const isActive = product?.activo !== false
     const price = Number(product?.precio)
+    // Reject missing, inactive or invalid priced products before charging.
     if (!product || !isActive || !Number.isFinite(price) || price <= 0) {
       throw new Error(`Producto invalido o inactivo: ${item.id}`)
     }
