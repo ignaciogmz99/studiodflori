@@ -77,7 +77,11 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
             delivery_neighborhood: String(delivery?.neighborhood || ''),
             delivery_notes: String(delivery?.specialInstructions || ''),
             delivery_date: String(delivery?.date || ''),
-            delivery_time: String(delivery?.time || '')
+            delivery_time: String(delivery?.time || ''),
+            cart_items_count: trustedOrder.items.length,
+            cart_items_summary: trustedOrder.items
+              .map((item) => `${item.name} x${item.quantity}`)
+              .join(' | ')
           },
           back_urls: {
             success: checkoutSuccessUrl,
@@ -187,7 +191,10 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
             delivery_notes: String(delivery?.specialInstructions || ''),
             delivery_date: String(delivery?.date || ''),
             delivery_time: String(delivery?.time || ''),
-            cart_items_count: trustedOrder.items.length
+            cart_items_count: trustedOrder.items.length,
+            cart_items_summary: trustedOrder.items
+              .map((item) => `${item.name} x${item.quantity}`)
+              .join(' | ')
           }
         },
         requestOptions: {

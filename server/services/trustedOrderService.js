@@ -4,12 +4,7 @@ const MAX_QTY_PER_ITEM = 20
 
 function getSupabaseCredentials() {
   const supabaseUrl = String(process.env.SUPABASE_URL || '').trim()
-  const supabaseKey = String(
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-    || process.env.SUPABASE_ANON_KEY
-    || process.env.SUPABASE_PUBLISHABLE_KEY
-    || ''
-  ).trim()
+  const supabaseKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
 
   return { supabaseUrl, supabaseKey }
 }
@@ -57,7 +52,7 @@ function quotePostgrestValue(value) {
 async function fetchProductsByIds(productIds) {
   const { supabaseUrl, supabaseKey } = getSupabaseCredentials()
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Faltan SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY (o SUPABASE_ANON_KEY) en server/.env')
+    throw new Error('Faltan SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en server/.env')
   }
 
   const url = new URL('/rest/v1/productos', supabaseUrl)
