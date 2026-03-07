@@ -80,6 +80,25 @@ function Tarjeta() {
       ...basePayload,
       ...approvedPayload
     })
+
+    fetch(`${apiBaseUrl}/api/comprobantes/confirm-paid`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        amount: Number(approvedPayload?.amount ?? basePayload.amount),
+        approvedAt: approvedPayload?.approvedAt || basePayload.approvedAt,
+        items: basePayload.items,
+        deliveryDetails: basePayload.deliveryDetails,
+        selectedDeliveryCity: basePayload.selectedDeliveryCity,
+        selectedDeliveryDate: basePayload.selectedDeliveryDate,
+        selectedDeliveryTime: basePayload.selectedDeliveryTime
+      })
+    }).catch((error) => {
+      console.warn('No se pudo guardar comprobante en Supabase:', error?.message || error)
+    })
+
     clearCart()
   }
 

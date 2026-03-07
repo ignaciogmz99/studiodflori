@@ -157,7 +157,6 @@ export function createMercadoPagoWebhookRouter({
         console.log('[MP webhook] recibido', { topic, id, dataId })
       }
 
-      // TODO: persistir estado del pago/pedido idempotentemente en base de datos.
       return res.status(200).json({ received: true })
     } catch (error) {
       console.error('Error procesando webhook de Mercado Pago:', error)

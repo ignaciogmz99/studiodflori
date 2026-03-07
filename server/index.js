@@ -2,13 +2,17 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import { fileURLToPath } from 'node:url'
+import path from 'node:path'
 import { MercadoPagoConfig } from 'mercadopago'
 import { createMercadoPagoRouter } from './routes/mercadopagoRoutes.js'
 import { createStripeRouter } from './routes/stripeRoutes.js'
 import { createMercadoPagoWebhookRouter } from './routes/webhooks/mercadopagoWebhookRoutes.js'
 import { createStripeWebhookRouter } from './routes/webhooks/stripeWebhookRoutes.js'
+import { createComprobantesRouter } from './routes/comprobantesRoutes.js'
 
-dotenv.config({ path: 'server/.env' })
+const serverDir = path.dirname(fileURLToPath(import.meta.url))
+dotenv.config({ path: path.join(serverDir, '.env') })
 
 const app = express()
 const port = Number(process.env.PORT || 3001)
@@ -23,21 +27,13 @@ if (!mercadopagoToken) {
 if (!stripeSecretKey) {
   console.error('Falta STRIPE_SECRET_KEY en server/.env')
 }
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.warn('Falta SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en server/.env')
+}
 
 const mpClient = new MercadoPagoConfig({
   accessToken: mercadopagoToken || ''
 })
-
-function maskCredential(value) {
-  const text = String(value || '').trim()
-  if (!text) {
-    return '(vacio)'
-  }
-  if (text.length <= 12) {
-    return `${text.slice(0, 4)}...${text.slice(-2)}`
-  }
-  return `${text.slice(0, 10)}...${text.slice(-6)}`
-}
 
 async function logMercadoPagoCredentialContext() {
   if (!mercadopagoToken) {
@@ -58,7 +54,7 @@ async function logMercadoPagoCredentialContext() {
 
     const user = await response.json()
     const isTestUser = Array.isArray(user?.tags) && user.tags.includes('test_user')
-    console.log(`[MP] Access token cargado: ${maskCredential(mercadopagoToken)}`)
+    console.log('[MP] Access token cargado correctamente')
     console.log(`[MP] Usuario: ${user?.nickname || 'desconocido'} | test_user=${isTestUser}`)
   } catch (error) {
     console.warn('[MP] Error validando contexto de credenciales:', error?.message || error)
@@ -138,6 +134,7 @@ app.use('/api/mercadopago', paymentsRateLimiter, createMercadoPagoRouter({
   mpCheckoutMode
 }))
 app.use('/api/stripe', paymentsRateLimiter, createStripeRouter({ stripeSecretKey }))
+app.use('/api/comprobantes', paymentsRateLimiter, createComprobantesRouter())
 app.use('/api/webhooks/mercadopago', webhooksRateLimiter, createMercadoPagoWebhookRouter({
   mpWebhookSecret: process.env.MP_WEBHOOK_SECRET,
   mercadopagoToken,
