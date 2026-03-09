@@ -99,6 +99,7 @@ function getDeliveryLabel(hours) {
 
 function FloresMenu() {
   const [inventoryById, setInventoryById] = useState({})
+  const [inventoryStatus, setInventoryStatus] = useState(supabase ? 'loading' : 'unavailable')
   const [imageIndexByProduct, setImageIndexByProduct] = useState({})
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [sortByPrice, setSortByPrice] = useState('default')
@@ -112,15 +113,20 @@ function FloresMenu() {
 
     async function loadInventory() {
       if (!supabase) {
+        setInventoryStatus('unavailable')
         return
       }
 
+      setInventoryStatus('loading')
       const { data, error } = await supabase
         .from('productos')
         .select('*')
 
       if (error) {
         console.error('Error cargando inventario desde Supabase:', error.message)
+        if (isMounted) {
+          setInventoryStatus('error')
+        }
         return
       }
 
@@ -138,6 +144,7 @@ function FloresMenu() {
       }, {})
 
       setInventoryById(nextInventory)
+      setInventoryStatus('ready')
     }
 
     loadInventory()
@@ -183,7 +190,8 @@ function FloresMenu() {
         totalImages: product.images.length,
         price: Number.isNaN(parsedPrice) ? null : parsedPrice,
         stock: inventory?.stock ?? null,
-        preparationHours: resolvePreparationHours(inventory)
+        preparationHours: resolvePreparationHours(inventory),
+        hasInventoryRecord: Boolean(inventory)
       }
     })
   }, [inventoryById, imageIndexByProduct])
@@ -398,22 +406,36 @@ function FloresMenu() {
             </div>
             <p className="flores-menu__name">{product.name}</p>
             <p className="flores-menu__price">
-              {typeof product.price === 'number' ? `$${product.price} MXN` : 'Precio no disponible'}
+              {inventoryStatus === 'loading'
+                ? 'Cargando precio...'
+                : typeof product.price === 'number'
+                  ? `$${product.price} MXN`
+                  : 'Precio no disponible'}
             </p>
-            {typeof product.stock !== 'number' && (
+            {inventoryStatus === 'loading' && (
+              <p className="flores-menu__stock">Cargando stock...</p>
+            )}
+            {inventoryStatus !== 'loading' && typeof product.stock !== 'number' && (
               <p className="flores-menu__stock">Stock no disponible</p>
             )}
-            {typeof product.stock === 'number' && product.stock <= 0 && (
+            {inventoryStatus !== 'loading' && typeof product.stock === 'number' && product.stock <= 0 && (
               <p className="flores-menu__stock">Agotado</p>
             )}
-            <p className="flores-menu__stock">{getDeliveryLabel(product.preparationHours)}</p>
+            {inventoryStatus !== 'loading' && product.hasInventoryRecord && (
+              <p className="flores-menu__stock">{getDeliveryLabel(product.preparationHours)}</p>
+            )}
             <button
               type="button"
               className="flores-menu__add-button"
               onClick={() => addToCart(product)}
-              disabled={typeof product.stock === 'number' && product.stock <= 0}
+              disabled={
+                inventoryStatus === 'loading'
+                || typeof product.price !== 'number'
+                || typeof product.stock !== 'number'
+                || product.stock <= 0
+              }
             >
-              Agregar al carrito
+              {inventoryStatus === 'loading' ? 'Cargando...' : 'Agregar al carrito'}
             </button>
           </article>
         ))}
