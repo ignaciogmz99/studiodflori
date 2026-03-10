@@ -7,10 +7,11 @@
   width: 100%;
   min-height: 64px;
   padding: 0 1rem;
-  background: #f894f4;
+  background: var(--page-bg);
   border: 0;
   border-radius: 0;
   box-shadow: none;
+  font-family: var(--font-ui);
 }
 
 .navbar__brand {
@@ -22,6 +23,81 @@
   text-decoration: none;
 }
 
+.navbar__mobile-menu-button {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+  color: #000;
+  cursor: pointer;
+}
+
+.navbar__mobile-menu-icon {
+  display: grid;
+  gap: 0.22rem;
+}
+
+.navbar__mobile-menu-icon span {
+  display: block;
+  width: 1rem;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.navbar__mobile-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  justify-content: flex-start;
+  background: rgba(23, 14, 7, 0.28);
+}
+
+.navbar__mobile-drawer {
+  width: min(82vw, 320px);
+  min-height: 100dvh;
+  box-sizing: border-box;
+  padding: 1rem 0.9rem;
+  background: #fff1fd;
+  box-shadow: 16px 0 32px rgba(143, 58, 134, 0.18);
+}
+
+.navbar__mobile-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.navbar__mobile-drawer-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.navbar__mobile-drawer-link {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 0.45rem;
+  border: 1px solid #efb7ea;
+  border-radius: 10px;
+  background: #fff7fe;
+  color: #000;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-decoration: none;
+  text-align: left;
+  padding: 0.7rem 0.8rem;
+  cursor: pointer;
+}
+
 .navbar__brand-icon-wrap {
   display: inline-flex;
   align-items: center;
@@ -29,7 +105,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: #f2e8cf;
+  background: #ffe7fb;
   overflow: hidden;
 }
 
@@ -41,8 +117,9 @@
 
 .navbar__brand-text {
   color: #000;
+  font-family: var(--font-ui);
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 700;
   letter-spacing: 0.01em;
   text-transform: lowercase;
   white-space: nowrap;
@@ -67,7 +144,8 @@
   padding: 0.48rem 0.52rem;
   color: #000;
   text-decoration: none;
-  font-size: 0.8rem;
+  font-family: var(--font-ui);
+  font-size: 1rem;
   font-weight: 600;
   border-radius: 6px;
   white-space: nowrap;
@@ -84,8 +162,8 @@
 .navbar__link:hover,
 .navbar__link:focus-visible,
 .navbar__link-button[aria-expanded='true'] {
-  color: #ffd489;
-  background: rgba(242, 232, 207, 0.2);
+  color: #000;
+  background: rgba(255, 255, 255, 0.28);
   outline: none;
 }
 
@@ -104,10 +182,10 @@
 .navbar__panel {
   width: min(82vw, 360px);
   border-radius: 14px;
-  background: #ece8dc;
-  box-shadow: 0 22px 45px rgba(39, 24, 12, 0.28);
+  background: #fff1fd;
+  box-shadow: 0 22px 45px rgba(143, 58, 134, 0.22);
   padding: 0.85rem 1rem 0.95rem;
-  color: #3f2d1e;
+  color: var(--text-main);
   position: relative;
 }
 
@@ -117,7 +195,7 @@
   right: 0.65rem;
   border: 0;
   background: transparent;
-  color: #3f2d1e;
+  color: var(--text-main);
   font-size: 1.3rem;
   line-height: 1;
   font-weight: 700;
@@ -142,13 +220,115 @@
   line-height: 1.4;
 }
 
+.navbar__cart-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+  max-height: min(46vh, 420px);
+  overflow-y: auto;
+}
+
+.navbar__cart-item {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.7rem;
+  border: 1px solid #efb7ea;
+  border-radius: 12px;
+  background: #fff7fe;
+}
+
+.navbar__cart-item-image {
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  object-fit: cover;
+  display: block;
+}
+
+.navbar__cart-item-main {
+  min-width: 0;
+}
+
+.navbar__cart-item-name {
+  margin: 0 0 0.2rem;
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.navbar__cart-item-price {
+  margin: 0.15rem 0;
+  font-size: 0.84rem;
+}
+
+.navbar__cart-item-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+
+.navbar__cart-item-controls button,
+.navbar__cart-clear {
+  border: 0;
+  border-radius: 8px;
+  background: #f894f4;
+  color: #1f111f;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.38rem 0.62rem;
+  cursor: pointer;
+}
+
+.navbar__cart-item-controls span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.navbar__cart-total {
+  margin: 0.8rem 0 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.navbar__cart-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.85rem;
+}
+
+.navbar__cart-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  margin-left: 0.35rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #000;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
 @media (max-width: 1100px) {
   .navbar__brand-text {
-    font-size: 0.88rem;
+    font-size: 1rem;
   }
 
   .navbar__link {
-    font-size: 0.75rem;
+    font-size: 1rem;
     padding: 0.42rem 0.44rem;
   }
 }
@@ -169,7 +349,7 @@
   }
 
   .navbar__brand-text {
-    font-size: 0.82rem;
+    font-size: 0.9rem;
   }
 
   .navbar__menu {
@@ -181,7 +361,7 @@
   }
 
   .navbar__link {
-    font-size: 0.74rem;
+    font-size: 0.9rem;
     padding: 0.38rem 0.44rem;
   }
 
@@ -196,6 +376,11 @@
 }
 
 @media (max-width: 560px) {
+  .navbar__mobile-menu-button {
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+
   .navbar__brand-icon-wrap {
     width: 32px;
     height: 32px;
@@ -207,16 +392,15 @@
   }
 
   .navbar__brand-text {
-    font-size: 0.74rem;
+    font-size: 0.82rem;
   }
 
   .navbar__menu {
-    justify-content: flex-end;
-    flex-wrap: nowrap;
+    display: none;
   }
 
   .navbar__link {
-    font-size: 0.7rem;
+    font-size: 0.82rem;
     padding: 0.32rem 0.4rem;
   }
 
@@ -236,5 +420,16 @@
 
   .navbar__panel-text {
     font-size: 0.84rem;
+  }
+
+  .navbar__cart-item {
+    grid-template-columns: 60px minmax(0, 1fr);
+    gap: 0.6rem;
+    padding: 0.6rem;
+  }
+
+  .navbar__cart-item-image {
+    width: 60px;
+    height: 60px;
   }
 }

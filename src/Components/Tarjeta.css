@@ -1,9 +1,9 @@
 .tarjeta {
-  background: #f3f1ec;
-  border: 1px solid #ddd3c4;
+  background: #fff1fd;
+  border: 1px solid #efb7ea;
   border-radius: 14px;
   padding: 1rem;
-  color: #3f2d1e;
+  color: #2f2130;
 }
 
 .tarjeta__header {
@@ -25,9 +25,9 @@
 .tarjeta__secure-note {
   margin: 0 0 0.45rem;
   padding: 0.45rem 0.6rem;
-  border: 1px solid #d7ccb8;
+  border: 1px solid #efb7ea;
   border-radius: 8px;
-  background: #fffaf1;
+  background: #fff7fe;
   font-size: 0.85rem;
   font-weight: 700;
   color: #3e3328;
@@ -44,10 +44,10 @@
 }
 
 .tarjeta__provider-option {
-  border: 1px solid #cdbca6;
+  border: 1px solid #efb7ea;
   border-radius: 999px;
   background: #fff;
-  color: #4a3a2c;
+  color: #2f2130;
   font-family: var(--font-ui);
   font-size: 0.82rem;
   font-weight: 700;
@@ -56,9 +56,9 @@
 }
 
 .tarjeta__provider-option--active {
-  background: #6f4a2e;
-  border-color: #6f4a2e;
-  color: #f6efe2;
+  background: #f894f4;
+  border-color: #f894f4;
+  color: #1f111f;
 }
 
 .tarjeta__brands-label {
@@ -66,7 +66,7 @@
   margin-bottom: 0.35rem;
   font-size: 0.82rem;
   font-weight: 700;
-  color: #4a3a2c;
+  color: #2f2130;
 }
 
 .tarjeta__brands-list {
@@ -79,13 +79,13 @@
 }
 
 .tarjeta__brand {
-  border: 1px solid #d8cfbf;
+  border: 1px solid #efb7ea;
   border-radius: 999px;
   background: #fff;
   padding: 0.2rem 0.55rem;
   font-size: 0.78rem;
   font-weight: 700;
-  color: #3b3128;
+  color: #2f2130;
 }
 
 .tarjeta__summary {
@@ -114,7 +114,7 @@
 
 .tarjeta__input {
   width: 100%;
-  border: 1px solid #d8cfbf;
+  border: 1px solid #efb7ea;
   border-radius: 8px;
   background: #fff;
   padding: 0.55rem 0.65rem;
@@ -134,7 +134,7 @@
 
 .tarjeta__brick {
   margin-top: 0.9rem;
-  border: 1px solid #d8cfbf;
+  border: 1px solid #efb7ea;
   border-radius: 10px;
   padding: 0.75rem;
   background: #fff;
@@ -147,7 +147,7 @@
 }
 
 .tarjeta__stripe-brick {
-  border: 1px solid #d7ccb8;
+  border: 1px solid #efb7ea;
   border-radius: 12px;
   background: #fff;
   padding: 1.1rem;
@@ -167,7 +167,7 @@
   font-family: var(--font-ui);
   font-size: 1.15rem;
   font-weight: 800;
-  color: #2d2419;
+  color: #2f2130;
 }
 
 .tarjeta__stripe-brands {
@@ -181,13 +181,13 @@
 .tarjeta__stripe-brand {
   min-width: 40px;
   text-align: center;
-  border: 1px solid #d9d0c1;
+  border: 1px solid #efb7ea;
   border-radius: 6px;
   background: #fff;
   padding: 0.22rem 0.42rem;
   font-size: 0.72rem;
   font-weight: 800;
-  color: #3c3328;
+  color: #2f2130;
 }
 
 .tarjeta__stripe-row {
@@ -197,7 +197,7 @@
 }
 
 .tarjeta__stripe-input {
-  border: 1px solid #cfc5b6;
+  border: 1px solid #efb7ea;
   border-radius: 8px;
   background: #fff;
   padding: 0.8rem 0.8rem;
@@ -208,8 +208,8 @@
 .tarjeta__button {
   border: 0;
   border-radius: 10px;
-  background: #6f4a2e;
-  color: #f6efe2;
+  background: #f894f4;
+  color: #1f111f;
   font-family: var(--font-ui);
   font-size: 0.9rem;
   font-weight: 700;
@@ -218,8 +218,8 @@
 }
 
 .tarjeta__button--secondary {
-  background: #b9a58d;
-  color: #2d2419;
+  background: #ffd8fb;
+  color: #2f2130;
 }
 
 .tarjeta__button:disabled {
@@ -242,7 +242,7 @@
 .tarjeta__loading {
   font-size: 0.82rem;
   font-weight: 700;
-  color: #4a3a2c;
+  color: #2f2130;
 }
 
 @media (max-width: 700px) {

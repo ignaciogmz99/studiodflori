@@ -1,9 +1,9 @@
 .pago {
-  background: #f3f1ec;
-  border: 1px solid #ddd3c4;
+  background: #fff1fd;
+  border: 1px solid #efb7ea;
   border-radius: 14px;
   padding: 1rem;
-  color: #3f2d1e;
+  color: #2f2130;
 }
 
 .pago__header {
@@ -24,8 +24,8 @@
 .pago__back {
   border: 0;
   border-radius: 10px;
-  background: #7a5a3a;
-  color: #f4edd9;
+  background: #f894f4;
+  color: #1f111f;
   font-family: var(--font-ui);
   font-weight: 700;
   font-size: 0.84rem;
@@ -47,8 +47,8 @@
 }
 
 .pago__items {
-  background: #fff9f0;
-  border: 1px solid #dfd6c8;
+  background: #fff7fe;
+  border: 1px solid #efb7ea;
   border-radius: 10px;
   padding: 0.85rem;
 }
@@ -67,7 +67,7 @@
   gap: 0.75rem;
   align-items: center;
   background: #fff;
-  border: 1px solid #e3dccf;
+  border: 1px solid #f2c9ee;
   border-radius: 10px;
   padding: 0.55rem;
 }
@@ -97,9 +97,9 @@
 .pago__delivery {
   margin: 0;
   padding: 0.85rem;
-  border: 1px solid #dfd6c8;
+  border: 1px solid #efb7ea;
   border-radius: 10px;
-  background: #fff9f0;
+  background: #fff7fe;
 }
 
 .pago__delivery-title {
@@ -131,12 +131,12 @@
 .pago__field-note {
   margin: 0;
   font-size: 0.78rem;
-  color: #6f5a43;
+  color: #875483;
 }
 
 .pago__field-input {
   width: 100%;
-  border: 1px solid #d8cfbf;
+  border: 1px solid #efb7ea;
   border-radius: 8px;
   background: #fff;
   padding: 0.5rem 0.6rem;
@@ -171,8 +171,8 @@
 .pago__next {
   border: 0;
   border-radius: 10px;
-  background: #6f4a2e;
-  color: #f6efe2;
+  background: #f894f4;
+  color: #1f111f;
   font-family: var(--font-ui);
   font-size: 0.9rem;
   font-weight: 700;
