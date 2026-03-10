@@ -3,7 +3,7 @@ import './Flores_menu.css'
 import { supabase } from '../lib/supabaseClient'
 import { useCart } from '../context/CartContext'
 
-const assetModules = import.meta.glob('../assets/*/*.{png,jpg,jpeg,webp}', {
+const assetModules = import.meta.glob('../assets/*/*.webp', {
   eager: true,
   import: 'default'
 })
@@ -261,6 +261,31 @@ function FloresMenu() {
     return filtered
   }, [maxPrice, minPrice, products, sortByPrice])
 
+  useEffect(() => {
+    filteredProducts.forEach((product) => {
+      if (!product.images || product.images.length < 2) {
+        return
+      }
+
+      const currentIndex = imageIndexByProduct[product.id] ?? product.principalIndex
+      const normalizedIndex = ((currentIndex % product.images.length) + product.images.length) % product.images.length
+      const preloadTargets = [
+        product.images[(normalizedIndex + 1) % product.images.length],
+        product.images[(normalizedIndex - 1 + product.images.length) % product.images.length]
+      ]
+
+      preloadTargets.forEach((src) => {
+        if (!src) {
+          return
+        }
+
+        const image = new window.Image()
+        image.decoding = 'async'
+        image.src = src
+      })
+    })
+  }, [filteredProducts, imageIndexByProduct])
+
   const showPreviousImage = (product) => {
     setImageIndexByProduct((prev) => {
       const current = prev[product.id] ?? product.principalIndex
@@ -379,7 +404,13 @@ function FloresMenu() {
         {filteredProducts.map((product) => (
           <article className="flores-menu__card" key={product.id}>
             <div className="flores-menu__image-wrap">
-              <img className="flores-menu__image" src={product.image} alt={product.name} loading="lazy" />
+              <img
+                className="flores-menu__image"
+                src={product.image}
+                alt={product.name}
+                loading="lazy"
+                decoding="async"
+              />
               {product.totalImages > 1 && (
                 <>
                   <button

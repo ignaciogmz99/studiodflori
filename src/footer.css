@@ -49,7 +49,7 @@
 
 @media (max-width: 560px) {
   .footer {
-    padding: 0.85rem 0.58rem calc(0.95rem + env(safe-area-inset-bottom, 0px));
+    padding: 0.85rem 0.58rem calc(4.5rem + env(safe-area-inset-bottom, 0px));
   }
 
   .footer__actions {
