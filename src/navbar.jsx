@@ -58,11 +58,29 @@ function Navbar() {
     setActivePanel(null)
   }
 
+  const handleOpenInfoPanel = (panelKey) => {
+    setActivePanel(panelKey)
+  }
+
   const selectedContent = activePanel ? panelContent[activePanel] : null
 
   return (
     <>
       <nav className="navbar" aria-label="Barra principal">
+        <button
+          type="button"
+          className="navbar__mobile-menu-button"
+          onClick={() => handleOpen('mobile-menu')}
+          aria-expanded={activePanel === 'mobile-menu'}
+          aria-label="Abrir menu principal"
+        >
+          <span className="navbar__mobile-menu-icon" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+        </button>
+
         <a className="navbar__brand" href="#" aria-label="Studio dei Fiori">
           <span className="navbar__brand-icon-wrap">
             <img className="navbar__logo-image" src={logo} alt="Logo de Studio dei Fiori" />
@@ -124,6 +142,49 @@ function Navbar() {
           </li>
         </ul>
       </nav>
+
+      {activePanel === 'mobile-menu' && (
+        <div className="navbar__mobile-drawer-backdrop" onClick={handleClose}>
+          <section
+            className="navbar__mobile-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu principal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="navbar__mobile-drawer-header">
+              <span className="navbar__mobile-drawer-title">Menu</span>
+              <button type="button" className="navbar__panel-close" onClick={handleClose} aria-label="Cerrar">
+                x
+              </button>
+            </div>
+            <a className="navbar__mobile-drawer-link" href="#" onClick={handleClose}>
+              Tipo De Flor
+            </a>
+            <button
+              type="button"
+              className="navbar__mobile-drawer-link"
+              onClick={() => handleOpenInfoPanel('regalos')}
+            >
+              Regalos
+            </button>
+            <button
+              type="button"
+              className="navbar__mobile-drawer-link"
+              onClick={() => handleOpenInfoPanel('contacto')}
+            >
+              Contacto
+            </button>
+            <button
+              type="button"
+              className="navbar__mobile-drawer-link"
+              onClick={() => handleOpenInfoPanel('direccion')}
+            >
+              Direccion
+            </button>
+          </section>
+        </div>
+      )}
 
       {activePanel === 'cart' && (
         <div className="navbar__panel-backdrop" onClick={handleClose}>
