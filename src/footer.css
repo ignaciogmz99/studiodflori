@@ -1,7 +1,7 @@
 .footer {
   width: 100%;
   box-sizing: border-box;
-  padding: 1.05rem 0.8rem 1.15rem;
+  padding: 1.05rem 0.8rem calc(1.15rem + env(safe-area-inset-bottom, 0px));
   background: #d9d9d9;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
   flex-shrink: 0;
@@ -49,7 +49,7 @@
 
 @media (max-width: 560px) {
   .footer {
-    padding: 0.85rem 0.58rem 0.95rem;
+    padding: 0.85rem 0.58rem calc(0.95rem + env(safe-area-inset-bottom, 0px));
   }
 
   .footer__actions {
