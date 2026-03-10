@@ -137,6 +137,10 @@
   justify-content: flex-end;
 }
 
+.navbar__menu-item {
+  display: flex;
+}
+
 .navbar__link {
   display: inline-flex;
   align-items: center;
@@ -376,9 +380,19 @@
 }
 
 @media (max-width: 560px) {
+  .navbar {
+    justify-content: flex-start;
+    overflow-x: visible;
+  }
+
   .navbar__mobile-menu-button {
     display: inline-flex;
     flex-shrink: 0;
+  }
+
+  .navbar__brand {
+    flex: 0 1 auto;
+    margin-right: auto;
   }
 
   .navbar__brand-icon-wrap {
@@ -396,12 +410,27 @@
   }
 
   .navbar__menu {
+    display: flex;
+    flex: 0 0 auto;
+    min-width: 0;
+    margin-left: 0;
+  }
+
+  .navbar__menu-item--desktop {
     display: none;
+  }
+
+  .navbar__menu-item--cart {
+    display: flex;
   }
 
   .navbar__link {
     font-size: 0.82rem;
     padding: 0.32rem 0.4rem;
+  }
+
+  .navbar__cart-button {
+    flex-shrink: 0;
   }
 
   .navbar__panel {

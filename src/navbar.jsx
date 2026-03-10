@@ -89,7 +89,7 @@ function Navbar() {
         </a>
 
         <ul className="navbar__menu">
-          <li>
+          <li className="navbar__menu-item navbar__menu-item--desktop">
             <button
               type="button"
               className="navbar__link navbar__link-button"
@@ -99,7 +99,7 @@ function Navbar() {
               Regalos
             </button>
           </li>
-          <li>
+          <li className="navbar__menu-item navbar__menu-item--desktop">
             <button
               type="button"
               className="navbar__link navbar__link-button"
@@ -109,7 +109,7 @@ function Navbar() {
               Contacto
             </button>
           </li>
-          <li>
+          <li className="navbar__menu-item navbar__menu-item--desktop">
             <button
               type="button"
               className="navbar__link navbar__link-button"
@@ -119,7 +119,7 @@ function Navbar() {
               Direccion
             </button>
           </li>
-          <li>
+          <li className="navbar__menu-item navbar__menu-item--cart">
             <button
               type="button"
               className={`navbar__link navbar__link-button navbar__cart-button ${totalItems > 0 ? 'navbar__cart-button--alert' : ''}`}
