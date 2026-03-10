@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import './Flores_menu.css'
 import { supabase } from '../lib/supabaseClient'
 import { useCart } from '../context/CartContext'
@@ -7,6 +7,35 @@ const assetModules = import.meta.glob('../assets/*/*.webp', {
   eager: true,
   import: 'default'
 })
+
+const ROMAN_NUMERALS = {
+  1: 'I',
+  2: 'II',
+  3: 'III',
+  4: 'IV',
+  5: 'V',
+  6: 'VI',
+  7: 'VII',
+  8: 'VIII',
+  9: 'IX',
+  10: 'X'
+}
+
+function formatProductName(value) {
+  return String(value || '')
+    .replace(/_/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => {
+      const parsed = Number(part)
+      if (Number.isInteger(parsed) && ROMAN_NUMERALS[parsed]) {
+        return ROMAN_NUMERALS[parsed]
+      }
+
+      return part
+    })
+    .join(' ')
+}
 
 const shelfProducts = Object.entries(assetModules).reduce((acc, [path, src]) => {
   const normalized = path.replace('\\', '/')
@@ -35,7 +64,7 @@ const localProducts = Object.entries(shelfProducts)
 
     return {
       id: name,
-      name: name.replace(/_/g, ' '),
+      name: formatProductName(name),
       images: sortedImages.map((image) => image.src),
       principalIndex: principalIndex >= 0 ? principalIndex : 0
     }
@@ -45,6 +74,31 @@ const localProducts = Object.entries(shelfProducts)
 
 const OPEN_HOUR = 10
 const CLOSE_HOUR = 19
+const ALL_FLOWER_TYPES = 'all'
+
+function normalizeFlowerType(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+}
+
+function formatFlowerTypeLabel(value) {
+  const normalized = normalizeFlowerType(value)
+
+  if (!normalized) {
+    return ''
+  }
+
+  if (normalized === ALL_FLOWER_TYPES) {
+    return 'Ver todo'
+  }
+
+  return normalized
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
 
 function resolvePreparationHours(inventory) {
   if (!inventory) {
@@ -97,15 +151,38 @@ function getDeliveryLabel(hours) {
   return 'Mañana'
 }
 
+function getPreparationLabel(hours) {
+  const parsedHours = Number(hours)
+  const preparationHours = Number.isFinite(parsedHours) && parsedHours > 0 ? parsedHours : 24
+  const now = new Date()
+  const nextAvailableDate = new Date(now)
+  nextAvailableDate.setDate(nextAvailableDate.getDate() + 1)
+
+  if (preparationHours < 24) {
+    const currentHour = now.getHours()
+    const isWithinDeliveryWindow = currentHour >= OPEN_HOUR && currentHour < CLOSE_HOUR
+    const earliestReadyAt = new Date(now.getTime() + (preparationHours * 60 * 60 * 1000))
+    const cutoffToday = new Date(now)
+    cutoffToday.setHours(CLOSE_HOUR, 0, 0, 0)
+    const isSameDay = earliestReadyAt.toDateString() === now.toDateString()
+
+    if (isWithinDeliveryWindow && isSameDay && earliestReadyAt <= cutoffToday) {
+      return 'Hoy sale'
+    }
+  }
+
+  if (nextAvailableDate.getDay() === 0) {
+    return 'Lunes a primera hora'
+  }
+
+  return 'Mañana a primera hora'
+}
+
 function FloresMenu() {
   const [inventoryById, setInventoryById] = useState({})
   const [inventoryStatus, setInventoryStatus] = useState(supabase ? 'loading' : 'unavailable')
   const [imageIndexByProduct, setImageIndexByProduct] = useState({})
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
-  const [sortByPrice, setSortByPrice] = useState('default')
-  const [minPrice, setMinPrice] = useState('')
-  const [maxPrice, setMaxPrice] = useState('')
-  const filtersDropdownRef = useRef(null)
+  const [selectedFlowerType, setSelectedFlowerType] = useState(ALL_FLOWER_TYPES)
   const { addToCart } = useCart()
 
   useEffect(() => {
@@ -154,28 +231,6 @@ function FloresMenu() {
     }
   }, [])
 
-  useEffect(() => {
-    if (!isFilterOpen) {
-      return undefined
-    }
-
-    const handleOutsideClick = (event) => {
-      if (!filtersDropdownRef.current) {
-        return
-      }
-
-      if (!filtersDropdownRef.current.contains(event.target)) {
-        setIsFilterOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleOutsideClick)
-
-    return () => {
-      document.removeEventListener('mousedown', handleOutsideClick)
-    }
-  }, [isFilterOpen])
-
   const products = useMemo(() => {
     return localProducts.map((product) => {
       const inventory = inventoryById[product.id]
@@ -188,6 +243,10 @@ function FloresMenu() {
         image: product.images[normalizedIndex],
         currentImageNumber: normalizedIndex + 1,
         totalImages: product.images.length,
+        flowerType: normalizeFlowerType(
+          inventory?.tipo_flor
+          ?? inventory?.tipoFlor
+        ),
         price: Number.isNaN(parsedPrice) ? null : parsedPrice,
         stock: inventory?.stock ?? null,
         preparationHours: resolvePreparationHours(inventory),
@@ -196,70 +255,45 @@ function FloresMenu() {
     })
   }, [inventoryById, imageIndexByProduct])
 
-  const filteredProducts = useMemo(() => {
-    const minValue = minPrice === '' ? null : Number(minPrice)
-    const maxValue = maxPrice === '' ? null : Number(maxPrice)
-    const hasMin = minValue != null && !Number.isNaN(minValue)
-    const hasMax = maxValue != null && !Number.isNaN(maxValue)
-    const lowerBound = hasMin && hasMax ? Math.min(minValue, maxValue) : minValue
-    const upperBound = hasMin && hasMax ? Math.max(minValue, maxValue) : maxValue
+  const flowerTypeTabs = useMemo(() => {
+    const seen = new Set()
+    const tabs = [{ value: ALL_FLOWER_TYPES, label: 'Ver todo' }]
 
-    const filtered = products.filter((product) => {
-      const hasPrice = typeof product.price === 'number'
-
-      if (lowerBound != null) {
-        if (!hasPrice || product.price < lowerBound) {
-          return false
-        }
+    products.forEach((product) => {
+      if (!product.flowerType || seen.has(product.flowerType)) {
+        return
       }
 
-      if (upperBound != null) {
-        if (!hasPrice || product.price > upperBound) {
-          return false
-        }
+      seen.add(product.flowerType)
+      tabs.push({
+        value: product.flowerType,
+        label: formatFlowerTypeLabel(product.flowerType)
+      })
+    })
+
+    return tabs
+  }, [products])
+
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      if (selectedFlowerType !== ALL_FLOWER_TYPES && product.flowerType !== selectedFlowerType) {
+        return false
       }
 
       return true
     })
+  }, [products, selectedFlowerType])
 
-    if (sortByPrice === 'price-asc') {
-      return [...filtered].sort((a, b) => {
-        if (typeof a.price === 'number' && typeof b.price === 'number') {
-          return a.price - b.price
-        }
-
-        if (typeof a.price === 'number') {
-          return -1
-        }
-
-        if (typeof b.price === 'number') {
-          return 1
-        }
-
-        return a.name.localeCompare(b.name)
-      })
+  useEffect(() => {
+    if (selectedFlowerType === ALL_FLOWER_TYPES) {
+      return
     }
 
-    if (sortByPrice === 'price-desc') {
-      return [...filtered].sort((a, b) => {
-        if (typeof a.price === 'number' && typeof b.price === 'number') {
-          return b.price - a.price
-        }
-
-        if (typeof a.price === 'number') {
-          return -1
-        }
-
-        if (typeof b.price === 'number') {
-          return 1
-        }
-
-        return a.name.localeCompare(b.name)
-      })
+    const typeStillExists = flowerTypeTabs.some((tab) => tab.value === selectedFlowerType)
+    if (!typeStillExists) {
+      setSelectedFlowerType(ALL_FLOWER_TYPES)
     }
-
-    return filtered
-  }, [maxPrice, minPrice, products, sortByPrice])
+  }, [flowerTypeTabs, selectedFlowerType])
 
   useEffect(() => {
     filteredProducts.forEach((product) => {
@@ -306,97 +340,33 @@ function FloresMenu() {
     })
   }
 
-  const resetFilters = () => {
-    setSortByPrice('default')
-    setMinPrice('')
-    setMaxPrice('')
-  }
+  const selectedFlowerTypeLabel = formatFlowerTypeLabel(selectedFlowerType)
+  const headline = selectedFlowerType === ALL_FLOWER_TYPES
+    ? 'Flores a domicilio en Guadalajara con entrega rapida para cada ocasion'
+    : `${selectedFlowerTypeLabel} a domicilio en Guadalajara con entrega rapida`
 
   return (
     <section className="flores-menu" aria-label="Catalogo de flores y plantas">
       <div className="flores-menu__tabs-box">
         <h2 className="flores-menu__tabs-title">Flores y Plantas</h2>
         <div className="flores-menu__tabs" role="tablist" aria-label="Categorias de flores">
-          <button type="button" className="flores-menu__tab">Ver todo</button>
-          <button type="button" className="flores-menu__tab">Todas las flores</button>
-          <button type="button" className="flores-menu__tab flores-menu__tab--active">Rosas</button>
-          <button type="button" className="flores-menu__tab">Gerberas</button>
-          <button type="button" className="flores-menu__tab">Tulipanes</button>
-          <button type="button" className="flores-menu__tab">Orquideas</button>
-          <button type="button" className="flores-menu__tab">Combinados</button>
-          <button type="button" className="flores-menu__tab">Premium</button>
+          {flowerTypeTabs.map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              className={`flores-menu__tab ${selectedFlowerType === tab.value ? 'flores-menu__tab--active' : ''}`}
+              onClick={() => setSelectedFlowerType(tab.value)}
+              aria-pressed={selectedFlowerType === tab.value}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      <h3 className="flores-menu__headline">Rosas a domicilio en Guadalajara con entrega rapida para expresar amor</h3>
+      <h3 className="flores-menu__headline">{headline}</h3>
 
       <div className="flores-menu__actions">
-        <div className="flores-menu__filters-dropdown" ref={filtersDropdownRef}>
-          <button
-            type="button"
-            className="flores-menu__filter"
-            onClick={() => setIsFilterOpen((prev) => !prev)}
-            aria-expanded={isFilterOpen}
-            aria-controls="flores-menu-filters"
-          >
-            Filtrar y ordenar
-          </button>
-          {isFilterOpen && (
-            <div className="flores-menu__filters-panel" id="flores-menu-filters">
-              <div className="flores-menu__filters-group">
-                <label className="flores-menu__filters-label" htmlFor="sort-by-price">
-                  Ordenar por precio
-                </label>
-                <select
-                  id="sort-by-price"
-                  className="flores-menu__filters-input"
-                  value={sortByPrice}
-                  onChange={(event) => setSortByPrice(event.target.value)}
-                >
-                  <option value="default">Sin orden</option>
-                  <option value="price-asc">Menor a mayor</option>
-                  <option value="price-desc">Mayor a menor</option>
-                </select>
-              </div>
-
-              <div className="flores-menu__filters-group">
-                <label className="flores-menu__filters-label" htmlFor="min-price">
-                  Precio minimo
-                </label>
-                <input
-                  id="min-price"
-                  className="flores-menu__filters-input"
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="Ej: 500"
-                  value={minPrice}
-                  onChange={(event) => setMinPrice(event.target.value)}
-                />
-              </div>
-
-              <div className="flores-menu__filters-group">
-                <label className="flores-menu__filters-label" htmlFor="max-price">
-                  Precio maximo
-                </label>
-                <input
-                  id="max-price"
-                  className="flores-menu__filters-input"
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="Ej: 2000"
-                  value={maxPrice}
-                  onChange={(event) => setMaxPrice(event.target.value)}
-                />
-              </div>
-
-              <button type="button" className="flores-menu__filters-clear" onClick={resetFilters}>
-                Limpiar
-              </button>
-            </div>
-          )}
-        </div>
         <span className="flores-menu__count">{filteredProducts.length} productos</span>
       </div>
 
@@ -453,7 +423,7 @@ function FloresMenu() {
               <p className="flores-menu__stock">Agotado</p>
             )}
             {inventoryStatus !== 'loading' && product.hasInventoryRecord && (
-              <p className="flores-menu__stock">{getDeliveryLabel(product.preparationHours)}</p>
+              <p className="flores-menu__stock">{getPreparationLabel(product.preparationHours)}</p>
             )}
             <button
               type="button"
