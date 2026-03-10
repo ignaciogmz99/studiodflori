@@ -9,7 +9,6 @@ import { DELIVERY_CITIES } from '../constants/deliveryCities'
 const OPEN_HOUR = 10
 const CLOSE_HOUR = 19
 const SLOT_MINUTES = 30
-const MIN_LEAD_HOURS = 3
 
 function formatDeliveryDate(dateValue) {
   if (!dateValue) {
@@ -29,13 +28,19 @@ function startOfDay(dateValue) {
   return nextDate
 }
 
-function resolveEarliestDate(preparationHours) {
-  const safeHours = Number.isFinite(preparationHours) && preparationHours > 0
-    ? Math.max(preparationHours, MIN_LEAD_HOURS)
-    : MIN_LEAD_HOURS
+function resolveEarliestDate() {
   const now = new Date()
+  const earliest = new Date(now)
 
-  return new Date(now.getTime() + (safeHours * 60 * 60 * 1000))
+  earliest.setDate(earliest.getDate() + 1)
+  earliest.setHours(OPEN_HOUR, 0, 0, 0)
+
+  while (isSunday(earliest)) {
+    earliest.setDate(earliest.getDate() + 1)
+    earliest.setHours(OPEN_HOUR, 0, 0, 0)
+  }
+
+  return earliest
 }
 
 function isSunday(dateValue) {
@@ -122,15 +127,14 @@ const DateTrigger = forwardRef(function DateTrigger({ value, onClick }, ref) {
 
 function TopMenu() {
   const {
-    estimatedPreparationHours,
     setSelectedDeliveryDate,
     setSelectedDeliveryTime,
     selectedDeliveryCity,
     setSelectedDeliveryCity
   } = useCart()
   const earliestDeliveryDateTime = useMemo(
-    () => resolveEarliestDate(estimatedPreparationHours),
-    [estimatedPreparationHours]
+    () => resolveEarliestDate(),
+    []
   )
   const minDeliveryDate = useMemo(
     () => startOfDay(earliestDeliveryDateTime),

@@ -113,16 +113,24 @@ function Tarjeta() {
     const marginX = 34
     const contentWidth = pageWidth - (marginX * 2)
     let cursorY = 38
+    const colors = {
+      accent: [248, 148, 244],
+      accentSoft: [255, 241, 253],
+      accentBorder: [239, 183, 234],
+      text: [47, 33, 48],
+      textSoft: [124, 93, 120],
+      white: [255, 255, 255]
+    }
 
     const drawSectionTitle = (title) => {
-      doc.setFillColor(122, 90, 58)
+      doc.setFillColor(...colors.accent)
       doc.roundedRect(marginX, cursorY, contentWidth, 24, 6, 6, 'F')
-      doc.setTextColor(246, 239, 226)
+      doc.setTextColor(...colors.text)
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(11)
       doc.text(String(title), marginX + 10, cursorY + 16)
       cursorY += 34
-      doc.setTextColor(46, 46, 46)
+      doc.setTextColor(...colors.text)
     }
 
     const writeLine = (text, options = {}) => {
@@ -136,8 +144,8 @@ function Tarjeta() {
     }
 
     const drawCard = (height) => {
-      doc.setFillColor(255, 249, 240)
-      doc.setDrawColor(223, 214, 200)
+      doc.setFillColor(...colors.accentSoft)
+      doc.setDrawColor(...colors.accentBorder)
       doc.roundedRect(marginX, cursorY - 14, contentWidth, height, 8, 8, 'FD')
     }
 
@@ -148,7 +156,7 @@ function Tarjeta() {
       // If logo cannot load for any reason, continue with textual header.
     }
 
-    doc.setTextColor(63, 45, 30)
+    doc.setTextColor(...colors.text)
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(17)
     doc.text('Comprobante de pago', marginX + 62, cursorY + 20)
@@ -214,11 +222,11 @@ function Tarjeta() {
 
     const pageHeight = doc.internal.pageSize.getHeight()
     const footerY = pageHeight - 58
-    doc.setDrawColor(223, 214, 200)
+    doc.setDrawColor(...colors.accentBorder)
     doc.line(marginX, footerY - 14, marginX + contentWidth, footerY - 14)
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(9)
-    doc.setTextColor(86, 68, 50)
+    doc.setTextColor(...colors.textSoft)
     doc.text('Comprobante digital de Studio D Flori. Conserva este documento para cualquier aclaracion.', marginX, footerY)
     doc.text('Horario de atencion: Lunes a Sabado de 9:00 a 18:00. WhatsApp: +52 33 1025 9546', marginX, footerY + 12)
     doc.text(`Emitido: ${new Date().toLocaleString('es-MX')}`, marginX, footerY + 24)

@@ -3,6 +3,11 @@
 :root {
   --font-ui: 'Nunito Sans', 'Segoe UI', sans-serif;
   --font-display: 'Cormorant Garamond', Georgia, serif;
+  --page-bg: #f894f4;
+  --surface-bg: #ffd8fb;
+  --surface-soft: #ffeafb;
+  --surface-border: #efb7ea;
+  --text-main: #2f2130;
 }
 
 html,
@@ -17,5 +22,6 @@ body,
 
 body {
   font-family: var(--font-ui);
-  color: #2f2f2f;
+  color: var(--text-main);
+  background: #ffffff;
 }
