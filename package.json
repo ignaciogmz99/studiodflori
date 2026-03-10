@@ -9,7 +9,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "images:optimize": "python local_tools/optimize_catalog_images.py"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.97.0",
