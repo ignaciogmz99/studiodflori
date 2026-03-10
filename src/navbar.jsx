@@ -90,11 +90,6 @@ function Navbar() {
 
         <ul className="navbar__menu">
           <li>
-            <a className="navbar__link" href="#">
-              Tipo De Flor
-            </a>
-          </li>
-          <li>
             <button
               type="button"
               className="navbar__link navbar__link-button"
@@ -158,9 +153,6 @@ function Navbar() {
                 x
               </button>
             </div>
-            <a className="navbar__mobile-drawer-link" href="#" onClick={handleClose}>
-              Tipo De Flor
-            </a>
             <button
               type="button"
               className="navbar__mobile-drawer-link"
