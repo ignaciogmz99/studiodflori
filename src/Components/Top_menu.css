@@ -203,6 +203,125 @@
   cursor: pointer;
 }
 
+.top-menu__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.top-menu__policy-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 100%;
+  padding: 0.3rem 0.1rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #6f6870;
+  font-family: var(--font-ui);
+  font-size: 0.98rem;
+  font-weight: 500;
+  white-space: normal;
+  box-shadow: none;
+  cursor: pointer;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.top-menu__policy-button:hover,
+.top-menu__policy-button:focus-visible {
+  color: #4d4750;
+  opacity: 0.92;
+  outline: none;
+}
+
+.top-menu__policy-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  font-size: 1rem;
+  line-height: 1;
+  filter: grayscale(1);
+}
+
+.top-menu__policy-copy {
+  min-width: 0;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.top-menu__policy-accent {
+  color: #e14a88;
+  font-weight: 600;
+}
+
+.top-menu__policy-copy-text {
+  color: #6f6870;
+}
+
+.top-menu__policy-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding-top: 5.3rem;
+  padding-right: 1rem;
+  background: rgba(23, 14, 7, 0.38);
+}
+
+.top-menu__policy-panel {
+  width: min(82vw, 360px);
+  border-radius: 14px;
+  background: #fff1fd;
+  box-shadow: 0 22px 45px rgba(143, 58, 134, 0.22);
+  padding: 0.85rem 1rem 0.95rem;
+  color: var(--text-main);
+  position: relative;
+}
+
+.top-menu__policy-close {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.65rem;
+  border: 0;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 1.3rem;
+  line-height: 1;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.top-menu__policy-panel .shipping-policy {
+  margin: 0;
+}
+
+.top-menu__policy-panel .shipping-policy__card {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.top-menu__policy-panel .shipping-policy__title {
+  margin: 0 2rem 0.7rem 0;
+  font-size: 1.2rem;
+}
+
+.top-menu__policy-panel .shipping-policy__heading {
+  margin-top: 1rem;
+  font-size: 1rem;
+}
+
+.top-menu__policy-panel .shipping-policy__copy {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 @media (max-width: 900px) {
   .top-menu {
     grid-template-columns: 1fr 1fr 1fr;
@@ -214,6 +333,14 @@
 
   .top-menu__text {
     font-size: 0.92rem;
+  }
+
+  .top-menu__policy-button {
+    font-size: 0.9rem;
+  }
+
+  .top-menu__policy-panel {
+    width: min(88vw, 330px);
   }
 }
 
@@ -276,6 +403,22 @@
   .top-menu__subtitle {
     display: block;
     font-size: 0.92rem;
+  }
+
+  .top-menu__actions {
+    justify-content: flex-start;
+  }
+
+  .top-menu__policy-button {
+    align-items: flex-start;
+    font-size: 0.82rem;
+    padding: 0.1rem 0;
+  }
+
+  .top-menu__policy-panel {
+    width: min(88vw, 310px);
+    padding: 0.8rem 0.88rem 0.92rem;
+    border-radius: 14px;
   }
 
   .react-datepicker__portal .react-datepicker {
