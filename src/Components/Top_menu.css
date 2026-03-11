@@ -6,13 +6,47 @@
   align-items: center;
 }
 
-.top-menu__title {
+.top-menu__intro {
   grid-column: 1 / -1;
+  margin-bottom: 0.35rem;
+}
+
+.top-menu__eyebrow {
+  display: none;
+  margin: 0 0 0.45rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(248, 148, 244, 0.16);
+  color: #8a3d81;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.top-menu__title {
   margin: 0;
   font-family: var(--font-display);
   font-size: 1.45rem;
   font-weight: 700;
   color: #353535;
+}
+
+.top-menu__title-mobile {
+  display: none;
+}
+
+.top-menu__title-desktop {
+  display: inline;
+}
+
+.top-menu__subtitle {
+  display: none;
+  margin: 0.35rem 0 0;
+  max-width: 46rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #655b67;
 }
 
 .top-menu__field {
@@ -31,6 +65,17 @@
   color: #30343a;
   cursor: pointer;
   transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.top-menu__field-label {
+  position: absolute;
+  top: -0.62rem;
+  left: 1rem;
+  padding: 0 0.35rem;
+  background: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #7a6076;
 }
 
 .top-menu__field:hover,
@@ -154,6 +199,10 @@
   cursor: pointer;
 }
 
+.top-menu__cta {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .top-menu {
     grid-template-columns: 1fr 1fr 1fr;
@@ -171,26 +220,77 @@
 @media (max-width: 560px) {
   .top-menu {
     grid-template-columns: 1fr;
+    gap: 0.85rem;
+    margin-bottom: 1.15rem;
+    padding: 1rem 0.95rem 1.05rem;
+    border-radius: 24px;
+    background:
+      linear-gradient(180deg, rgba(255, 251, 255, 0.96), rgba(255, 241, 253, 0.96));
+    box-shadow: 0 16px 34px rgba(143, 58, 134, 0.12);
+  }
+
+  .top-menu__eyebrow {
+    display: inline-flex;
   }
 
   .top-menu__title {
-    font-size: 0.95rem;
+    font-size: 2rem;
+    line-height: 0.95;
+  }
+
+  .top-menu__title-desktop {
+    display: none;
+  }
+
+  .top-menu__title-mobile {
+    display: inline;
   }
 
   .top-menu__field {
-    padding: 0.48rem 0.65rem;
-    margin-bottom: 0.4rem;
+    min-height: 72px;
+    padding: 1.15rem 0.95rem 0.75rem;
+    margin-bottom: 0;
+    border-radius: 18px;
+    border-color: #d9c6d7;
+    background: rgba(255, 255, 255, 0.85);
   }
 
-  .top-menu__text {
-    font-size: 0.85rem;
+  .top-menu__field-label {
+    left: 0.9rem;
+    background: #fff7fe;
+    font-size: 0.82rem;
   }
 
   .top-menu__time-select {
-    font-size: 0.85rem;
+    font-size: 1rem;
   }
 
   .top-menu__city-select {
-    font-size: 0.85rem;
+    font-size: 1rem;
+  }
+
+  .top-menu__date-trigger {
+    font-size: 1rem;
+  }
+
+  .top-menu__subtitle {
+    display: block;
+    font-size: 0.92rem;
+  }
+
+  .top-menu__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 56px;
+    border: 0;
+    border-radius: 999px;
+    background: #f894f4;
+    color: #1f111f;
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    font-weight: 800;
+    text-decoration: none;
+    box-shadow: 0 10px 20px rgba(143, 58, 134, 0.18);
   }
 }
