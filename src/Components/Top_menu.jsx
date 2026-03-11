@@ -146,6 +146,9 @@ function TopMenu() {
   )
   const [deliveryDate, setDeliveryDate] = useState(() => initialDate)
   const [deliveryTime, setDeliveryTime] = useState('')
+  const [isMobileDatePicker, setIsMobileDatePicker] = useState(() => (
+    typeof window !== 'undefined' ? window.innerWidth <= 560 : false
+  ))
   const effectiveDeliveryDate = useMemo(() => {
     const candidateDate = deliveryDate && deliveryDate >= minDeliveryDate
       ? startOfDay(deliveryDate)
@@ -166,6 +169,19 @@ function TopMenu() {
     setSelectedDeliveryDate(formatISODate(effectiveDeliveryDate))
     setSelectedDeliveryTime(effectiveDeliveryTime)
   }, [effectiveDeliveryDate, effectiveDeliveryTime, setSelectedDeliveryDate, setSelectedDeliveryTime])
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileDatePicker(window.innerWidth <= 560)
+    }
+
+    handleResize()
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
 
   return (
     <section className="top-menu" aria-label="Destino de entrega">
@@ -201,10 +217,11 @@ function TopMenu() {
           filterDate={(date) => hasEnabledSlots(date, earliestDeliveryDateTime)}
           locale={es}
           dateFormat="EEEE d 'de' MMMM"
-          popperPlacement="bottom-start"
+          popperPlacement={isMobileDatePicker ? 'bottom' : 'bottom-start'}
           calendarClassName="top-menu__calendar"
           customInput={<DateTrigger />}
           placeholderText={formatDeliveryDate(effectiveDeliveryDate)}
+          withPortal={isMobileDatePicker}
         />
       </div>
 

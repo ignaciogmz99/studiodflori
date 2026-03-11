@@ -73,6 +73,8 @@
   justify-content: space-between;
   gap: 0.75rem;
   margin-bottom: 1rem;
+  padding-right: 2.4rem;
+  position: relative;
 }
 
 .navbar__mobile-drawer-title {
@@ -204,6 +206,12 @@
   line-height: 1;
   font-weight: 700;
   cursor: pointer;
+}
+
+.navbar__mobile-drawer-header .navbar__panel-close {
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
 }
 
 .navbar__panel-title {
