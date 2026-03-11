@@ -1,5 +1,4 @@
 import MercadoPagoPayment from './MercadoPagoPayment'
-import StripePayment from './StripePayment'
 
 export const paymentProviders = [
   {
@@ -7,12 +6,6 @@ export const paymentProviders = [
     label: 'Mercado Pago',
     summary: 'Completa tu pago con Mercado Pago sin salir de esta pagina.',
     Component: MercadoPagoPayment
-  },
-  {
-    id: 'stripe',
-    label: 'Stripe',
-    summary: 'Completa tu pago con Stripe con tarjeta bancaria.',
-    Component: StripePayment
   }
 ]
 

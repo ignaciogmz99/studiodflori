@@ -58,7 +58,7 @@ function MercadoPagoPayment({
   mpPublicKey,
   payableAmount,
   items,
-  customerEmail,
+  hasApprovedPayment,
   deliveryDetails,
   selectedDeliveryCity,
   selectedDeliveryDate,
@@ -72,7 +72,6 @@ function MercadoPagoPayment({
   const brickControllerRef = useRef(null)
   const payloadRef = useRef({
     items,
-    customerEmail,
     deliveryDetails,
     selectedDeliveryCity,
     selectedDeliveryDate,
@@ -82,7 +81,6 @@ function MercadoPagoPayment({
   useEffect(() => {
     payloadRef.current = {
       items,
-      customerEmail,
       deliveryDetails,
       selectedDeliveryCity,
       selectedDeliveryDate,
@@ -90,7 +88,6 @@ function MercadoPagoPayment({
     }
   }, [
     items,
-    customerEmail,
     deliveryDetails,
     selectedDeliveryCity,
     selectedDeliveryDate,
@@ -180,7 +177,7 @@ function MercadoPagoPayment({
                   customer: {
                     fullName: currentPayload.deliveryDetails.fullName,
                     phone: currentPayload.deliveryDetails.phone,
-                    email: currentPayload.customerEmail
+                    email: ''
                   },
                   delivery: {
                     fulfillmentType: currentPayload.deliveryDetails.fulfillmentType || 'delivery',
@@ -271,12 +268,12 @@ function MercadoPagoPayment({
           Falta configurar VITE_MERCADO_PAGO_PUBLIC_KEY para mostrar Mercado Pago Bricks.
         </p>
       )}
-      {mpPublicKey && payableAmount < 5 && (
+      {mpPublicKey && payableAmount < 5 && !hasApprovedPayment && (
         <p className="tarjeta__error">
-          El monto minimo para procesar con tarjeta en pruebas es 5 MXN. Agrega mas productos al carrito.
+          El monto minimo para procesar con tarjeta es 5 MXN. Agrega mas productos al carrito.
         </p>
       )}
-      {mpPublicKey && payableAmount >= 5 && (
+      {mpPublicKey && payableAmount >= 5 && !hasApprovedPayment && (
         <div id={BRICK_CONTAINER_ID} className="tarjeta__brick" />
       )}
       {errorMessage && <p className="tarjeta__error">{errorMessage}</p>}
