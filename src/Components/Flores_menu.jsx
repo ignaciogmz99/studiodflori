@@ -128,29 +128,6 @@ function resolvePreparationHours(inventory) {
   return 24
 }
 
-function getDeliveryLabel(hours) {
-  const parsedHours = Number(hours)
-  const preparationHours = Number.isFinite(parsedHours) && parsedHours > 0 ? parsedHours : 24
-
-  if (preparationHours >= 24) {
-    return 'Preparacion: 24 horas'
-  }
-
-  const now = new Date()
-  const currentHour = now.getHours()
-  const isWithinDeliveryWindow = currentHour >= OPEN_HOUR && currentHour < CLOSE_HOUR
-  const earliestReadyAt = new Date(now.getTime() + (preparationHours * 60 * 60 * 1000))
-  const cutoffToday = new Date(now)
-  cutoffToday.setHours(CLOSE_HOUR, 0, 0, 0)
-  const isSameDay = earliestReadyAt.toDateString() === now.toDateString()
-
-  if (isWithinDeliveryWindow && isSameDay && earliestReadyAt <= cutoffToday) {
-    return 'Hoy sale'
-  }
-
-  return 'Mañana'
-}
-
 function getPreparationLabel(hours) {
   const parsedHours = Number(hours)
   const preparationHours = Number.isFinite(parsedHours) && parsedHours > 0 ? parsedHours : 24
@@ -300,9 +277,18 @@ function FloresMenu() {
     return tabs
   }, [products])
 
+  const activeFlowerType = useMemo(() => {
+    if (selectedFlowerType === ALL_FLOWER_TYPES) {
+      return ALL_FLOWER_TYPES
+    }
+
+    const typeStillExists = flowerTypeTabs.some((tab) => tab.value === selectedFlowerType)
+    return typeStillExists ? selectedFlowerType : ALL_FLOWER_TYPES
+  }, [flowerTypeTabs, selectedFlowerType])
+
   const filteredProducts = useMemo(() => {
     const productsByFlowerType = products.filter((product) => {
-      if (selectedFlowerType !== ALL_FLOWER_TYPES && product.flowerType !== selectedFlowerType) {
+      if (activeFlowerType !== ALL_FLOWER_TYPES && product.flowerType !== activeFlowerType) {
         return false
       }
 
@@ -331,18 +317,7 @@ function FloresMenu() {
 
       return true
     })
-  }, [maxPrice, minPrice, products, selectedFlowerType])
-
-  useEffect(() => {
-    if (selectedFlowerType === ALL_FLOWER_TYPES) {
-      return
-    }
-
-    const typeStillExists = flowerTypeTabs.some((tab) => tab.value === selectedFlowerType)
-    if (!typeStillExists) {
-      setSelectedFlowerType(ALL_FLOWER_TYPES)
-    }
-  }, [flowerTypeTabs, selectedFlowerType])
+  }, [activeFlowerType, maxPrice, minPrice, products])
 
   useEffect(() => {
     filteredProducts.forEach((product) => {
@@ -389,8 +364,8 @@ function FloresMenu() {
     })
   }
 
-  const selectedFlowerTypeLabel = formatFlowerTypeLabel(selectedFlowerType)
-  const headline = selectedFlowerType === ALL_FLOWER_TYPES
+  const selectedFlowerTypeLabel = formatFlowerTypeLabel(activeFlowerType)
+  const headline = activeFlowerType === ALL_FLOWER_TYPES
     ? 'Flores a domicilio en Guadalajara con entrega rapida para cada ocasion'
     : `${selectedFlowerTypeLabel} a domicilio en Guadalajara con entrega rapida`
 
@@ -403,9 +378,9 @@ function FloresMenu() {
             <button
               key={tab.value}
               type="button"
-              className={`flores-menu__tab ${selectedFlowerType === tab.value ? 'flores-menu__tab--active' : ''}`}
+              className={`flores-menu__tab ${activeFlowerType === tab.value ? 'flores-menu__tab--active' : ''}`}
               onClick={() => setSelectedFlowerType(tab.value)}
-              aria-pressed={selectedFlowerType === tab.value}
+              aria-pressed={activeFlowerType === tab.value}
             >
               {tab.label}
             </button>
@@ -464,6 +439,17 @@ function FloresMenu() {
           </div>
         <span className="flores-menu__count">{filteredProducts.length} productos</span>
       </div>
+
+      {inventoryStatus === 'unavailable' && (
+        <p className="flores-menu__stock">
+          No se pudo conectar al inventario. Verifica las variables de Supabase para habilitar precios y compra.
+        </p>
+      )}
+      {inventoryStatus === 'error' && (
+        <p className="flores-menu__stock">
+          Hubo un error cargando el inventario. Intenta de nuevo en unos minutos.
+        </p>
+      )}
 
       <div className="flores-menu__shelf" aria-label="Estante de productos">
         {filteredProducts.map((product) => (

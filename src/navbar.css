@@ -165,6 +165,28 @@
   font-family: inherit;
 }
 
+.navbar__cart-button {
+  position: relative;
+  isolation: isolate;
+}
+
+.navbar__cart-button--alert {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.48));
+  box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+  animation: navbar-cart-glow 1.8s ease-in-out infinite;
+}
+
+.navbar__cart-button--alert::after {
+  content: '';
+  position: absolute;
+  inset: -0.15rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.12) 45%, transparent 72%);
+  opacity: 0;
+  z-index: -1;
+  animation: navbar-cart-flash 1.8s ease-out infinite;
+}
+
 .navbar__link:hover,
 .navbar__link:focus-visible,
 .navbar__link-button[aria-expanded='true'] {
@@ -332,6 +354,72 @@
   font-size: 0.72rem;
   font-weight: 800;
   line-height: 1;
+}
+
+.navbar__cart-button--alert .navbar__cart-badge {
+  box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+  animation: navbar-cart-badge-pop 1.8s ease-in-out infinite;
+}
+
+@keyframes navbar-cart-glow {
+  0%,
+  100% {
+    transform: translateY(0);
+    box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+  }
+
+  35% {
+    transform: translateY(-1px);
+    box-shadow: 0 0 0.55rem rgba(255, 255, 255, 0.55);
+  }
+
+  55% {
+    transform: translateY(0);
+    box-shadow: 0 0 1rem rgba(255, 255, 255, 0.42);
+  }
+}
+
+@keyframes navbar-cart-flash {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+
+  30% {
+    opacity: 0.85;
+  }
+
+  65% {
+    opacity: 0;
+    transform: scale(1.16);
+  }
+}
+
+@keyframes navbar-cart-badge-pop {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+  }
+
+  35% {
+    transform: scale(1.06);
+    box-shadow: 0 0 0.45rem rgba(255, 255, 255, 0.85);
+  }
+
+  55% {
+    transform: scale(1.12);
+    box-shadow: 0 0 0.8rem rgba(255, 255, 255, 0.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navbar__cart-button--alert,
+  .navbar__cart-button--alert::after,
+  .navbar__cart-button--alert .navbar__cart-badge {
+    animation: none;
+  }
 }
 
 @media (max-width: 1100px) {
