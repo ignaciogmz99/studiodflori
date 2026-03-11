@@ -395,7 +395,7 @@ function FloresMenu() {
     : `${selectedFlowerTypeLabel} a domicilio en Guadalajara con entrega rapida`
 
   return (
-    <section className="flores-menu" aria-label="Catalogo de flores y plantas">
+    <section className="flores-menu" id="catalogo-flores" aria-label="Catalogo de flores y plantas">
       <div className="flores-menu__tabs-box">
         <h2 className="flores-menu__tabs-title">Flores y Plantas</h2>
         <div className="flores-menu__tabs" role="tablist" aria-label="Categorias de flores">

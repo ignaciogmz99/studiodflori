@@ -169,11 +169,20 @@ function TopMenu() {
 
   return (
     <section className="top-menu" aria-label="Destino de entrega">
-      <h2 className="top-menu__title">Enviar a:</h2>
+      <div className="top-menu__intro">
+        <p className="top-menu__eyebrow">Entrega programada</p>
+        <h2 className="top-menu__title">
+          <span className="top-menu__title-desktop">Enviar a:</span>
+          <span className="top-menu__title-mobile">¿A donde quieres enviar?</span>
+        </h2>
+        <p className="top-menu__subtitle">
+          Elige ciudad, fecha y horario. La entrega mas pronto disponible respeta tus reglas actuales:
+          desde las 10:00 del siguiente dia habil.
+        </p>
+      </div>
 
       <div className="top-menu__field top-menu__field--city" aria-label="Seleccionar ciudad de entrega">
-        <span className="top-menu__icon" aria-hidden="true">
-        </span>
+        <span className="top-menu__field-label">Ciudad</span>
         <select
           className="top-menu__city-select"
           value={selectedDeliveryCity}
@@ -187,7 +196,7 @@ function TopMenu() {
       </div>
 
       <div className="top-menu__field top-menu__field--date" aria-label="Seleccionar fecha de entrega">
-        <span className="top-menu__icon" aria-hidden="true" />
+        <span className="top-menu__field-label">Fecha de entrega</span>
         <DatePicker
           selected={effectiveDeliveryDate}
           onChange={(date) => setDeliveryDate(date || minDeliveryDate)}
@@ -203,7 +212,7 @@ function TopMenu() {
       </div>
 
       <div className="top-menu__field top-menu__field--time" aria-label="Seleccionar horario de entrega">
-        <span className="top-menu__icon" aria-hidden="true" />
+        <span className="top-menu__field-label">Horario</span>
         <select
           className="top-menu__time-select"
           value={effectiveDeliveryTime}
@@ -217,6 +226,10 @@ function TopMenu() {
           ))}
         </select>
       </div>
+
+      <a className="top-menu__cta" href="#catalogo-flores">
+        Ver flores
+      </a>
     </section>
   )
 }
