@@ -199,10 +199,6 @@
   cursor: pointer;
 }
 
-.top-menu__cta {
-  display: none;
-}
-
 @media (max-width: 900px) {
   .top-menu {
     grid-template-columns: 1fr 1fr 1fr;
@@ -278,19 +274,4 @@
     font-size: 0.92rem;
   }
 
-  .top-menu__cta {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 56px;
-    border: 0;
-    border-radius: 999px;
-    background: #f894f4;
-    color: #1f111f;
-    font-family: var(--font-ui);
-    font-size: 1rem;
-    font-weight: 800;
-    text-decoration: none;
-    box-shadow: 0 10px 20px rgba(143, 58, 134, 0.18);
-  }
 }

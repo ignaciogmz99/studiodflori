@@ -175,10 +175,7 @@ function TopMenu() {
           <span className="top-menu__title-desktop">Enviar a:</span>
           <span className="top-menu__title-mobile">¿A donde quieres enviar?</span>
         </h2>
-        <p className="top-menu__subtitle">
-          Elige ciudad, fecha y horario. La entrega mas pronto disponible respeta tus reglas actuales:
-          desde las 10:00 del siguiente dia habil.
-        </p>
+        <p className="top-menu__subtitle">Elige ciudad, fecha y horario.</p>
       </div>
 
       <div className="top-menu__field top-menu__field--city" aria-label="Seleccionar ciudad de entrega">
@@ -226,10 +223,6 @@ function TopMenu() {
           ))}
         </select>
       </div>
-
-      <a className="top-menu__cta" href="#catalogo-flores">
-        Ver flores
-      </a>
     </section>
   )
 }
