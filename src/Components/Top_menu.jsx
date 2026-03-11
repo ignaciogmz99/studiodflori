@@ -5,6 +5,7 @@ import 'react-datepicker/dist/react-datepicker.css'
 import './Top_menu.css'
 import { useCart } from '../context/CartContext'
 import { DELIVERY_CITIES } from '../constants/deliveryCities'
+import ShippingPolicyPanel from './ShippingPolicyPanel.jsx'
 
 const OPEN_HOUR = 10
 const CLOSE_HOUR = 19
@@ -146,6 +147,7 @@ function TopMenu() {
   )
   const [deliveryDate, setDeliveryDate] = useState(() => initialDate)
   const [deliveryTime, setDeliveryTime] = useState('')
+  const [isPolicyOpen, setIsPolicyOpen] = useState(false)
   const [isMobileDatePicker, setIsMobileDatePicker] = useState(() => (
     typeof window !== 'undefined' ? window.innerWidth <= 560 : false
   ))
@@ -240,6 +242,24 @@ function TopMenu() {
           ))}
         </select>
       </div>
+
+      <div className="top-menu__actions" aria-label="Acciones de entrega">
+        <button
+          type="button"
+          className="top-menu__policy-button"
+          onClick={() => setIsPolicyOpen(true)}
+          aria-expanded={isPolicyOpen}
+          aria-label="Politica de envio"
+        >
+          <span className="top-menu__policy-icon" aria-hidden="true">🚚</span>
+          <span className="top-menu__policy-copy">
+            <span className="top-menu__policy-accent">Politica de Envio.</span>
+            <span className="top-menu__policy-copy-text"> Garantizamos la entrega segura y puntual de tus regalos.</span>
+          </span>
+        </button>
+      </div>
+
+      {isPolicyOpen && <ShippingPolicyPanel onClose={() => setIsPolicyOpen(false)} />}
     </section>
   )
 }
