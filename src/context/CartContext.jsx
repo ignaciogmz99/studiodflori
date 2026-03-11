@@ -4,6 +4,19 @@ import { DELIVERY_CITIES } from '../constants/deliveryCities'
 
 const CartContext = createContext(null)
 const CART_STORAGE_KEY = 'studiodflori_cart_v1'
+const INITIAL_DELIVERY_DETAILS = {
+  fulfillmentType: 'delivery',
+  fullName: '',
+  phoneCountryCode: '+52',
+  phone: '',
+  recipientType: 'self',
+  recipientName: '',
+  streetAddress: '',
+  neighborhood: '',
+  postalCode: '',
+  specialInstructions: '',
+  flowerMessage: ''
+}
 
 function readStoredCart() {
   if (typeof window === 'undefined') {
@@ -30,19 +43,7 @@ export function CartProvider({ children }) {
   const [selectedDeliveryDate, setSelectedDeliveryDate] = useState('')
   const [selectedDeliveryTime, setSelectedDeliveryTime] = useState('')
   const [selectedDeliveryCity, setSelectedDeliveryCity] = useState(DELIVERY_CITIES[0])
-  const [deliveryDetails, setDeliveryDetails] = useState({
-    fulfillmentType: 'delivery',
-    fullName: '',
-    phoneCountryCode: '+52',
-    phone: '',
-    recipientType: 'self',
-    recipientName: '',
-    streetAddress: '',
-    neighborhood: '',
-    postalCode: '',
-    specialInstructions: '',
-    flowerMessage: ''
-  })
+  const [deliveryDetails, setDeliveryDetails] = useState(INITIAL_DELIVERY_DETAILS)
 
   useEffect(() => {
     window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
@@ -92,6 +93,10 @@ export function CartProvider({ children }) {
 
   const clearCart = () => {
     setItems([])
+    setSelectedDeliveryDate('')
+    setSelectedDeliveryTime('')
+    setSelectedDeliveryCity(DELIVERY_CITIES[0])
+    setDeliveryDetails(INITIAL_DELIVERY_DETAILS)
   }
 
   const openPaymentView = () => {

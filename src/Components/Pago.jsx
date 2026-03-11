@@ -58,6 +58,7 @@ function Pago() {
     setDeliveryDetails,
     openCardView
   } = useCart()
+
   const minDeliveryDate = resolveEarliestDate(estimatedPreparationHours)
   const deliveryDate = selectedDeliveryDate
     ? new Date(`${selectedDeliveryDate}T00:00:00`)
@@ -130,20 +131,20 @@ function Pago() {
       <header className="pago__header">
         <h2 className="pago__title">Pago</h2>
         <button type="button" className="pago__back" onClick={closePaymentView}>
-          Volver al catalogo
+          Volver al catálogo
         </button>
       </header>
 
       <p className="pago__meta">
         Fecha de entrega: {formatDeliveryDate(deliveryDate)}
-        {selectedDeliveryDate ? '' : ' (minima)'}
+        {selectedDeliveryDate ? '' : ' (mínima)'}
       </p>
       <p className="pago__meta">
         Horario deseado: {selectedDeliveryTime || 'Sin horario seleccionado'}
       </p>
       <div className="pago__checkout-grid">
-        <section className="pago__delivery" aria-label="Informacion de entrega">
-          <h3 className="pago__delivery-title">Informacion para entregar tu pedido</h3>
+        <section className="pago__delivery" aria-label="Información de entrega">
+          <h3 className="pago__delivery-title">Información para entregar tu pedido</h3>
           <div className="pago__delivery-grid">
             <label className="pago__field">
               <span className="pago__field-label">Tipo de entrega</span>
@@ -172,14 +173,14 @@ function Pago() {
               />
             </label>
             <label className="pago__field pago__field--wide">
-              <span className="pago__field-label">¿Quien recibe el pedido?</span>
-              <p className="pago__field-note">Puedes recibirlo tu o enviarlo a quien desees.</p>
+              <span className="pago__field-label">¿Quién recibe el pedido?</span>
+              <p className="pago__field-note">Puedes recibirlo tú o enviarlo a quien desees.</p>
               <select
                 className="pago__field-input"
                 name="recipientType"
                 value={recipientType}
                 onChange={handleDeliveryContactChange}
-                aria-label="Seleccionar quien recibe el pedido"
+                aria-label="Seleccionar quién recibe el pedido"
               >
                 {RECIPIENT_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
@@ -201,14 +202,14 @@ function Pago() {
               </label>
             )}
             <label className="pago__field pago__field--wide">
-              <span className="pago__field-label">Telefono</span>
+              <span className="pago__field-label">Teléfono</span>
               <div className="pago__phone-row">
                 <select
                   className="pago__field-input"
                   name="phoneCountryCode"
                   value={phoneCountryCode}
                   onChange={handleDeliveryContactChange}
-                  aria-label="Prefijo telefonico"
+                  aria-label="Prefijo telefónico"
                 >
                   {PHONE_COUNTRY_CODES.map((code) => (
                     <option key={code.value} value={code.value}>{code.label}</option>
@@ -229,14 +230,14 @@ function Pago() {
             {!isStorePickup && (
               <>
                 <label className="pago__field pago__field--wide">
-                  <span className="pago__field-label">Calle y numero de entrega</span>
+                  <span className="pago__field-label">Calle y número de entrega</span>
                   <input
                     className="pago__field-input"
                     type="text"
                     name="streetAddress"
                     value={deliveryDetails.streetAddress}
                     onChange={handleDeliveryContactChange}
-                    placeholder="Ej. Av. Mexico 1234"
+                    placeholder="Ej. Av. México 1234"
                     autoComplete="street-address"
                   />
                 </label>
@@ -252,7 +253,7 @@ function Pago() {
                   />
                 </label>
                 <label className="pago__field">
-                  <span className="pago__field-label">Codigo postal</span>
+                  <span className="pago__field-label">Código postal</span>
                   <input
                     className="pago__field-input"
                     type="text"
@@ -298,20 +299,20 @@ function Pago() {
                 name="specialInstructions"
                 value={deliveryDetails.specialInstructions}
                 onChange={handleDeliveryContactChange}
-                placeholder="Ej. Departamento 4B, tocar interfon 12, entregar en recepcion."
+                placeholder="Ej. Departamento 4B, tocar interfon 12, entregar en recepción."
                 rows={3}
               />
             </label>
           </div>
           {!isPhoneValid && (
-            <p className="pago__warning">Ingresa un telefono valido de 10 digitos con el prefijo seleccionado.</p>
+            <p className="pago__warning">Ingresa un teléfono válido de 10 dígitos con el prefijo seleccionado.</p>
           )}
           {isRecipientOther && !deliveryDetails.recipientName.trim() && (
             <p className="pago__warning">Ingresa el nombre de quien recibe para continuar.</p>
           )}
           {!isStorePickup && !cityIsSupported && (
             <p className="pago__warning">
-              Solo realizamos entregas en Guadalajara, Zapopan, Tlaquepaque y Tonala.
+              Solo realizamos entregas en Guadalajara, Zapopan, Tlaquepaque y Tonalá.
             </p>
           )}
           <div className="pago__actions">
@@ -328,7 +329,7 @@ function Pago() {
 
         <section className="pago__items" aria-label="Resumen del carrito">
           {items.length === 0 && (
-            <p className="pago__empty">Tu carrito esta vacio.</p>
+            <p className="pago__empty">Tu carrito está vacío.</p>
           )}
 
           {items.length > 0 && (
@@ -357,5 +358,3 @@ function Pago() {
 }
 
 export default Pago
-
-
