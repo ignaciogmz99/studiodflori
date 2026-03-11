@@ -35,7 +35,6 @@ function Tarjeta() {
   const stripePublishableKey = String(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '').trim()
   const payableAmount = Number(totalPrice.toFixed(2))
   const [paymentProvider, setPaymentProvider] = useState(defaultPaymentProvider)
-  const [customerEmail, setCustomerEmail] = useState('')
   const [receiptData, setReceiptData] = useState(null)
   const orderIdRef = useRef(
     `ord_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`
@@ -45,6 +44,8 @@ function Tarjeta() {
     () => getPaymentProvider(paymentProvider),
     [paymentProvider]
   )
+  const hasApprovedPayment = Boolean(receiptData)
+  const displayedAmount = Number((receiptData?.amount ?? payableAmount) || 0)
 
   const normalizedDeliveryDetails = useMemo(() => {
     const phoneCountryCode = deliveryDetails.phoneCountryCode || '+52'
@@ -69,7 +70,6 @@ function Tarjeta() {
       amount: payableAmount,
       currency: 'MXN',
       items,
-      customerEmail,
       deliveryDetails: normalizedDeliveryDetails,
       selectedDeliveryCity,
       selectedDeliveryDate,
@@ -183,7 +183,6 @@ function Tarjeta() {
     drawCard(72)
     writeLine(`Nombre: ${receiptData.deliveryDetails?.fullName || 'N/A'}`)
     writeLine(`Telefono: ${receiptData.deliveryDetails?.phone || 'N/A'}`)
-    writeLine(`Email: ${receiptData.customerEmail || 'N/A'}`)
     cursorY += 14
 
     drawSectionTitle('Entrega')
@@ -242,7 +241,7 @@ function Tarjeta() {
     stripePublishableKey,
     payableAmount,
     items,
-    customerEmail,
+    hasApprovedPayment,
     deliveryDetails: normalizedDeliveryDetails,
     selectedDeliveryCity,
     selectedDeliveryDate,
@@ -253,48 +252,45 @@ function Tarjeta() {
   return (
     <section className="tarjeta" aria-label="Pago con tarjeta">
       <header className="tarjeta__header">
-        <h2 className="tarjeta__title">Pagar con tarjeta</h2>
+        <h2 className="tarjeta__title">{hasApprovedPayment ? 'Pago completado' : 'Pagar con tarjeta'}</h2>
       </header>
 
       <p className="tarjeta__secure-note">
-        Elige tu proveedor de pago: Mercado Pago o Stripe.
+        {hasApprovedPayment
+          ? 'Tu pago fue aprobado correctamente. Ya puedes descargar tu comprobante en PDF.'
+          : 'Completa tu pago con Mercado Pago sin salir de esta pagina.'}
       </p>
-      <div className="tarjeta__provider-switch" role="radiogroup" aria-label="Proveedor de pago">
-        {paymentProviders.map((provider) => (
-          <button
-            key={provider.id}
-            type="button"
-            className={`tarjeta__provider-option ${paymentProvider === provider.id ? 'tarjeta__provider-option--active' : ''}`}
-            onClick={() => setPaymentProvider(provider.id)}
-            aria-pressed={paymentProvider === provider.id}
-          >
-            {provider.label}
-          </button>
-        ))}
-      </div>
-      <div className="tarjeta__brands" aria-label="Tarjetas aceptadas">
-        <span className="tarjeta__brands-label">Tarjetas aceptadas:</span>
-        <ul className="tarjeta__brands-list">
-          <li className="tarjeta__brand">Visa</li>
-          <li className="tarjeta__brand">Mastercard</li>
-          <li className="tarjeta__brand">American Express</li>
-        </ul>
-      </div>
-      <p className="tarjeta__meta">Total a pagar: ${payableAmount.toFixed(2)} MXN</p>
+      {!hasApprovedPayment && paymentProviders.length > 1 && (
+        <div className="tarjeta__provider-switch" role="radiogroup" aria-label="Proveedor de pago">
+          {paymentProviders.map((provider) => (
+            <button
+              key={provider.id}
+              type="button"
+              className={`tarjeta__provider-option ${paymentProvider === provider.id ? 'tarjeta__provider-option--active' : ''}`}
+              onClick={() => setPaymentProvider(provider.id)}
+              aria-pressed={paymentProvider === provider.id}
+            >
+              {provider.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {!hasApprovedPayment && (
+        <div className="tarjeta__brands" aria-label="Tarjetas aceptadas">
+          <span className="tarjeta__brands-label">Tarjetas aceptadas:</span>
+          <ul className="tarjeta__brands-list">
+            <li className="tarjeta__brand">Visa</li>
+            <li className="tarjeta__brand">Mastercard</li>
+            <li className="tarjeta__brand">American Express</li>
+          </ul>
+        </div>
+      )}
+      <p className="tarjeta__meta">
+        {hasApprovedPayment ? 'Total pagado:' : 'Total a pagar:'} ${displayedAmount.toFixed(2)} MXN
+      </p>
 
       <div className="tarjeta__summary">
         <p className="tarjeta__summary-text">{selectedProvider.summary}</p>
-        <label className="tarjeta__field">
-          <span className="tarjeta__label">Correo para el comprobante (opcional)</span>
-          <input
-            className="tarjeta__input"
-            type="email"
-            value={customerEmail}
-            onChange={(event) => setCustomerEmail(event.target.value)}
-            placeholder="correo@ejemplo.com"
-            autoComplete="email"
-          />
-        </label>
       </div>
 
       <PaymentProviderBoundary providerKey={paymentProvider}>
