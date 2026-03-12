@@ -269,6 +269,8 @@
   align-items: flex-start;
   padding-top: 5.3rem;
   padding-right: 1rem;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  box-sizing: border-box;
   overflow-y: auto;
   background: rgba(23, 14, 7, 0.38);
   overscroll-behavior: contain;
@@ -276,7 +278,7 @@
 
 .top-menu__policy-panel {
   width: min(82vw, 360px);
-  max-height: calc(100dvh - 6.5rem);
+  max-height: calc(100svh - 6.5rem - env(safe-area-inset-bottom));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
@@ -423,7 +425,7 @@
 
   .top-menu__policy-panel {
     width: min(88vw, 310px);
-    max-height: calc(100dvh - 2rem);
+    max-height: calc(100svh - 2rem - env(safe-area-inset-bottom));
     padding: 0.8rem 0.88rem 0.92rem;
     border-radius: 14px;
     touch-action: pan-y;
