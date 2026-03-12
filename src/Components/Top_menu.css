@@ -423,9 +423,14 @@
     padding: 0.1rem 0;
   }
 
+  .top-menu__policy-backdrop {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
   .top-menu__policy-panel {
     width: min(88vw, 310px);
-    max-height: calc(100svh - 2rem - env(safe-area-inset-bottom));
+    max-height: calc(100svh - 5.5rem - env(safe-area-inset-bottom, 0px));
+    margin-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
     padding: 0.8rem 0.88rem 0.92rem;
     border-radius: 14px;
     touch-action: pan-y;
