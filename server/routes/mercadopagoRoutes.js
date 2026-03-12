@@ -141,6 +141,13 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
 
       cleanupExpiredOrders()
       const normalizedOrderId = validateOrderId(orderId)
+      console.log('[MP process-payment] request', {
+        orderId: normalizedOrderId,
+        hasToken: Boolean(token),
+        paymentMethodId: String(payment_method_id || '').trim() || 'missing',
+        installments: Number(installments) > 0 ? Number(installments) : 1,
+        itemsCount: Array.isArray(items) ? items.length : 0
+      })
       // Never trust client-side totals for payment amount.
       const trustedOrder = await buildTrustedOrderFromClientItems(items)
       if (!token || !payment_method_id || !Number.isFinite(trustedOrder.amount) || trustedOrder.amount <= 0) {
@@ -218,6 +225,13 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
         status_detail: response.status_detail
       }
 
+      console.log('[MP process-payment] response', {
+        orderId: normalizedOrderId,
+        paymentId: response.id,
+        status: response.status,
+        statusDetail: response.status_detail
+      })
+
       paymentByOrderId.set(normalizedOrderId, {
         fingerprint,
         status: 'completed',
@@ -237,7 +251,11 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
       ) {
         return res.status(400).json({ error: error.message })
       }
-      console.error('Error procesando pago con Mercado Pago:', error)
+      console.error('Error procesando pago con Mercado Pago:', {
+        message: error?.message || 'Error desconocido',
+        cause: error?.cause || null,
+        orderId: normalizedOrderId || 'unknown'
+      })
       return res.status(500).json({
         error: error?.cause?.[0]?.description || error?.message || 'No se pudo procesar el pago'
       })
