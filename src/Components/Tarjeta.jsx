@@ -81,23 +81,26 @@ function Tarjeta() {
       ...approvedPayload
     })
 
-    fetch(`${apiBaseUrl}/api/comprobantes/confirm-paid`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        amount: Number(approvedPayload?.amount ?? basePayload.amount),
-        approvedAt: approvedPayload?.approvedAt || basePayload.approvedAt,
-        items: basePayload.items,
-        deliveryDetails: basePayload.deliveryDetails,
-        selectedDeliveryCity: basePayload.selectedDeliveryCity,
-        selectedDeliveryDate: basePayload.selectedDeliveryDate,
-        selectedDeliveryTime: basePayload.selectedDeliveryTime
+    // Mercado Pago webhook is the source of truth for persistence and PDF generation.
+    if (String(approvedPayload?.provider || paymentProvider) !== 'mercadopago') {
+      fetch(`${apiBaseUrl}/api/comprobantes/confirm-paid`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          amount: Number(approvedPayload?.amount ?? basePayload.amount),
+          approvedAt: approvedPayload?.approvedAt || basePayload.approvedAt,
+          items: basePayload.items,
+          deliveryDetails: basePayload.deliveryDetails,
+          selectedDeliveryCity: basePayload.selectedDeliveryCity,
+          selectedDeliveryDate: basePayload.selectedDeliveryDate,
+          selectedDeliveryTime: basePayload.selectedDeliveryTime
+        })
+      }).catch((error) => {
+        console.warn('No se pudo guardar comprobante en Supabase:', error?.message || error)
       })
-    }).catch((error) => {
-      console.warn('No se pudo guardar comprobante en Supabase:', error?.message || error)
-    })
+    }
 
     clearCart()
   }
@@ -168,13 +171,14 @@ function Tarjeta() {
     const fulfillmentType = receiptData.deliveryDetails?.fulfillmentType === 'pickup'
       ? 'Recoger en tienda'
       : 'Entrega a domicilio'
-    const orderNumber = `SDF-${String(receiptData.paymentId || Date.now()).slice(-10).toUpperCase()}`
+    const orderNumber = receiptData.orderId || 'N/A'
 
     drawSectionTitle('Pago confirmado')
-    drawCard(104)
+    drawCard(118)
     writeLine(`No. de orden: ${orderNumber}`, { bold: true })
     writeLine(`Folio de pago: ${receiptData.paymentId || 'N/A'}`)
     writeLine(`Proveedor: ${receiptData.provider || 'N/A'}`)
+    writeLine(`Origen de registro: ${receiptData.provider === 'mercadopago' ? 'Webhook Mercado Pago' : 'Confirmacion directa'}`)
     writeLine(`Fecha: ${new Date(receiptData.approvedAt || Date.now()).toLocaleString('es-MX')}`)
     writeLine(`Total pagado: $${Number(receiptData.amount || 0).toFixed(2)} ${receiptData.currency || 'MXN'}`)
     cursorY += 14

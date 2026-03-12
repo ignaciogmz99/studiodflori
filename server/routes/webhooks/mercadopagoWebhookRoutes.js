@@ -5,6 +5,14 @@ import {
   buildWhatsAppReceiptMessage,
   sendWhatsAppBusinessMessage
 } from '../../services/whatsappBusinessService.js'
+import { upsertPaidOrder } from '../../services/orderPersistenceService.js'
+import { createMercadoPagoReceiptPdf } from '../../services/receiptPdfService.js'
+
+function createHttpError(message, statusCode = 400) {
+  const error = new Error(message)
+  error.statusCode = statusCode
+  return error
+}
 
 function parseMercadoPagoSignatureHeader(signatureHeader) {
   const entries = String(signatureHeader || '')
@@ -40,13 +48,13 @@ function verifyMercadoPagoWebhookSignature({
 }) {
   const secret = String(webhookSecret || '').trim()
   if (!secret) {
-    throw new Error('Falta MP_WEBHOOK_SECRET para validar webhook de Mercado Pago')
+    throw createHttpError('Falta MP_WEBHOOK_SECRET para validar webhook de Mercado Pago', 500)
   }
   const parsed = parseMercadoPagoSignatureHeader(signatureHeader)
   const ts = String(parsed.ts || '').trim()
   const v1 = String(parsed.v1 || '').trim()
   if (!ts || !v1 || !requestId || !dataId) {
-    throw new Error('Encabezados de firma de Mercado Pago invalidos')
+    throw createHttpError('Encabezados de firma de Mercado Pago invalidos', 400)
   }
 
   const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`
@@ -56,7 +64,7 @@ function verifyMercadoPagoWebhookSignature({
     .digest('hex')
 
   if (!secureEqualHex(v1, expected)) {
-    throw new Error('Firma de Mercado Pago invalida')
+    throw createHttpError('Firma de Mercado Pago invalida', 400)
   }
 }
 
@@ -84,6 +92,35 @@ export function createMercadoPagoWebhookRouter({
   whatsappApiVersion
 } = {}) {
   const router = Router()
+  const processedPayments = new Map()
+
+  const getPaymentProcessingState = (paymentId) => {
+    const safeId = String(paymentId || '').trim()
+    const now = Date.now()
+    for (const [existingId, expiresAt] of processedPayments.entries()) {
+      if (expiresAt?.expiresAt <= now) {
+        processedPayments.delete(existingId)
+      }
+    }
+
+    if (!safeId) {
+      return null
+    }
+
+    const currentState = processedPayments.get(safeId)
+    if (currentState) {
+      return currentState
+    }
+
+    const nextState = {
+      persisted: false,
+      pdfGenerated: false,
+      whatsappSent: false,
+      expiresAt: now + (60 * 60 * 1000)
+    }
+    processedPayments.set(safeId, nextState)
+    return nextState
+  }
 
   router.post('/', async (req, res) => {
     try {
@@ -101,7 +138,7 @@ export function createMercadoPagoWebhookRouter({
       })
 
       if (!mercadopagoToken) {
-        throw new Error('Falta MERCADO_PAGO_ACCESS_TOKEN para validar webhook de Mercado Pago')
+        throw createHttpError('Falta MERCADO_PAGO_ACCESS_TOKEN para validar webhook de Mercado Pago', 500)
       }
 
       const shouldCheckPayment = topic === 'payment' || req.body?.type === 'payment'
@@ -117,7 +154,64 @@ export function createMercadoPagoWebhookRouter({
         })
 
         if (String(payment?.status || '').toLowerCase() === 'approved') {
+          const paymentState = getPaymentProcessingState(payment?.id || dataId)
+          const stageErrors = []
+          if (paymentState?.persisted && paymentState?.pdfGenerated && paymentState?.whatsappSent) {
+            console.log('[MP webhook] pago ya procesado, se omiten acciones duplicadas', {
+              paymentId: payment?.id || dataId
+            })
+            return res.status(200).json({ received: true, duplicated: true })
+          }
+
           const metadata = payment?.metadata || {}
+          const persistenceMetadata = {
+            customer_name: String(metadata.customer_name || '').trim(),
+            customer_phone: String(metadata.customer_phone || '').trim(),
+            cart_items_summary: String(metadata.cart_items_summary || '').trim(),
+            delivery_city: String(metadata.delivery_city || '').trim(),
+            delivery_address: String(metadata.delivery_address || '').trim(),
+            delivery_neighborhood: String(metadata.delivery_neighborhood || '').trim(),
+            delivery_postal_code: String(metadata.delivery_postal_code || '').trim(),
+            delivery_date: String(metadata.delivery_date || '').trim(),
+            delivery_time: String(metadata.delivery_time || '').trim()
+          }
+
+          if (!paymentState?.persisted) {
+            try {
+              await upsertPaidOrder({
+                amountMxn: payment?.transaction_amount,
+                customerName: persistenceMetadata.customer_name,
+                customerPhone: persistenceMetadata.customer_phone,
+                metadata: {
+                  ...persistenceMetadata,
+                  order_id: String(metadata.order_id || '').trim()
+                },
+                paidAt: payment?.date_approved || payment?.date_created || new Date().toISOString(),
+                paymentId: String(payment?.id || dataId || '').trim(),
+                orderId: String(metadata.order_id || '').trim(),
+                source: 'mercadopago_webhook'
+              })
+              paymentState.persisted = true
+            } catch (error) {
+              stageErrors.push(`persistencia: ${error?.message || error}`)
+              console.warn('[MP webhook] fallo persistiendo comprobante:', error?.message || error)
+            }
+          }
+
+          if (!paymentState?.pdfGenerated) {
+            try {
+              const pdfResult = await createMercadoPagoReceiptPdf(payment)
+              console.log('[MP webhook] PDF generado', {
+                paymentId: payment?.id || dataId,
+                filePath: pdfResult.filePath
+              })
+              paymentState.pdfGenerated = true
+            } catch (error) {
+              stageErrors.push(`pdf: ${error?.message || error}`)
+              console.warn('[MP webhook] fallo generando PDF:', error?.message || error)
+            }
+          }
+
           const whatsappText = buildWhatsAppReceiptMessage({
             provider: 'Mercado Pago',
             paymentId: payment?.id || dataId,
@@ -132,25 +226,42 @@ export function createMercadoPagoWebhookRouter({
               : 'Entrega a domicilio',
             deliveryDate: metadata.delivery_date,
             deliveryTime: metadata.delivery_time,
-            deliveryCity: metadata.delivery_city
+            deliveryCity: metadata.delivery_city,
+            deliveryAddress: metadata.delivery_address,
+            deliveryNeighborhood: metadata.delivery_neighborhood,
+            deliveryPostalCode: metadata.delivery_postal_code,
+            recipientName: String(metadata.recipient_name || metadata.customer_name || '').trim(),
+            flowerMessage: metadata.flower_message,
+            specialInstructions: metadata.delivery_notes,
+            cartItemsSummary: metadata.cart_items_summary
           })
 
-          try {
-            await sendWhatsAppBusinessMessage({
-              whatsappAccessToken,
-              whatsappPhoneNumberId,
-              whatsappRecipient,
-              whatsappTemplateName,
-              whatsappTemplateLanguageCode,
-              whatsappApiVersion,
-              textBody: whatsappText
-            })
-            console.log('[MP webhook] WhatsApp enviado', {
-              paymentId: payment?.id || dataId
-            })
-          } catch (error) {
-            // Keep webhook response successful even if notification failed.
-            console.warn('[MP webhook] fallo envio por WhatsApp:', error?.message || error)
+          if (!paymentState?.whatsappSent) {
+            try {
+              await sendWhatsAppBusinessMessage({
+                whatsappAccessToken,
+                whatsappPhoneNumberId,
+                whatsappRecipient,
+                whatsappTemplateName,
+                whatsappTemplateLanguageCode,
+                whatsappApiVersion,
+                textBody: whatsappText
+              })
+              paymentState.whatsappSent = true
+              console.log('[MP webhook] WhatsApp enviado', {
+                paymentId: payment?.id || dataId
+              })
+            } catch (error) {
+              stageErrors.push(`whatsapp: ${error?.message || error}`)
+              console.warn('[MP webhook] fallo envio por WhatsApp:', error?.message || error)
+            }
+          }
+
+          if (stageErrors.length > 0) {
+            throw createHttpError(
+              `Fallo post-pago de Mercado Pago (${stageErrors.join(' | ')})`,
+              500
+            )
           }
         }
       } else {
@@ -160,7 +271,10 @@ export function createMercadoPagoWebhookRouter({
       return res.status(200).json({ received: true })
     } catch (error) {
       console.error('Error procesando webhook de Mercado Pago:', error)
-      return res.status(400).json({ error: error?.message || 'Error procesando webhook de Mercado Pago' })
+      const statusCode = Number(error?.statusCode)
+      return res
+        .status(Number.isFinite(statusCode) && statusCode >= 400 ? statusCode : 500)
+        .json({ error: error?.message || 'Error procesando webhook de Mercado Pago' })
     }
   })
 
