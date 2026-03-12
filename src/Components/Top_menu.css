@@ -269,13 +269,17 @@
   align-items: flex-start;
   padding-top: 5.3rem;
   padding-right: 1rem;
+  overflow-y: auto;
   background: rgba(23, 14, 7, 0.38);
+  overscroll-behavior: contain;
 }
 
 .top-menu__policy-panel {
   width: min(82vw, 360px);
   max-height: calc(100dvh - 6.5rem);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   border-radius: 14px;
   background: #fff1fd;
   box-shadow: 0 22px 45px rgba(143, 58, 134, 0.22);
@@ -422,6 +426,7 @@
     max-height: calc(100dvh - 2rem);
     padding: 0.8rem 0.88rem 0.92rem;
     border-radius: 14px;
+    touch-action: pan-y;
   }
 
   .react-datepicker__portal .react-datepicker {
