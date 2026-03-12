@@ -187,6 +187,7 @@ export function createMercadoPagoWebhookRouter({
         if (String(payment?.status || '').toLowerCase() === 'approved') {
           const paymentState = getPaymentProcessingState(payment?.id || dataId)
           const stageErrors = []
+          let persistenceSucceeded = Boolean(paymentState?.persisted)
           if (paymentState?.persisted && paymentState?.pdfGenerated && paymentState?.whatsappSent) {
             console.log('[MP webhook] pago ya procesado, se omiten acciones duplicadas', {
               paymentId: payment?.id || dataId
@@ -223,6 +224,7 @@ export function createMercadoPagoWebhookRouter({
                 source: 'mercadopago_webhook'
               })
               paymentState.persisted = true
+              persistenceSucceeded = true
             } catch (error) {
               stageErrors.push(`persistencia: ${error?.message || error}`)
               console.warn('[MP webhook] fallo persistiendo comprobante:', error?.message || error)
@@ -289,10 +291,22 @@ export function createMercadoPagoWebhookRouter({
           }
 
           if (stageErrors.length > 0) {
-            throw createHttpError(
-              `Fallo post-pago de Mercado Pago (${stageErrors.join(' | ')})`,
-              500
-            )
+            if (!persistenceSucceeded) {
+              throw createHttpError(
+                `Fallo post-pago de Mercado Pago (${stageErrors.join(' | ')})`,
+                500
+              )
+            }
+
+            console.warn('[MP webhook] post-pago parcial completado', {
+              paymentId: payment?.id || dataId,
+              errors: stageErrors
+            })
+
+            return res.status(200).json({
+              received: true,
+              processedWithWarnings: true
+            })
           }
         }
       } else {
