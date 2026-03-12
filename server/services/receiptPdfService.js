@@ -1,5 +1,5 @@
 /* global Buffer */
-import { mkdir, writeFile } from 'node:fs/promises'
+import { access, mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { jsPDF } from 'jspdf'
@@ -146,11 +146,25 @@ export async function createMercadoPagoReceiptPdf(payment = {}) {
 
   await mkdir(receiptsDir, { recursive: true })
   const filePath = path.join(receiptsDir, fileName)
+
+  try {
+    await access(filePath)
+    return {
+      fileName,
+      filePath,
+      pdfBuffer: null,
+      alreadyExisted: true
+    }
+  } catch {
+    // File does not exist yet; continue with generation.
+  }
+
   await writeFile(filePath, pdfBuffer)
 
   return {
     fileName,
     filePath,
-    pdfBuffer
+    pdfBuffer,
+    alreadyExisted: false
   }
 }
