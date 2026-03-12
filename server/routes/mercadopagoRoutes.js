@@ -7,6 +7,11 @@ import {
   buildTrustedOrderFromClientItems,
   validateOrderId
 } from '../services/trustedOrderService.js'
+import {
+  upsertPaidOrder,
+  updatePaidOrderProcessingState
+} from '../services/orderPersistenceService.js'
+import { createMercadoPagoReceiptPdf } from '../services/receiptPdfService.js'
 
 const ORDER_TTL_MS = 30 * 60 * 1000
 // In-memory order state to reduce duplicate charges on retries.
@@ -15,6 +20,75 @@ const paymentByOrderId = new Map()
 export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckoutMode }) {
   const router = Router()
   const mpWebhookUrl = String(process.env.MP_WEBHOOK_URL || '').trim()
+
+  async function runApprovedPaymentFallback({
+    paymentResponse,
+    orderId,
+    customer,
+    delivery,
+    trustedOrder
+  }) {
+    const metadata = {
+      order_id: orderId,
+      customer_name: String(customer?.fullName || '').trim(),
+      customer_phone: String(customer?.phone || '').trim(),
+      fulfillment_type: String(delivery?.fulfillmentType || 'delivery').trim() || 'delivery',
+      recipient_name: String(delivery?.recipientName || customer?.fullName || '').trim(),
+      delivery_city: String(delivery?.city || '').trim(),
+      delivery_address: String(delivery?.streetAddress || '').trim(),
+      delivery_postal_code: String(delivery?.postalCode || '').trim(),
+      delivery_neighborhood: String(delivery?.neighborhood || '').trim(),
+      flower_message: String(delivery?.flowerMessage || '').trim(),
+      delivery_notes: String(delivery?.specialInstructions || '').trim(),
+      delivery_date: String(delivery?.date || '').trim(),
+      delivery_time: String(delivery?.time || '').trim(),
+      cart_items_count: trustedOrder.items.length,
+      cart_items_summary: trustedOrder.items
+        .map((item) => `${item.name} x${item.quantity}`)
+        .join(' | ')
+    }
+
+    try {
+      await upsertPaidOrder({
+        amountMxn: paymentResponse?.transaction_amount,
+        customerName: metadata.customer_name,
+        customerPhone: metadata.customer_phone,
+        metadata,
+        paidAt: paymentResponse?.date_approved || paymentResponse?.date_created || new Date().toISOString(),
+        paymentId: String(paymentResponse?.id || '').trim(),
+        orderId,
+        source: 'mercadopago_process_payment'
+      })
+
+      const pdfResult = await createMercadoPagoReceiptPdf({
+        ...paymentResponse,
+        currency_id: paymentResponse?.currency_id || 'MXN',
+        payer: {
+          email: String(paymentResponse?.payer?.email || customer?.email || '').trim()
+        },
+        metadata
+      })
+
+      await updatePaidOrderProcessingState({
+        paymentId: String(paymentResponse?.id || '').trim(),
+        orderId,
+        pdfPath: pdfResult.filePath,
+        pdfGeneratedAt: new Date().toISOString()
+      })
+
+      console.log('[MP process-payment] fallback post-pago completado', {
+        orderId,
+        paymentId: paymentResponse?.id,
+        pdfPath: pdfResult.filePath
+      })
+    } catch (error) {
+      console.warn('[MP process-payment] fallo fallback post-pago:', {
+        orderId,
+        paymentId: paymentResponse?.id || 'unknown',
+        message: error?.message || error
+      })
+    }
+  }
 
   function cleanupExpiredOrders() {
     const now = Date.now()
@@ -177,6 +251,25 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
       })
 
       const payment = new Payment(mpClient)
+      const paymentMetadata = {
+        order_id: normalizedOrderId,
+        customer_name: String(customer?.fullName || ''),
+        customer_phone: String(customer?.phone || ''),
+        fulfillment_type: String(delivery?.fulfillmentType || 'delivery'),
+        recipient_name: String(delivery?.recipientName || customer?.fullName || ''),
+        delivery_city: String(delivery?.city || ''),
+        delivery_address: String(delivery?.streetAddress || ''),
+        delivery_postal_code: String(delivery?.postalCode || ''),
+        delivery_neighborhood: String(delivery?.neighborhood || ''),
+        flower_message: String(delivery?.flowerMessage || ''),
+        delivery_notes: String(delivery?.specialInstructions || ''),
+        delivery_date: String(delivery?.date || ''),
+        delivery_time: String(delivery?.time || ''),
+        cart_items_count: trustedOrder.items.length,
+        cart_items_summary: trustedOrder.items
+          .map((item) => `${item.name} x${item.quantity}`)
+          .join(' | ')
+      }
       const response = await payment.create({
         body: {
           token: String(token),
@@ -189,25 +282,7 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
             email: String(payer?.email || customer?.email || '').trim() || undefined,
             identification: payer?.identification || undefined
           },
-          metadata: {
-            order_id: normalizedOrderId,
-            customer_name: String(customer?.fullName || ''),
-            customer_phone: String(customer?.phone || ''),
-            fulfillment_type: String(delivery?.fulfillmentType || 'delivery'),
-            recipient_name: String(delivery?.recipientName || customer?.fullName || ''),
-            delivery_city: String(delivery?.city || ''),
-            delivery_address: String(delivery?.streetAddress || ''),
-            delivery_postal_code: String(delivery?.postalCode || ''),
-            delivery_neighborhood: String(delivery?.neighborhood || ''),
-            flower_message: String(delivery?.flowerMessage || ''),
-            delivery_notes: String(delivery?.specialInstructions || ''),
-            delivery_date: String(delivery?.date || ''),
-            delivery_time: String(delivery?.time || ''),
-            cart_items_count: trustedOrder.items.length,
-            cart_items_summary: trustedOrder.items
-              .map((item) => `${item.name} x${item.quantity}`)
-              .join(' | ')
-          },
+          metadata: paymentMetadata,
           notification_url: mpWebhookUrl || undefined
         },
         requestOptions: {
@@ -231,6 +306,16 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
         status: response.status,
         statusDetail: response.status_detail
       })
+
+      if (String(response?.status || '').toLowerCase() === 'approved') {
+        await runApprovedPaymentFallback({
+          paymentResponse: response,
+          orderId: normalizedOrderId,
+          customer,
+          delivery,
+          trustedOrder
+        })
+      }
 
       paymentByOrderId.set(normalizedOrderId, {
         fingerprint,
