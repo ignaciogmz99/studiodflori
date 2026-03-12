@@ -68,6 +68,29 @@ function verifyMercadoPagoWebhookSignature({
   }
 }
 
+function resolveMercadoPagoRequestId(headers = {}) {
+  const directRequestId = String(headers['x-request-id'] || '').trim()
+  if (directRequestId) {
+    return {
+      requestId: directRequestId,
+      requestIdSource: 'x-request-id'
+    }
+  }
+
+  const railwayRequestId = String(headers['x-railway-request-id'] || '').trim()
+  if (railwayRequestId) {
+    return {
+      requestId: railwayRequestId,
+      requestIdSource: 'x-railway-request-id'
+    }
+  }
+
+  return {
+    requestId: '',
+    requestIdSource: 'missing'
+  }
+}
+
 async function fetchMercadoPagoPaymentById({ paymentId, accessToken }) {
   const response = await fetch(`https://api.mercadopago.com/v1/payments/${encodeURIComponent(paymentId)}`, {
     headers: {
@@ -128,7 +151,15 @@ export function createMercadoPagoWebhookRouter({
       const id = String(req.query?.id || '').trim()
       const dataId = String(req.query?.['data.id'] || req.body?.data?.id || id).trim()
       const signatureHeader = String(req.headers['x-signature'] || '').trim()
-      const requestId = String(req.headers['x-request-id'] || '').trim()
+      const { requestId, requestIdSource } = resolveMercadoPagoRequestId(req.headers)
+
+      console.log('[MP webhook] request headers', {
+        topic,
+        dataId,
+        hasSignature: Boolean(signatureHeader),
+        requestIdSource,
+        hasRequestId: Boolean(requestId)
+      })
 
       verifyMercadoPagoWebhookSignature({
         signatureHeader,
@@ -270,7 +301,10 @@ export function createMercadoPagoWebhookRouter({
 
       return res.status(200).json({ received: true })
     } catch (error) {
-      console.error('Error procesando webhook de Mercado Pago:', error)
+      console.error('Error procesando webhook de Mercado Pago:', {
+        message: error?.message || 'Error desconocido',
+        statusCode: error?.statusCode || 500
+      })
       const statusCode = Number(error?.statusCode)
       return res
         .status(Number.isFinite(statusCode) && statusCode >= 400 ? statusCode : 500)

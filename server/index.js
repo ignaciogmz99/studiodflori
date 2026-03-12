@@ -30,6 +30,9 @@ if (!stripeSecretKey) {
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   console.warn('Falta SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en server/.env')
 }
+if (!process.env.MP_WEBHOOK_URL) {
+  console.warn('Falta MP_WEBHOOK_URL en server/.env; Mercado Pago no podra notificar pagos al webhook')
+}
 
 const mpClient = new MercadoPagoConfig({
   accessToken: mercadopagoToken || ''

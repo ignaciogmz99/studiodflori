@@ -14,6 +14,7 @@ const paymentByOrderId = new Map()
 
 export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckoutMode }) {
   const router = Router()
+  const mpWebhookUrl = String(process.env.MP_WEBHOOK_URL || '').trim()
 
   function cleanupExpiredOrders() {
     const now = Date.now()
@@ -199,7 +200,8 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
             cart_items_summary: trustedOrder.items
               .map((item) => `${item.name} x${item.quantity}`)
               .join(' | ')
-          }
+          },
+          notification_url: mpWebhookUrl || undefined
         },
         requestOptions: {
           // Mercado Pago SDK idempotency key to deduplicate retries upstream.
