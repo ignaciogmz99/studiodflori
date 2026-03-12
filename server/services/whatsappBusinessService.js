@@ -29,6 +29,29 @@ function formatAmount(amount, currency) {
   return `${normalizedAmount.toFixed(2)} ${String(currency || 'MXN').toUpperCase()}`
 }
 
+function buildLocationLine({ deliveryAddress, deliveryNeighborhood, deliveryCity, deliveryPostalCode } = {}) {
+  return [
+    String(deliveryAddress || '').trim(),
+    String(deliveryNeighborhood || '').trim(),
+    String(deliveryCity || '').trim(),
+    String(deliveryPostalCode || '').trim()
+  ]
+    .filter(Boolean)
+    .join(', ')
+}
+
+function formatCartItemsSummary(cartItemsSummary) {
+  const rawValue = String(cartItemsSummary || '').trim()
+  if (!rawValue) {
+    return ['Sin detalle']
+  }
+
+  return rawValue
+    .split('|')
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
 export function buildWhatsAppReceiptMessage({
   provider,
   paymentId,
@@ -42,31 +65,66 @@ export function buildWhatsAppReceiptMessage({
   deliveryType,
   deliveryDate,
   deliveryTime,
-  deliveryCity
+  deliveryCity,
+  deliveryAddress,
+  deliveryNeighborhood,
+  deliveryPostalCode,
+  recipientName,
+  flowerMessage,
+  specialInstructions,
+  cartItemsSummary
 } = {}) {
   // Stripe reports minor units; MP usually reports major units.
   const resolvedAmount = Number.isFinite(Number(amount))
     ? Number(amount)
     : toMajorAmountFromMinor(amountInMinor)
+  const locationLine = buildLocationLine({
+    deliveryAddress,
+    deliveryNeighborhood,
+    deliveryCity,
+    deliveryPostalCode
+  })
+  const productLines = formatCartItemsSummary(cartItemsSummary)
 
   const lines = [
-    'Nuevo pago confirmado',
+    'PEDIDO CONFIRMADO',
+    '',
+    'Pago',
     `Proveedor: ${provider || 'N/A'}`,
-    `Folio de pago: ${paymentId || 'N/A'}`,
+    `Folio: ${paymentId || 'N/A'}`,
     `Orden: ${orderId || 'N/A'}`,
     `Monto: ${formatAmount(resolvedAmount, currency || 'MXN')}`,
     '',
-    'Cliente:',
+    'Cliente',
     `Nombre: ${customerName || 'N/A'}`,
     `Telefono: ${customerPhone || 'N/A'}`,
     `Email: ${customerEmail || 'N/A'}`,
     '',
-    'Entrega:',
+    'Entrega',
     `Tipo: ${deliveryType || 'N/A'}`,
     `Fecha: ${deliveryDate || 'N/A'}`,
     `Horario: ${deliveryTime || 'N/A'}`,
-    `Ciudad: ${deliveryCity || 'N/A'}`
+    `Recibe: ${recipientName || customerName || 'N/A'}`,
+    `Ubicacion: ${locationLine || deliveryCity || 'N/A'}`,
+    ''
   ]
+
+  if (flowerMessage) {
+    lines.push('Mensaje para la flor')
+    lines.push(String(flowerMessage).trim())
+    lines.push('')
+  }
+
+  if (specialInstructions) {
+    lines.push('Indicaciones')
+    lines.push(String(specialInstructions).trim())
+    lines.push('')
+  }
+
+  lines.push('Productos')
+  productLines.forEach((item) => {
+    lines.push(`- ${item}`)
+  })
 
   return lines.join('\n')
 }
