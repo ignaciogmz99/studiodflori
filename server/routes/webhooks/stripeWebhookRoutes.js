@@ -2,6 +2,7 @@
 import { Router } from 'express'
 import crypto from 'node:crypto'
 import {
+  buildWhatsAppTemplateParameters,
   buildWhatsAppReceiptMessage,
   sendWhatsAppBusinessMessage
 } from '../../services/whatsappBusinessService.js'
@@ -225,19 +226,36 @@ export function createStripeWebhookRouter({
           deliveryTime: metadata.delivery_time,
           deliveryCity: metadata.delivery_city
         })
+        const whatsappTemplateParameters = buildWhatsAppTemplateParameters({
+          orderId: metadata.order_id,
+          paymentId: paymentIntent?.id,
+          customerName: metadata.customer_name,
+          recipientName: metadata.customer_name,
+          cartItemsSummary: metadata.cart_items_summary,
+          deliveryDate: metadata.delivery_date,
+          deliveryTime: metadata.delivery_time,
+          deliveryCity: metadata.delivery_city,
+          deliveryAddress: metadata.delivery_address,
+          deliveryNeighborhood: metadata.delivery_neighborhood,
+          deliveryPostalCode: metadata.delivery_postal_code,
+          customerPhone: metadata.customer_phone
+        })
 
         try {
-          await sendWhatsAppBusinessMessage({
+          const whatsappResult = await sendWhatsAppBusinessMessage({
             whatsappAccessToken,
             whatsappPhoneNumberId,
             whatsappRecipient,
             whatsappTemplateName,
             whatsappTemplateLanguageCode,
             whatsappApiVersion,
+            whatsappTemplateParameters,
             textBody: whatsappText
           })
           console.log('[Stripe webhook] WhatsApp enviado', {
-            paymentIntentId: paymentIntent?.id
+            paymentIntentId: paymentIntent?.id,
+            recipient: whatsappResult?.recipient || 'unknown',
+            messageId: whatsappResult?.responsePayload?.messages?.[0]?.id || 'unknown'
           })
         } catch (error) {
           // Notification failures should not fail webhook ack to Stripe.
