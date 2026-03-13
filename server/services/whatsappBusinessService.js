@@ -146,6 +146,7 @@ export function buildWhatsAppTemplateParameters({
   paymentId,
   customerName,
   recipientName,
+  deliveryType,
   deliveryDate,
   deliveryTime,
   deliveryCity,
@@ -153,7 +154,9 @@ export function buildWhatsAppTemplateParameters({
   deliveryNeighborhood,
   deliveryPostalCode,
   customerPhone,
-  cartItemsSummary
+  cartItemsSummary,
+  flowerMessage,
+  specialInstructions
 } = {}) {
   const locationLine = buildLocationLine({
     deliveryAddress,
@@ -168,10 +171,13 @@ export function buildWhatsAppTemplateParameters({
     compactSingleLine(customerName),
     compactSingleLine(recipientName || customerName),
     compactSingleLine(cartItemsSummary, 'Sin detalle', 300),
+    compactSingleLine(deliveryType),
     compactSingleLine(deliveryDate),
     compactSingleLine(deliveryTime),
     compactSingleLine(locationLine || deliveryCity),
-    compactSingleLine(customerPhone)
+    compactSingleLine(customerPhone),
+    compactSingleLine(flowerMessage, 'Sin mensaje', 300),
+    compactSingleLine(specialInstructions, 'Sin instrucciones', 300)
   ]
 }
 
