@@ -232,13 +232,18 @@ export function createStripeWebhookRouter({
           customerName: metadata.customer_name,
           recipientName: metadata.customer_name,
           cartItemsSummary: metadata.cart_items_summary,
+          deliveryType: String(metadata.fulfillment_type || 'delivery').toLowerCase() === 'pickup'
+            ? 'Recoger en tienda'
+            : 'Entrega a domicilio',
           deliveryDate: metadata.delivery_date,
           deliveryTime: metadata.delivery_time,
           deliveryCity: metadata.delivery_city,
           deliveryAddress: metadata.delivery_address,
           deliveryNeighborhood: metadata.delivery_neighborhood,
           deliveryPostalCode: metadata.delivery_postal_code,
-          customerPhone: metadata.customer_phone
+          customerPhone: metadata.customer_phone,
+          flowerMessage: metadata.flower_message,
+          specialInstructions: metadata.delivery_notes
         })
 
         try {
