@@ -2,6 +2,7 @@
 import { Router } from 'express'
 import crypto from 'node:crypto'
 import {
+  buildWhatsAppTemplateParameters,
   buildWhatsAppReceiptMessage,
   sendWhatsAppBusinessMessage
 } from '../../services/whatsappBusinessService.js'
@@ -280,17 +281,32 @@ export function createMercadoPagoWebhookRouter({
             specialInstructions: metadata.delivery_notes,
             cartItemsSummary: metadata.cart_items_summary
           })
+          const whatsappTemplateParameters = buildWhatsAppTemplateParameters({
+            orderId: metadata.order_id,
+            paymentId: payment?.id || dataId,
+            customerName: metadata.customer_name,
+            recipientName: String(metadata.recipient_name || metadata.customer_name || '').trim(),
+            cartItemsSummary: metadata.cart_items_summary,
+            deliveryDate: metadata.delivery_date,
+            deliveryTime: metadata.delivery_time,
+            deliveryCity: metadata.delivery_city,
+            deliveryAddress: metadata.delivery_address,
+            deliveryNeighborhood: metadata.delivery_neighborhood,
+            deliveryPostalCode: metadata.delivery_postal_code,
+            customerPhone: metadata.customer_phone
+          })
 
           const hasWhatsapp = Boolean(existingState?.whatsapp_sent_at)
           if (!hasWhatsapp) {
             try {
-              await sendWhatsAppBusinessMessage({
+              const whatsappResult = await sendWhatsAppBusinessMessage({
                 whatsappAccessToken,
                 whatsappPhoneNumberId,
                 whatsappRecipient,
                 whatsappTemplateName,
                 whatsappTemplateLanguageCode,
                 whatsappApiVersion,
+                whatsappTemplateParameters,
                 textBody: whatsappText
               })
               await updatePaidOrderProcessingState({
@@ -299,11 +315,13 @@ export function createMercadoPagoWebhookRouter({
                 whatsappSentAt: new Date().toISOString()
               })
               console.log('[MP webhook] WhatsApp enviado', {
-                paymentId: normalizedPaymentId
+                paymentId: normalizedPaymentId,
+                recipient: whatsappResult?.recipient || 'unknown',
+                messageId: whatsappResult?.responsePayload?.messages?.[0]?.id || 'unknown'
               })
             } catch (error) {
-              stageErrors.push(`whatsapp: ${error?.message || error}`)
-              console.warn('[MP webhook] fallo envio por WhatsApp:', error?.message || error)
+              stageErrors.push(`notificacion: ${error?.message || error}`)
+              console.warn('[MP webhook] fallo enviando notificacion:', error?.message || error)
             }
           }
 

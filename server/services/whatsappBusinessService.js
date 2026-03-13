@@ -52,6 +52,18 @@ function formatCartItemsSummary(cartItemsSummary) {
     .filter(Boolean)
 }
 
+function compactSingleLine(value, fallback = 'N/A', maxLength = 160) {
+  const normalized = String(value || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!normalized) {
+    return fallback
+  }
+
+  return normalized.slice(0, maxLength)
+}
+
 export function buildWhatsAppReceiptMessage({
   provider,
   paymentId,
@@ -129,6 +141,40 @@ export function buildWhatsAppReceiptMessage({
   return lines.join('\n')
 }
 
+export function buildWhatsAppTemplateParameters({
+  orderId,
+  paymentId,
+  customerName,
+  recipientName,
+  deliveryDate,
+  deliveryTime,
+  deliveryCity,
+  deliveryAddress,
+  deliveryNeighborhood,
+  deliveryPostalCode,
+  customerPhone,
+  cartItemsSummary
+} = {}) {
+  const locationLine = buildLocationLine({
+    deliveryAddress,
+    deliveryNeighborhood,
+    deliveryCity,
+    deliveryPostalCode
+  })
+
+  return [
+    compactSingleLine(orderId),
+    compactSingleLine(paymentId),
+    compactSingleLine(customerName),
+    compactSingleLine(recipientName || customerName),
+    compactSingleLine(cartItemsSummary, 'Sin detalle', 300),
+    compactSingleLine(deliveryDate),
+    compactSingleLine(deliveryTime),
+    compactSingleLine(locationLine || deliveryCity),
+    compactSingleLine(customerPhone)
+  ]
+}
+
 export async function sendWhatsAppBusinessMessage({
   whatsappAccessToken,
   whatsappPhoneNumberId,
@@ -136,6 +182,7 @@ export async function sendWhatsAppBusinessMessage({
   whatsappTemplateName,
   whatsappTemplateLanguageCode = 'es_MX',
   whatsappApiVersion = 'v22.0',
+  whatsappTemplateParameters,
   textBody
 } = {}) {
   const accessToken = String(whatsappAccessToken || '').trim()
@@ -153,7 +200,20 @@ export async function sendWhatsAppBusinessMessage({
         type: 'template',
         template: {
           name: String(whatsappTemplateName),
-          language: { code: String(whatsappTemplateLanguageCode || 'es_MX') }
+          language: { code: String(whatsappTemplateLanguageCode || 'es_MX') },
+          ...(Array.isArray(whatsappTemplateParameters) && whatsappTemplateParameters.length > 0
+            ? {
+                components: [
+                  {
+                    type: 'body',
+                    parameters: whatsappTemplateParameters.map((parameter) => ({
+                      type: 'text',
+                      text: compactSingleLine(parameter, 'N/A', 300)
+                    }))
+                  }
+                ]
+              }
+            : {})
         }
       }
     : {
@@ -179,5 +239,12 @@ export async function sendWhatsAppBusinessMessage({
   if (!response.ok) {
     const details = await response.text()
     throw new Error(`WhatsApp Business rechazo el envio (${response.status}): ${details}`)
+  }
+
+  const responsePayload = await response.json()
+  return {
+    recipient,
+    payload,
+    responsePayload
   }
 }
