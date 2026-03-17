@@ -81,27 +81,7 @@ function Tarjeta() {
       ...approvedPayload
     })
 
-    // Mercado Pago webhook is the source of truth for persistence and PDF generation.
-    if (String(approvedPayload?.provider || paymentProvider) !== 'mercadopago') {
-      fetch(`${apiBaseUrl}/api/comprobantes/confirm-paid`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          amount: Number(approvedPayload?.amount ?? basePayload.amount),
-          approvedAt: approvedPayload?.approvedAt || basePayload.approvedAt,
-          items: basePayload.items,
-          deliveryDetails: basePayload.deliveryDetails,
-          selectedDeliveryCity: basePayload.selectedDeliveryCity,
-          selectedDeliveryDate: basePayload.selectedDeliveryDate,
-          selectedDeliveryTime: basePayload.selectedDeliveryTime
-        })
-      }).catch((error) => {
-        console.warn('No se pudo guardar comprobante en Supabase:', error?.message || error)
-      })
-    }
-
+    // Persistence is handled server-side by the MercadoPago and Stripe webhooks.
     clearCart()
   }
 
@@ -112,127 +92,247 @@ function Tarjeta() {
 
     const { jsPDF } = await import('jspdf')
     const doc = new jsPDF({ unit: 'pt', format: 'a4' })
-    const pageWidth = doc.internal.pageSize.getWidth()
-    const marginX = 34
-    const contentWidth = pageWidth - (marginX * 2)
-    let cursorY = 38
-    const colors = {
-      accent: [248, 148, 244],
-      accentSoft: [255, 241, 253],
-      accentBorder: [239, 183, 234],
-      text: [47, 33, 48],
-      textSoft: [124, 93, 120],
-      white: [255, 255, 255]
+    const W = doc.internal.pageSize.getWidth()
+    const H = doc.internal.pageSize.getHeight()
+    const mx = 42
+    const cw = W - mx * 2
+    let y = 0
+
+    const C = {
+      pink:       [243, 125, 232],
+      pinkLight:  [250, 210, 246],
+      pinkSoft:   [255, 245, 254],
+      pinkBorder: [235, 175, 228],
+      pinkDark:   [185,  72, 172],
+      text:       [ 38,  24,  40],
+      soft:       [130,  96, 126],
+      light:      [185, 158, 182],
+      white:      [255, 255, 255],
     }
 
-    const drawSectionTitle = (title) => {
-      doc.setFillColor(...colors.accent)
-      doc.roundedRect(marginX, cursorY, contentWidth, 24, 6, 6, 'F')
-      doc.setTextColor(...colors.text)
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(11)
-      doc.text(String(title), marginX + 10, cursorY + 16)
-      cursorY += 34
-      doc.setTextColor(...colors.text)
-    }
-
-    const writeLine = (text, options = {}) => {
-      const fontSize = options.fontSize || 10.5
-      const maxWidth = options.maxWidth || (contentWidth - 16)
-      doc.setFont('helvetica', options.bold ? 'bold' : 'normal')
-      doc.setFontSize(fontSize)
-      const lines = doc.splitTextToSize(String(text || ''), maxWidth)
-      doc.text(lines, marginX + 8, cursorY)
-      cursorY += (lines.length * (fontSize + 3))
-    }
-
-    const drawCard = (height) => {
-      doc.setFillColor(...colors.accentSoft)
-      doc.setDrawColor(...colors.accentBorder)
-      doc.roundedRect(marginX, cursorY - 14, contentWidth, height, 8, 8, 'FD')
-    }
+    // ── HEADER ─────────────────────────────────────────────────────
+    const hdrH = 82
+    doc.setFillColor(...C.pink)
+    doc.rect(0, 0, W, hdrH, 'F')
+    // Bottom accent strip
+    doc.setFillColor(...C.pinkDark)
+    doc.rect(0, hdrH - 3, W, 3, 'F')
 
     try {
-      const logoImage = await loadImage(logoBien)
-      doc.addImage(logoImage, 'JPEG', marginX, cursorY, 52, 52)
+      const logo = await loadImage(logoBien)
+      doc.addImage(logo, 'JPEG', mx, 15, 52, 52)
     } catch {
-      // If logo cannot load for any reason, continue with textual header.
+      // continue without logo
     }
 
-    doc.setTextColor(...colors.text)
+    doc.setTextColor(...C.white)
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(17)
-    doc.text('Comprobante de pago', marginX + 62, cursorY + 20)
+    doc.text('Studio dei Fiori', mx + 64, 36)
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(11)
-    doc.text('Studio dei Fiori', marginX + 62, cursorY + 38)
-    cursorY += 66
+    doc.setFontSize(9.5)
+    doc.text('Comprobante oficial de pago', mx + 64, 52)
 
+    // Top-right: order number
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(8.5)
+    doc.text('COMPROBANTE', W - mx, 30, { align: 'right' })
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    doc.text(`#${String(receiptData.orderId || 'N/A').slice(-14)}`, W - mx, 44, { align: 'right' })
+
+    y = hdrH + 26
+
+    // ── PAGO CONFIRMADO badge ──────────────────────────────────────
+    const bw = 178
+    const bh = 26
+    doc.setFillColor(...C.pinkSoft)
+    doc.setDrawColor(...C.pinkBorder)
+    doc.roundedRect(mx, y, bw, bh, 13, 13, 'FD')
+    doc.setTextColor(...C.pinkDark)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9.5)
+    doc.text('\u2713  Pago confirmado', mx + bw / 2, y + 17, { align: 'center' })
+
+    y += bh + 26
+
+    // ── HELPERS ────────────────────────────────────────────────────
+    const sectionHeader = (title) => {
+      doc.setTextColor(...C.pinkDark)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(7.5)
+      doc.text(title.toUpperCase(), mx, y)
+      y += 5
+      doc.setDrawColor(...C.pinkBorder)
+      doc.setLineWidth(1.2)
+      doc.line(mx, y, mx + cw, y)
+      y += 14
+    }
+
+    const labelCol = mx
+    const valueCol = mx + 162
+    const valueMaxW = cw - 166
+
+    const row = (label, value) => {
+      if (!value || value === 'N/A') {
+        return
+      }
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8.5)
+      doc.setTextColor(...C.soft)
+      doc.text(String(label), labelCol, y)
+      doc.setFontSize(9.5)
+      doc.setTextColor(...C.text)
+      const lines = doc.splitTextToSize(String(value), valueMaxW)
+      doc.text(lines, valueCol, y)
+      y += Math.max(20, lines.length * 13 + 4)
+    }
+
+    // ── INFORMACIÓN DEL PAGO ───────────────────────────────────────
+    sectionHeader('Informacion del pago')
+
+    const providerLabel = receiptData.provider === 'stripe'
+      ? 'Stripe'
+      : receiptData.provider === 'mercadopago'
+        ? 'Mercado Pago'
+        : String(receiptData.provider || 'N/A')
+
+    const fechaStr = new Date(receiptData.approvedAt || Date.now()).toLocaleString('es-MX', {
+      dateStyle: 'long',
+      timeStyle: 'short'
+    })
+
+    row('No. de orden', receiptData.orderId)
+    row('Folio de pago', receiptData.paymentId)
+    row('Proveedor', providerLabel)
+    row('Fecha', fechaStr)
+    row('Total pagado', `$${Number(receiptData.amount || 0).toFixed(2)} ${receiptData.currency || 'MXN'}`)
+
+    y += 8
+
+    // ── DATOS DEL CLIENTE ──────────────────────────────────────────
+    sectionHeader('Datos del cliente')
+    row('Nombre', receiptData.deliveryDetails?.fullName)
+    row('Telefono', receiptData.deliveryDetails?.phone)
+
+    y += 8
+
+    // ── ENTREGA ────────────────────────────────────────────────────
     const fulfillmentType = receiptData.deliveryDetails?.fulfillmentType === 'pickup'
       ? 'Recoger en tienda'
       : 'Entrega a domicilio'
-    const orderNumber = receiptData.orderId || 'N/A'
-
-    drawSectionTitle('Pago confirmado')
-    drawCard(118)
-    writeLine(`No. de orden: ${orderNumber}`, { bold: true })
-    writeLine(`Folio de pago: ${receiptData.paymentId || 'N/A'}`)
-    writeLine(`Proveedor: ${receiptData.provider || 'N/A'}`)
-    writeLine(`Origen de registro: ${receiptData.provider === 'mercadopago' ? 'Webhook Mercado Pago' : 'Confirmacion directa'}`)
-    writeLine(`Fecha: ${new Date(receiptData.approvedAt || Date.now()).toLocaleString('es-MX')}`)
-    writeLine(`Total pagado: $${Number(receiptData.amount || 0).toFixed(2)} ${receiptData.currency || 'MXN'}`)
-    cursorY += 14
-
-    drawSectionTitle('Datos del cliente')
-    drawCard(72)
-    writeLine(`Nombre: ${receiptData.deliveryDetails?.fullName || 'N/A'}`)
-    writeLine(`Telefono: ${receiptData.deliveryDetails?.phone || 'N/A'}`)
-    cursorY += 14
-
-    drawSectionTitle('Entrega')
-    drawCard(fulfillmentType !== 'Recoger en tienda' ? 148 : 106)
-    writeLine(`Tipo: ${fulfillmentType}`)
-    writeLine(`Recibe: ${receiptData.deliveryDetails?.recipientType === 'other'
+    const recipient = receiptData.deliveryDetails?.recipientType === 'other'
       ? (receiptData.deliveryDetails?.recipientName || 'Otra persona')
-      : 'El comprador'}`)
-    writeLine(`Fecha de entrega: ${receiptData.selectedDeliveryDate || 'N/A'}`)
-    writeLine(`Horario deseado: ${receiptData.selectedDeliveryTime || 'N/A'}`)
+      : 'El comprador'
+
+    sectionHeader('Entrega')
+    row('Tipo', fulfillmentType)
+    row('Recibe', recipient)
+    row('Fecha de entrega', receiptData.selectedDeliveryDate)
+    row('Horario deseado', receiptData.selectedDeliveryTime)
 
     if (fulfillmentType !== 'Recoger en tienda') {
-      writeLine(`Ciudad: ${receiptData.selectedDeliveryCity || 'N/A'}`)
-      writeLine(`Direccion: ${receiptData.deliveryDetails?.streetAddress || 'N/A'}`)
-      writeLine(`Colonia: ${receiptData.deliveryDetails?.neighborhood || 'N/A'}`)
-      writeLine(`Codigo postal: ${receiptData.deliveryDetails?.postalCode || 'N/A'}`)
+      row('Ciudad', receiptData.selectedDeliveryCity)
+      row('Direccion', receiptData.deliveryDetails?.streetAddress)
+      row('Colonia', receiptData.deliveryDetails?.neighborhood)
+      row('Codigo postal', receiptData.deliveryDetails?.postalCode)
     }
 
     if (receiptData.deliveryDetails?.flowerMessage) {
-      writeLine(`Mensaje para la flor: ${receiptData.deliveryDetails.flowerMessage}`)
+      row('Mensaje', receiptData.deliveryDetails.flowerMessage)
     }
 
     if (receiptData.deliveryDetails?.specialInstructions) {
-      writeLine(`Instrucciones: ${receiptData.deliveryDetails.specialInstructions}`)
+      row('Instrucciones', receiptData.deliveryDetails.specialInstructions)
     }
-    cursorY += 14
 
-    drawSectionTitle('Productos')
+    y += 8
+
+    // ── PRODUCTOS ──────────────────────────────────────────────────
+    sectionHeader('Productos')
+
+    // Table header row
+    doc.setFillColor(...C.pinkLight)
+    doc.rect(mx, y - 10, cw, 20, 'F')
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(8.5)
+    doc.setTextColor(...C.pinkDark)
+    doc.text('Producto', mx + 8, y + 4)
+    doc.text('Cant.', W - mx - 90, y + 4, { align: 'right' })
+    doc.text('Importe', W - mx - 4, y + 4, { align: 'right' })
+    y += 18
+
     const products = receiptData.items || []
-    drawCard(Math.max(70, 26 + (products.length * 18)))
-    products.forEach((item) => {
-      const quantity = Number(item?.quantity || 0)
+    let subtotal = 0
+
+    products.forEach((item, i) => {
+      if (i % 2 === 0) {
+        doc.setFillColor(250, 245, 250)
+        doc.rect(mx, y - 11, cw, 20, 'F')
+      }
+      const qty = Number(item?.quantity || 0)
       const price = Number(item?.price || 0)
-      writeLine(`- ${item?.name || 'Producto'} x${quantity} - $${(price * quantity).toFixed(2)} MXN`)
+      const lineTotal = qty * price
+      subtotal += lineTotal
+
+      const nameLine = doc.splitTextToSize(String(item?.name || 'Producto'), cw - 155)
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9.5)
+      doc.setTextColor(...C.text)
+      doc.text(nameLine, mx + 8, y)
+
+      doc.setFontSize(9)
+      doc.setTextColor(...C.soft)
+      doc.text(`x${qty}`, W - mx - 90, y, { align: 'right' })
+
+      doc.setTextColor(...C.text)
+      doc.text(`$${lineTotal.toFixed(2)}`, W - mx - 4, y, { align: 'right' })
+
+      y += Math.max(20, nameLine.length * 14)
     })
 
-    const pageHeight = doc.internal.pageSize.getHeight()
-    const footerY = pageHeight - 58
-    doc.setDrawColor(...colors.accentBorder)
-    doc.line(marginX, footerY - 14, marginX + contentWidth, footerY - 14)
-    doc.setFont('helvetica', 'normal')
+    // Total row
+    y += 4
+    doc.setDrawColor(...C.pinkBorder)
+    doc.setLineWidth(0.8)
+    doc.line(mx, y, mx + cw, y)
+    y += 2
+    doc.setFillColor(...C.pinkSoft)
+    doc.rect(mx, y, cw, 26, 'F')
+    doc.setFont('helvetica', 'bold')
     doc.setFontSize(9)
-    doc.setTextColor(...colors.textSoft)
-    doc.text('Comprobante digital de Studio D Flori. Conserva este documento para cualquier aclaracion.', marginX, footerY)
-    doc.text('Horario de atencion: Lunes a Sabado de 9:00 a 18:00. WhatsApp: +52 33 1025 9546', marginX, footerY + 12)
-    doc.text(`Emitido: ${new Date().toLocaleString('es-MX')}`, marginX, footerY + 24)
+    doc.setTextColor(...C.pinkDark)
+    doc.text('Total', W - mx - 90, y + 16, { align: 'right' })
+    doc.setFontSize(11)
+    doc.setTextColor(...C.text)
+    doc.text(
+      `$${Number(receiptData.amount || subtotal).toFixed(2)} ${receiptData.currency || 'MXN'}`,
+      W - mx - 4,
+      y + 16,
+      { align: 'right' }
+    )
+
+    // ── FOOTER ─────────────────────────────────────────────────────
+    const footerY = H - 50
+    doc.setDrawColor(...C.pinkBorder)
+    doc.setLineWidth(0.8)
+    doc.line(mx, footerY, mx + cw, footerY)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8.5)
+    doc.setTextColor(...C.light)
+    doc.text(
+      'Conserva este documento para cualquier aclaracion.',
+      W / 2, footerY + 13, { align: 'center' }
+    )
+    doc.text(
+      'Studio D Flori \u00b7 WhatsApp: +52 33 1025 9546 \u00b7 Lun\u2013Sab 9:00\u201318:00',
+      W / 2, footerY + 25, { align: 'center' }
+    )
+    doc.setFontSize(7.5)
+    doc.text(
+      `Emitido: ${new Date().toLocaleString('es-MX')}`,
+      W / 2, footerY + 38, { align: 'center' }
+    )
 
     const safePaymentId = String(receiptData.paymentId || 'sin-folio').replace(/[^a-zA-Z0-9-_]/g, '')
     doc.save(`comprobante-${safePaymentId}.pdf`)

@@ -9,7 +9,6 @@ import { createMercadoPagoRouter } from './routes/mercadopagoRoutes.js'
 import { createStripeRouter } from './routes/stripeRoutes.js'
 import { createMercadoPagoWebhookRouter } from './routes/webhooks/mercadopagoWebhookRoutes.js'
 import { createStripeWebhookRouter } from './routes/webhooks/stripeWebhookRoutes.js'
-import { createComprobantesRouter } from './routes/comprobantesRoutes.js'
 
 const serverDir = path.dirname(fileURLToPath(import.meta.url))
 dotenv.config({ path: path.join(serverDir, '.env') })
@@ -65,9 +64,22 @@ async function logMercadoPagoCredentialContext() {
 }
 
 // Lightweight in-memory rate limiter (per ip + path).
-// Good enough for a single instance; for multi-instance use Redis/shared storage.
+// Works correctly for a single server instance. For multi-instance deployments
+// (e.g. horizontal scaling) replace with a shared store such as Redis.
 function createMemoryRateLimiter({ windowMs, maxRequests }) {
   const hits = new Map()
+
+  // Purge expired entries every windowMs to prevent unbounded memory growth.
+  const cleanupInterval = setInterval(() => {
+    const now = Date.now()
+    for (const [key, entry] of hits.entries()) {
+      if (entry.resetAt <= now) {
+        hits.delete(key)
+      }
+    }
+  }, windowMs)
+  // Do not keep the process alive solely for cleanup.
+  cleanupInterval.unref()
 
   return (req, res, next) => {
     const now = Date.now()
@@ -137,7 +149,6 @@ app.use('/api/mercadopago', paymentsRateLimiter, createMercadoPagoRouter({
   mpCheckoutMode
 }))
 app.use('/api/stripe', paymentsRateLimiter, createStripeRouter({ stripeSecretKey }))
-app.use('/api/comprobantes', paymentsRateLimiter, createComprobantesRouter())
 app.use('/api/webhooks/mercadopago', webhooksRateLimiter, createMercadoPagoWebhookRouter({
   mpWebhookSecret: process.env.MP_WEBHOOK_SECRET,
   mercadopagoToken,

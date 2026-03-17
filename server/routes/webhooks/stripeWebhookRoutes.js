@@ -6,6 +6,7 @@ import {
   buildWhatsAppReceiptMessage,
   sendWhatsAppBusinessMessage
 } from '../../services/whatsappBusinessService.js'
+import { upsertPaidOrder } from '../../services/orderPersistenceService.js'
 
 const DEFAULT_WEBHOOK_TOLERANCE_SECONDS = 300
 
@@ -191,6 +192,37 @@ export function createStripeWebhookRouter({
       if (eventType === 'payment_intent.succeeded') {
         const paymentIntent = event?.data?.object || {}
         const metadata = paymentIntent?.metadata || {}
+
+        // Persist the order to Supabase (source of truth for Stripe payments).
+        try {
+          const amountMxn = Number(paymentIntent?.amount_received ?? paymentIntent?.amount ?? 0) / 100
+          await upsertPaidOrder({
+            amountMxn,
+            customerName: String(metadata.customer_name || '').trim(),
+            customerPhone: String(metadata.customer_phone || '').trim(),
+            metadata: {
+              order_id: String(metadata.order_id || '').trim(),
+              customer_name: String(metadata.customer_name || '').trim(),
+              customer_phone: String(metadata.customer_phone || '').trim(),
+              cart_items_summary: String(metadata.cart_items_summary || '').trim(),
+              delivery_city: String(metadata.delivery_city || '').trim(),
+              delivery_address: String(metadata.delivery_address || '').trim(),
+              delivery_neighborhood: String(metadata.delivery_neighborhood || '').trim(),
+              delivery_postal_code: String(metadata.delivery_postal_code || '').trim(),
+              delivery_date: String(metadata.delivery_date || '').trim(),
+              delivery_time: String(metadata.delivery_time || '').trim()
+            },
+            paidAt: new Date().toISOString(),
+            paymentId: String(paymentIntent?.id || '').trim(),
+            orderId: String(metadata.order_id || '').trim(),
+            source: 'stripe_webhook'
+          })
+          console.log('[Stripe webhook] comprobante guardado en Supabase', { paymentIntentId: paymentIntent?.id })
+        } catch (error) {
+          // Log but don't fail the webhook — Stripe would retry if we return non-2xx.
+          console.warn('[Stripe webhook] fallo guardando comprobante en Supabase:', error?.message || error)
+        }
+
         const { text, html } = buildOrderEmailContent(paymentIntent)
         const recipient = String(orderNotificationToEmail || '').trim()
         const sender = String(orderNotificationFromEmail || '').trim()
