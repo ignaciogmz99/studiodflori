@@ -119,6 +119,11 @@ function extractPaymentIdFromResource(resource) {
   return String(match?.[1] || '').trim()
 }
 
+// Set en memoria para bloquear procesamiento concurrente del mismo paymentId
+// dentro del mismo proceso. Previene doble envío de WhatsApp si MP manda
+// el mismo webhook dos veces casi simultáneamente.
+const activePayments = new Set()
+
 export function createMercadoPagoWebhookRouter({
   mpWebhookSecret,
   mercadopagoToken,
@@ -185,6 +190,17 @@ export function createMercadoPagoWebhookRouter({
           const normalizedPaymentId = String(payment?.id || dataId || '').trim()
           const metadata = payment?.metadata || {}
           const normalizedOrderId = String(metadata.order_id || '').trim()
+
+          // Bloquear procesamiento concurrente del mismo pago en este proceso.
+          if (activePayments.has(normalizedPaymentId)) {
+            console.log('[MP webhook] pago ya en proceso en esta instancia, omitiendo', {
+              paymentId: normalizedPaymentId
+            })
+            return res.status(200).json({ received: true, inProgress: true })
+          }
+          activePayments.add(normalizedPaymentId)
+
+          try {
           let existingState = await getPaidOrderProcessingState({
             paymentId: normalizedPaymentId,
             orderId: normalizedOrderId
@@ -257,6 +273,16 @@ export function createMercadoPagoWebhookRouter({
               console.warn('[MP webhook] fallo generando PDF:', error?.message || error)
             }
           }
+
+          // Re-leer estado más reciente de DB antes de enviar WhatsApp para
+          // detectar si un webhook concurrente ya lo envió y evitar duplicados.
+          try {
+            const freshState = await getPaidOrderProcessingState({
+              paymentId: normalizedPaymentId,
+              orderId: normalizedOrderId
+            })
+            if (freshState) existingState = freshState
+          } catch (_) {}
 
           const whatsappText = buildWhatsAppReceiptMessage({
             provider: 'Mercado Pago',
@@ -347,6 +373,9 @@ export function createMercadoPagoWebhookRouter({
               received: true,
               processedWithWarnings: true
             })
+          }
+          } finally {
+            activePayments.delete(normalizedPaymentId)
           }
         }
       } else {

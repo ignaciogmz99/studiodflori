@@ -264,6 +264,31 @@ export async function upsertPaidOrder({
 
   if (!response.ok) {
     const errorPayload = await response.text()
+    let errorData = {}
+    try { errorData = JSON.parse(errorPayload) } catch (_) {}
+    // Race condition: otro webhook concurrente ya insertó el mismo payment_id.
+    // Si hay UNIQUE constraint en Supabase, el INSERT falla con 23505.
+    // Tratarlo como duplicado: re-fetch y devolver el registro existente.
+    const isUniqueViolation =
+      response.status === 409 ||
+      String(errorData?.code || '') === '23505' ||
+      /unique|duplicate/i.test(errorData?.message || '')
+    if (isUniqueViolation && (normalizedPaymentId || normalizedOrderId)) {
+      const refetched = await findExistingPaidOrder({
+        supabaseUrl,
+        supabaseKey,
+        paymentId: normalizedPaymentId,
+        orderId: normalizedOrderId
+      })
+      return {
+        persisted: true,
+        duplicate: true,
+        race: true,
+        paymentId: normalizedPaymentId,
+        orderId: normalizedOrderId,
+        row: refetched
+      }
+    }
     throw new Error(`No se pudo guardar comprobante en Supabase: ${response.status} ${errorPayload}`)
   }
 
