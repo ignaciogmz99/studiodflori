@@ -171,7 +171,6 @@ export function buildWhatsAppTemplateParameters({
     compactSingleLine(customerName),
     compactSingleLine(recipientName || customerName),
     compactSingleLine(cartItemsSummary, 'Sin detalle', 300),
-    compactSingleLine(deliveryType),
     compactSingleLine(deliveryDate),
     compactSingleLine(deliveryTime),
     compactSingleLine(locationLine || deliveryCity),
