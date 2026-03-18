@@ -99,11 +99,11 @@ function Tarjeta() {
     let y = 0
 
     const C = {
-      pink:       [243, 125, 232],
-      pinkLight:  [250, 210, 246],
-      pinkSoft:   [255, 245, 254],
-      pinkBorder: [235, 175, 228],
-      pinkDark:   [185,  72, 172],
+      pink:       [210, 120, 198],
+      pinkLight:  [245, 215, 242],
+      pinkSoft:   [253, 245, 252],
+      pinkBorder: [225, 175, 220],
+      pinkDark:   [148,  68, 138],
       text:       [ 38,  24,  40],
       soft:       [130,  96, 126],
       light:      [185, 158, 182],
@@ -152,7 +152,7 @@ function Tarjeta() {
     doc.setTextColor(...C.pinkDark)
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(9.5)
-    doc.text('\u2713  Pago confirmado', mx + bw / 2, y + 17, { align: 'center' })
+    doc.text('Pago confirmado', mx + bw / 2, y + 17, { align: 'center' })
 
     y += bh + 26
 
@@ -177,11 +177,11 @@ function Tarjeta() {
       if (!value || value === 'N/A') {
         return
       }
+      doc.setFontSize(9)
       doc.setFont('helvetica', 'normal')
-      doc.setFontSize(8.5)
       doc.setTextColor(...C.soft)
       doc.text(String(label), labelCol, y)
-      doc.setFontSize(9.5)
+      doc.setFont('helvetica', 'bold')
       doc.setTextColor(...C.text)
       const lines = doc.splitTextToSize(String(value), valueMaxW)
       doc.text(lines, valueCol, y)
@@ -255,7 +255,7 @@ function Tarjeta() {
     doc.setFillColor(...C.pinkLight)
     doc.rect(mx, y - 10, cw, 20, 'F')
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(8.5)
+    doc.setFontSize(9)
     doc.setTextColor(...C.pinkDark)
     doc.text('Producto', mx + 8, y + 4)
     doc.text('Cant.', W - mx - 90, y + 4, { align: 'right' })
