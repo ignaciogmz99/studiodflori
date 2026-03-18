@@ -143,6 +143,41 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true })
 })
 
+// ── Ruta de prueba temporal — eliminar en produccion ──────────
+app.get('/api/test-whatsapp', async (_req, res) => {
+  const { sendWhatsAppBusinessMessage, buildWhatsAppTemplateParameters } = await import('./services/whatsappBusinessService.js')
+  try {
+    const params = buildWhatsAppTemplateParameters({
+      orderId: 'ORD-TEST-001',
+      paymentId: 'PAY-TEST-001',
+      customerName: 'Cliente Prueba',
+      recipientName: 'Cliente Prueba',
+      cartItemsSummary: '1x Rosa roja',
+      deliveryDate: '2026-03-20',
+      deliveryTime: '10:00 - 12:00',
+      deliveryCity: 'Zapopan',
+      deliveryAddress: 'Calle Test 123',
+      deliveryNeighborhood: 'Centro',
+      deliveryPostalCode: '45000',
+      customerPhone: process.env.WHATSAPP_BUSINESS_TO,
+      flowerMessage: 'Mensaje de prueba',
+      specialInstructions: 'Sin instrucciones'
+    })
+    const result = await sendWhatsAppBusinessMessage({
+      whatsappAccessToken: process.env.WHATSAPP_BUSINESS_ACCESS_TOKEN,
+      whatsappPhoneNumberId: process.env.WHATSAPP_BUSINESS_PHONE_NUMBER_ID,
+      whatsappRecipient: process.env.WHATSAPP_BUSINESS_TO,
+      whatsappTemplateName: process.env.WHATSAPP_BUSINESS_TEMPLATE_NAME,
+      whatsappTemplateLanguageCode: process.env.WHATSAPP_BUSINESS_TEMPLATE_LANGUAGE || 'es_MX',
+      whatsappApiVersion: process.env.WHATSAPP_BUSINESS_API_VERSION || 'v22.0',
+      whatsappTemplateParameters: params
+    })
+    res.json({ ok: true, result })
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error?.message || String(error) })
+  }
+})
+
 app.use('/api/mercadopago', paymentsRateLimiter, createMercadoPagoRouter({
   mpClient,
   mercadopagoToken,
