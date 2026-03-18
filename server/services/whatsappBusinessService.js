@@ -166,17 +166,17 @@ export function buildWhatsAppTemplateParameters({
   })
 
   return [
-    compactSingleLine(orderId),
-    compactSingleLine(paymentId),
-    compactSingleLine(customerName),
-    compactSingleLine(recipientName || customerName),
-    compactSingleLine(cartItemsSummary, 'Sin detalle', 300),
-    compactSingleLine(deliveryDate),
-    compactSingleLine(deliveryTime),
-    compactSingleLine(locationLine || deliveryCity),
-    compactSingleLine(customerPhone),
-    compactSingleLine(flowerMessage, 'Sin mensaje', 300),
-    compactSingleLine(specialInstructions, 'Sin instrucciones', 300)
+    { name: 'order_id',             value: compactSingleLine(orderId) },
+    { name: 'payment_id',           value: compactSingleLine(paymentId) },
+    { name: 'customer_name',        value: compactSingleLine(customerName) },
+    { name: 'recipient_name',       value: compactSingleLine(recipientName || customerName) },
+    { name: 'cart_items',           value: compactSingleLine(cartItemsSummary, 'Sin detalle', 300) },
+    { name: 'delivery_date',        value: compactSingleLine(deliveryDate) },
+    { name: 'delivery_time',        value: compactSingleLine(deliveryTime) },
+    { name: 'delivery_location',    value: compactSingleLine(locationLine || deliveryCity) },
+    { name: 'customer_phone',       value: compactSingleLine(customerPhone) },
+    { name: 'flower_message',       value: compactSingleLine(flowerMessage, 'Sin mensaje', 300) },
+    { name: 'special_instructions', value: compactSingleLine(specialInstructions, 'Sin instrucciones', 300) }
   ]
 }
 
@@ -211,10 +211,12 @@ export async function sendWhatsAppBusinessMessage({
                 components: [
                   {
                     type: 'body',
-                    parameters: whatsappTemplateParameters.map((parameter) => ({
-                      type: 'text',
-                      text: compactSingleLine(parameter, 'N/A', 300)
-                    }))
+                    parameters: whatsappTemplateParameters.map((parameter) => {
+                      const isNamed = parameter !== null && typeof parameter === 'object' && 'name' in parameter
+                      return isNamed
+                        ? { type: 'text', parameter_name: parameter.name, text: compactSingleLine(parameter.value, 'N/A', 300) }
+                        : { type: 'text', text: compactSingleLine(parameter, 'N/A', 300) }
+                    })
                   }
                 ]
               }
