@@ -242,20 +242,24 @@ export async function upsertPaidOrder({
     schemaSupport
   })
 
-  const url = new URL('/rest/v1/comprobantes', supabaseUrl)
-  let prefer = 'return=representation'
-
-  if (schemaSupport.paymentColumns && normalizedPaymentId) {
-    url.searchParams.set('on_conflict', 'payment_id')
-    prefer = 'resolution=merge-duplicates,return=representation'
+  if (existingRow) {
+    return {
+      persisted: true,
+      duplicate: true,
+      paymentId: normalizedPaymentId,
+      orderId: normalizedOrderId,
+      row: existingRow
+    }
   }
+
+  const url = new URL('/rest/v1/comprobantes', supabaseUrl)
 
   const response = await supabaseRequest({
     url: url.toString(),
     supabaseKey,
     method: 'POST',
     body: [row],
-    prefer
+    prefer: 'return=representation'
   })
 
   if (!response.ok) {
