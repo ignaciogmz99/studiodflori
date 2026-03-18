@@ -178,10 +178,17 @@
 }
 
 .flores-menu__card {
-  background: #efefef;
+  background: #ffffff;
   border-radius: 14px;
   overflow: hidden;
-  border: 1px solid #e0e0e0;
+  border: 1px solid rgba(239, 183, 234, 0.5);
+  box-shadow: 0 2px 12px rgba(200, 80, 190, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.flores-menu__card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(200, 80, 190, 0.15);
 }
 
 .flores-menu__image-wrap {
@@ -268,10 +275,10 @@
 .flores-menu__name {
   margin: 0;
   padding: 0.72rem 0.75rem 0.2rem;
-  font-family: var(--font-ui);
-  font-size: 1rem;
-  font-weight: 700;
-  color: #353535;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2f2130;
   text-transform: capitalize;
 }
 
@@ -297,7 +304,7 @@
   width: calc(100% - 1.5rem);
   margin: 0 0.75rem 0.8rem;
   border: 0;
-  border-radius: 10px;
+  border-radius: 999px;
   padding: 0.55rem 0.7rem;
   background: #f894f4;
   color: #1f111f;
@@ -305,6 +312,12 @@
   font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.flores-menu__add-button:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(200, 80, 190, 0.3);
 }
 
 .flores-menu__add-button:disabled {

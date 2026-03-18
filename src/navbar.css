@@ -7,7 +7,7 @@
   width: 100%;
   min-height: 64px;
   padding: 0 1rem;
-  background: var(--page-bg);
+  background: linear-gradient(135deg, #f170ea, #e855d8);
   border: 0;
   border-radius: 0;
   box-shadow: none;
@@ -118,12 +118,11 @@
 }
 
 .navbar__brand-text {
-  color: #000;
-  font-family: var(--font-ui);
-  font-size: 1rem;
-  font-weight: 700;
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 600;
   letter-spacing: 0.01em;
-  text-transform: lowercase;
   white-space: nowrap;
 }
 
@@ -187,11 +186,15 @@
   animation: navbar-cart-flash 1.8s ease-out infinite;
 }
 
+.navbar__link {
+  color: #fff;
+}
+
 .navbar__link:hover,
 .navbar__link:focus-visible,
 .navbar__link-button[aria-expanded='true'] {
-  color: #000;
-  background: rgba(255, 255, 255, 0.28);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.22);
   outline: none;
 }
 
@@ -350,7 +353,7 @@
   padding: 0 0.3rem;
   border-radius: 999px;
   background: #ffffff;
-  color: #000;
+  color: #c020b0;
   font-size: 0.72rem;
   font-weight: 800;
   line-height: 1;

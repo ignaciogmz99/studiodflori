@@ -122,6 +122,13 @@
   font-size: 0.9rem;
   color: #2e2e2e;
   box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  outline: none;
+}
+
+.tarjeta__input:focus {
+  border-color: #f894f4;
+  box-shadow: 0 0 0 3px rgba(248, 148, 244, 0.18);
 }
 
 .tarjeta__actions {
@@ -207,14 +214,20 @@
 
 .tarjeta__button {
   border: 0;
-  border-radius: 10px;
+  border-radius: 999px;
   background: #f894f4;
   color: #1f111f;
   font-family: var(--font-ui);
   font-size: 0.9rem;
   font-weight: 700;
-  padding: 0.55rem 0.95rem;
+  padding: 0.55rem 1.2rem;
   cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tarjeta__button:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(200, 80, 190, 0.3);
 }
 
 .tarjeta__button--secondary {
