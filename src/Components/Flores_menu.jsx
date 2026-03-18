@@ -366,13 +366,13 @@ function FloresMenu() {
 
   const selectedFlowerTypeLabel = formatFlowerTypeLabel(activeFlowerType)
   const headline = activeFlowerType === ALL_FLOWER_TYPES
-    ? 'Flores a domicilio en Guadalajara con entrega rapida para cada ocasion'
-    : `${selectedFlowerTypeLabel} a domicilio en Guadalajara con entrega rapida`
+    ? 'Flores a domicilio en Guadalajara con entrega para cada ocasion'
+    : `${selectedFlowerTypeLabel} a domicilio en Guadalajara con entrega`
 
   return (
     <section className="flores-menu" id="catalogo-flores" aria-label="Catalogo de flores y plantas">
       <div className="flores-menu__tabs-box">
-        <h2 className="flores-menu__tabs-title">Flores y Plantas</h2>
+        <h2 className="flores-menu__tabs-title">Flores</h2>
         <div className="flores-menu__tabs" role="tablist" aria-label="Categorias de flores">
           {flowerTypeTabs.map((tab) => (
             <button

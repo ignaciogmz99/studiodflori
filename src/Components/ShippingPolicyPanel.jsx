@@ -1,6 +1,23 @@
+import { useEffect } from 'react'
 import ShippingPolicy from './ShippingPolicy.jsx'
 
 function ShippingPolicyPanel({ onClose }) {
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [])
+
+  useEffect(() => {
+    function handleKey(event) {
+      if (event.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
   return (
     <div className="top-menu__policy-backdrop" onClick={onClose}>
       <section
@@ -16,7 +33,7 @@ function ShippingPolicyPanel({ onClose }) {
           onClick={onClose}
           aria-label="Cerrar politica de envio"
         >
-          x
+          ✕
         </button>
         <ShippingPolicy />
       </section>
