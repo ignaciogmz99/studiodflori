@@ -256,37 +256,21 @@ export function createStripeWebhookRouter({
             : 'Entrega a domicilio',
           deliveryDate: metadata.delivery_date,
           deliveryTime: metadata.delivery_time,
-          deliveryCity: metadata.delivery_city
-        })
-        const whatsappTemplateParameters = buildWhatsAppTemplateParameters({
-          orderId: metadata.order_id,
-          paymentId: paymentIntent?.id,
-          customerName: metadata.customer_name,
-          recipientName: metadata.customer_name,
-          cartItemsSummary: metadata.cart_items_summary,
-          deliveryType: String(metadata.fulfillment_type || 'delivery').toLowerCase() === 'pickup'
-            ? 'Recoger en tienda'
-            : 'Entrega a domicilio',
-          deliveryDate: metadata.delivery_date,
-          deliveryTime: metadata.delivery_time,
           deliveryCity: metadata.delivery_city,
           deliveryAddress: metadata.delivery_address,
           deliveryNeighborhood: metadata.delivery_neighborhood,
           deliveryPostalCode: metadata.delivery_postal_code,
-          customerPhone: metadata.customer_phone,
+          recipientName: metadata.recipient_name || metadata.customer_name,
           flowerMessage: metadata.flower_message,
-          specialInstructions: metadata.delivery_notes
+          specialInstructions: metadata.delivery_notes,
+          cartItemsSummary: metadata.cart_items_summary
         })
-
         try {
           const whatsappResult = await sendWhatsAppBusinessMessage({
             whatsappAccessToken,
             whatsappPhoneNumberId,
             whatsappRecipient,
-            whatsappTemplateName,
-            whatsappTemplateLanguageCode,
             whatsappApiVersion,
-            whatsappTemplateParameters,
             textBody: whatsappText
           })
           console.log('[Stripe webhook] WhatsApp enviado', {

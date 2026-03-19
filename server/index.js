@@ -145,32 +145,15 @@ app.get('/api/health', (_req, res) => {
 
 // ── Ruta de prueba temporal — eliminar en produccion ──────────
 app.get('/api/test-whatsapp', async (_req, res) => {
-  const { sendWhatsAppBusinessMessage, buildWhatsAppTemplateParameters } = await import('./services/whatsappBusinessService.js')
+  const { sendWhatsAppBusinessMessage } = await import('./services/whatsappBusinessService.js')
   try {
-    const params = buildWhatsAppTemplateParameters({
-      orderId: 'ORD-001',
-      paymentId: 'PAY-TEST-001',
-      customerName: 'Cliente Prueba',
-      recipientName: 'Destinatario Prueba',
-      cartItemsSummary: 'Ramo de rosas rojas x1',
-      deliveryDate: '2026-03-20',
-      deliveryTime: '10:00 - 12:00',
-      deliveryAddress: 'Av. Siempre Viva 123',
-      deliveryNeighborhood: 'Centro',
-      deliveryCity: 'Guadalajara',
-      deliveryPostalCode: '44100',
-      customerPhone: '3334567890',
-      flowerMessage: 'Con mucho amor',
-      specialInstructions: 'Tocar el timbre'
-    })
     const result = await sendWhatsAppBusinessMessage({
       whatsappAccessToken: process.env.WHATSAPP_BUSINESS_ACCESS_TOKEN,
       whatsappPhoneNumberId: process.env.WHATSAPP_BUSINESS_PHONE_NUMBER_ID,
       whatsappRecipient: process.env.WHATSAPP_BUSINESS_TO,
-      whatsappTemplateName: process.env.WHATSAPP_BUSINESS_TEMPLATE_NAME,
-      whatsappTemplateLanguageCode: process.env.WHATSAPP_BUSINESS_TEMPLATE_LANGUAGE || 'es_MX',
       whatsappApiVersion: process.env.WHATSAPP_BUSINESS_API_VERSION || 'v22.0',
-      whatsappTemplateParameters: params
+      whatsappTemplateName: 'hello_world',
+      whatsappTemplateLanguageCode: 'en_US'
     })
     res.json({ ok: true, result })
   } catch (error) {
