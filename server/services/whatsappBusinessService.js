@@ -212,10 +212,9 @@ export async function sendWhatsAppBusinessMessage({
                   {
                     type: 'body',
                     parameters: whatsappTemplateParameters.map((parameter) => {
-                      const isNamed = parameter !== null && typeof parameter === 'object' && 'name' in parameter
-                      return isNamed
-                        ? { type: 'text', parameter_name: parameter.name, text: compactSingleLine(parameter.value, 'N/A', 300) }
-                        : { type: 'text', text: compactSingleLine(parameter, 'N/A', 300) }
+                      const isNamed = parameter !== null && typeof parameter === 'object' && 'value' in parameter
+                      const textValue = isNamed ? parameter.value : parameter
+                      return { type: 'text', text: compactSingleLine(textValue, 'N/A', 300) }
                     })
                   }
                 ]
