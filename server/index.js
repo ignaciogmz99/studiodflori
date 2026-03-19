@@ -152,8 +152,21 @@ app.get('/api/test-whatsapp', async (_req, res) => {
       whatsappPhoneNumberId: process.env.WHATSAPP_BUSINESS_PHONE_NUMBER_ID,
       whatsappRecipient: process.env.WHATSAPP_BUSINESS_TO,
       whatsappApiVersion: process.env.WHATSAPP_BUSINESS_API_VERSION || 'v22.0',
-      whatsappTemplateName: 'hello_world',
-      whatsappTemplateLanguageCode: 'en_US'
+      whatsappTemplateName: 'pedido_god',
+      whatsappTemplateLanguageCode: 'es_MX',
+      whatsappTemplateParameters: [
+        { value: 'ORD-20260317-001' },
+        { value: 'PAY-150089092685' },
+        { value: 'Maria Garcia' },
+        { value: 'Juan Garcia' },
+        { value: '2x Rosa roja, 1x Girasol' },
+        { value: '2026-03-20' },
+        { value: '10:00 - 12:00' },
+        { value: 'Av. Lopez Mateos 123, Zapopan' },
+        { value: '3334913334' },
+        { value: 'Con mucho carino' },
+        { value: 'Tocar el timbre' }
+      ]
     })
     res.json({ ok: true, result })
   } catch (error) {
