@@ -8,6 +8,8 @@ import {
 } from '../../services/whatsappBusinessService.js'
 import { upsertPaidOrder } from '../../services/orderPersistenceService.js'
 
+const activeStripeEvents = new Set()
+
 const DEFAULT_WEBHOOK_TOLERANCE_SECONDS = 300
 
 function parseStripeSignatureHeader(signatureHeader) {
@@ -190,6 +192,12 @@ export function createStripeWebhookRouter({
       console.log('[Stripe webhook] recibido', { eventType, eventId })
 
       if (eventType === 'payment_intent.succeeded') {
+        if (activeStripeEvents.has(eventId)) {
+          console.log('[Stripe webhook] evento ya en proceso, omitiendo', { eventId })
+          return res.status(200).json({ received: true, inProgress: true })
+        }
+        activeStripeEvents.add(eventId)
+
         const paymentIntent = event?.data?.object || {}
         const metadata = paymentIntent?.metadata || {}
 
@@ -242,28 +250,21 @@ export function createStripeWebhookRouter({
           console.warn('[Stripe webhook] faltan variables para envio de email (RESEND_API_KEY, ORDER_NOTIFICATION_FROM_EMAIL, ORDER_NOTIFICATION_TO_EMAIL)')
         }
 
-        const whatsappText = buildWhatsAppReceiptMessage({
-          provider: 'Stripe',
-          paymentId: paymentIntent?.id,
+        const whatsappTemplateParameters = buildWhatsAppTemplateParameters({
           orderId: metadata.order_id,
-          amountInMinor: paymentIntent?.amount_received || paymentIntent?.amount,
-          currency: paymentIntent?.currency || 'MXN',
+          paymentId: paymentIntent?.id,
           customerName: metadata.customer_name,
-          customerPhone: metadata.customer_phone,
-          customerEmail: metadata.customer_email || paymentIntent?.receipt_email,
-          deliveryType: String(metadata.fulfillment_type || 'delivery').toLowerCase() === 'pickup'
-            ? 'Recoger en tienda'
-            : 'Entrega a domicilio',
+          recipientName: metadata.recipient_name || metadata.customer_name,
+          cartItemsSummary: metadata.cart_items_summary,
           deliveryDate: metadata.delivery_date,
           deliveryTime: metadata.delivery_time,
           deliveryCity: metadata.delivery_city,
           deliveryAddress: metadata.delivery_address,
           deliveryNeighborhood: metadata.delivery_neighborhood,
           deliveryPostalCode: metadata.delivery_postal_code,
-          recipientName: metadata.recipient_name || metadata.customer_name,
+          customerPhone: metadata.customer_phone,
           flowerMessage: metadata.flower_message,
-          specialInstructions: metadata.delivery_notes,
-          cartItemsSummary: metadata.cart_items_summary
+          specialInstructions: metadata.delivery_notes
         })
         try {
           const whatsappResult = await sendWhatsAppBusinessMessage({
@@ -271,7 +272,9 @@ export function createStripeWebhookRouter({
             whatsappPhoneNumberId,
             whatsappRecipient,
             whatsappApiVersion,
-            textBody: whatsappText
+            whatsappTemplateName,
+            whatsappTemplateLanguageCode,
+            whatsappTemplateParameters
           })
           console.log('[Stripe webhook] WhatsApp enviado', {
             paymentIntentId: paymentIntent?.id,
@@ -281,6 +284,8 @@ export function createStripeWebhookRouter({
         } catch (error) {
           // Notification failures should not fail webhook ack to Stripe.
           console.warn('[Stripe webhook] fallo envio por WhatsApp:', error?.message || error)
+        } finally {
+          activeStripeEvents.delete(eventId)
         }
       }
 
