@@ -158,6 +158,7 @@ function getPreparationLabel(hours) {
 function FloresMenu() {
   const [inventoryById, setInventoryById] = useState({})
   const [inventoryStatus, setInventoryStatus] = useState(supabase ? 'loading' : 'unavailable')
+  const [retryCount, setRetryCount] = useState(0)
   const [imageIndexByProduct, setImageIndexByProduct] = useState({})
   const [selectedFlowerType, setSelectedFlowerType] = useState(ALL_FLOWER_TYPES)
   const [isPriceFilterOpen, setIsPriceFilterOpen] = useState(false)
@@ -210,7 +211,7 @@ function FloresMenu() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [retryCount])
 
   useEffect(() => {
     if (!isPriceFilterOpen) {
@@ -447,7 +448,10 @@ function FloresMenu() {
       )}
       {inventoryStatus === 'error' && (
         <p className="flores-menu__stock">
-          Hubo un error cargando el inventario. Intenta de nuevo en unos minutos.
+          Hubo un error cargando el inventario.{' '}
+          <button onClick={() => setRetryCount((c) => c + 1)} style={{ textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
+            Intentar de nuevo
+          </button>
         </p>
       )}
 

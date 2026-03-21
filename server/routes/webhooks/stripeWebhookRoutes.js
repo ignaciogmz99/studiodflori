@@ -201,7 +201,7 @@ export function createStripeWebhookRouter({
         const paymentIntent = event?.data?.object || {}
         const metadata = paymentIntent?.metadata || {}
 
-        // Persist the order to Supabase (source of truth for Stripe payments).
+        // Persist the order to Supabase — critical step, return 500 if it fails so Stripe retries.
         try {
           const amountMxn = Number(paymentIntent?.amount_received ?? paymentIntent?.amount ?? 0) / 100
           await upsertPaidOrder({
@@ -227,8 +227,9 @@ export function createStripeWebhookRouter({
           })
           console.log('[Stripe webhook] comprobante guardado en Supabase', { paymentIntentId: paymentIntent?.id })
         } catch (error) {
-          // Log but don't fail the webhook — Stripe would retry if we return non-2xx.
-          console.warn('[Stripe webhook] fallo guardando comprobante en Supabase:', error?.message || error)
+          console.error('[Stripe webhook] fallo guardando comprobante en Supabase:', error?.message || error)
+          activeStripeEvents.delete(eventId)
+          return res.status(500).json({ error: 'Error guardando comprobante, Stripe reintentará' })
         }
 
         const { text, html } = buildOrderEmailContent(paymentIntent)

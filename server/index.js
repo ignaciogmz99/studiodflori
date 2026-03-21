@@ -1,6 +1,7 @@
 /* global process */
 import express from 'express'
 import cors from 'cors'
+import helmet from 'helmet'
 import dotenv from 'dotenv'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
@@ -112,6 +113,8 @@ const webhooksRateLimiter = createMemoryRateLimiter({
   maxRequests: 120
 })
 
+app.use(helmet())
+
 // Allow frontend origin configured in env (comma-separated list supported).
 const allowedOrigins = (process.env.FRONTEND_ORIGIN || 'http://localhost:5173')
   .split(',')
@@ -120,7 +123,7 @@ const allowedOrigins = (process.env.FRONTEND_ORIGIN || 'http://localhost:5173')
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (allowedOrigins.includes(origin)) {
       callback(null, true)
     } else {
       callback(new Error(`CORS: origen no permitido: ${origin}`))
@@ -154,36 +157,6 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true })
 })
 
-// ── Ruta de prueba temporal — eliminar en produccion ──────────
-app.get('/api/test-whatsapp', async (_req, res) => {
-  const { sendWhatsAppBusinessMessage } = await import('./services/whatsappBusinessService.js')
-  try {
-    const result = await sendWhatsAppBusinessMessage({
-      whatsappAccessToken: process.env.WHATSAPP_BUSINESS_ACCESS_TOKEN,
-      whatsappPhoneNumberId: process.env.WHATSAPP_BUSINESS_PHONE_NUMBER_ID,
-      whatsappRecipient: process.env.WHATSAPP_BUSINESS_TO,
-      whatsappApiVersion: process.env.WHATSAPP_BUSINESS_API_VERSION || 'v22.0',
-      whatsappTemplateName: 'pedido_god',
-      whatsappTemplateLanguageCode: 'es_MX',
-      whatsappTemplateParameters: [
-        { value: 'ORD-20260317-001' },
-        { value: 'PAY-150089092685' },
-        { value: 'Maria Garcia' },
-        { value: 'Juan Garcia' },
-        { value: '2x Rosa roja, 1x Girasol' },
-        { value: '2026-03-20' },
-        { value: '10:00 - 12:00' },
-        { value: 'Av. Lopez Mateos 123, Zapopan' },
-        { value: '3334913334' },
-        { value: 'Con mucho carino' },
-        { value: 'Tocar el timbre' }
-      ]
-    })
-    res.json({ ok: true, result })
-  } catch (error) {
-    res.status(500).json({ ok: false, error: error?.message || String(error) })
-  }
-})
 
 app.use('/api/mercadopago', paymentsRateLimiter, createMercadoPagoRouter({
   mpClient,

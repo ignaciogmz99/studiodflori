@@ -95,27 +95,23 @@ function StripePayment({
     setIsLoading(true)
     ensureStripeSdk()
       .then(() => {
-        if (!isMounted) {
-          return
-        }
+        if (!isMounted) return
         setStripeSdkReady(true)
         setErrorMessage('')
       })
       .catch(() => {
-        if (!isMounted) {
-          return
-        }
+        if (!isMounted) return
         setStripeSdkReady(false)
         setErrorMessage('No se pudo cargar Stripe. Recarga la pagina e intenta de nuevo.')
       })
       .finally(() => {
-        if (isMounted) {
-          setIsLoading(false)
-        }
+        if (isMounted) setIsLoading(false)
       })
 
     return () => {
       isMounted = false
+      // Reset cached promise so next mount intenta cargar de nuevo si falló
+      if (!window.Stripe) stripeScriptPromise = null
     }
   }, [])
 
