@@ -16,7 +16,7 @@ function ShippingPolicy() {
 
         <h4 className="shipping-policy__heading">Dia de las Madres y San Valentin</h4>
         <p className="shipping-policy__copy">
-          El horario de entrega es de 8:00 am a 8:00 pm. Por el volumen de pedidos, en estos dias
+          El horario de entrega es de 10:00 am a 7:00 pm. Por el volumen de pedidos, en estos dias
           no hay entregas con horario especial.
         </p>
 
