@@ -173,7 +173,7 @@ export function buildWhatsAppTemplateParameters({
     { name: 'cart_items',           value: compactSingleLine(cartItemsSummary, 'Sin detalle', 300) },
     { name: 'delivery_date',        value: compactSingleLine(deliveryDate) },
     { name: 'delivery_time',        value: compactSingleLine(deliveryTime) },
-    { name: 'delivery_location',    value: compactSingleLine(locationLine || deliveryCity) },
+    { name: 'delivery_location',    value: String(deliveryType || '').trim().toLowerCase() === 'pickup' ? 'Se recoge en tienda' : compactSingleLine(locationLine || deliveryCity) },
     { name: 'customer_phone',       value: compactSingleLine(customerPhone) },
     { name: 'flower_message',       value: compactSingleLine(flowerMessage, 'Sin mensaje', 300) },
     { name: 'special_instructions', value: compactSingleLine(specialInstructions, 'Sin instrucciones', 300) }
