@@ -6,7 +6,7 @@ import {
   buildWhatsAppReceiptMessage,
   sendWhatsAppBusinessMessage
 } from '../../services/whatsappBusinessService.js'
-import { upsertPaidOrder } from '../../services/orderPersistenceService.js'
+import { upsertPaidOrder, getPaidOrderProcessingState, updatePaidOrderProcessingState } from '../../services/orderPersistenceService.js'
 
 const activeStripeEvents = new Set()
 
@@ -251,43 +251,63 @@ export function createStripeWebhookRouter({
           console.warn('[Stripe webhook] faltan variables para envio de email (RESEND_API_KEY, ORDER_NOTIFICATION_FROM_EMAIL, ORDER_NOTIFICATION_TO_EMAIL)')
         }
 
-        const whatsappTemplateParameters = buildWhatsAppTemplateParameters({
-          orderId: metadata.order_id,
-          paymentId: paymentIntent?.id,
-          customerName: metadata.customer_name,
-          recipientName: metadata.recipient_name || metadata.customer_name,
-          cartItemsSummary: metadata.cart_items_summary,
-          deliveryDate: metadata.delivery_date,
-          deliveryTime: metadata.delivery_time,
-          deliveryCity: metadata.delivery_city,
-          deliveryAddress: metadata.delivery_address,
-          deliveryNeighborhood: metadata.delivery_neighborhood,
-          deliveryPostalCode: metadata.delivery_postal_code,
-          customerPhone: metadata.customer_phone,
-          flowerMessage: metadata.flower_message,
-          specialInstructions: metadata.delivery_notes
-        })
+        const paymentId = String(paymentIntent?.id || '').trim()
+        const orderId = String(metadata.order_id || '').trim()
+
+        // Verificar en DB si ya se envio WhatsApp para evitar duplicados en reintentos de Stripe.
+        let alreadySentWhatsapp = false
         try {
-          const whatsappResult = await sendWhatsAppBusinessMessage({
-            whatsappAccessToken,
-            whatsappPhoneNumberId,
-            whatsappRecipient,
-            whatsappApiVersion,
-            whatsappTemplateName,
-            whatsappTemplateLanguageCode,
-            whatsappTemplateParameters
-          })
-          console.log('[Stripe webhook] WhatsApp enviado', {
-            paymentIntentId: paymentIntent?.id,
-            recipient: whatsappResult?.recipient || 'unknown',
-            messageId: whatsappResult?.responsePayload?.messages?.[0]?.id || 'unknown'
-          })
+          const state = await getPaidOrderProcessingState({ paymentId, orderId })
+          alreadySentWhatsapp = Boolean(state?.whatsapp_sent_at)
         } catch (error) {
-          // Notification failures should not fail webhook ack to Stripe.
-          console.warn('[Stripe webhook] fallo envio por WhatsApp:', error?.message || error)
-        } finally {
-          activeStripeEvents.delete(eventId)
+          console.warn('[Stripe webhook] no se pudo verificar estado de WhatsApp:', error?.message || error)
         }
+
+        if (!alreadySentWhatsapp) {
+          const whatsappTemplateParameters = buildWhatsAppTemplateParameters({
+            orderId: metadata.order_id,
+            paymentId: paymentIntent?.id,
+            customerName: metadata.customer_name,
+            recipientName: metadata.recipient_name || metadata.customer_name,
+            cartItemsSummary: metadata.cart_items_summary,
+            deliveryDate: metadata.delivery_date,
+            deliveryTime: metadata.delivery_time,
+            deliveryCity: metadata.delivery_city,
+            deliveryAddress: metadata.delivery_address,
+            deliveryNeighborhood: metadata.delivery_neighborhood,
+            deliveryPostalCode: metadata.delivery_postal_code,
+            customerPhone: metadata.customer_phone,
+            flowerMessage: metadata.flower_message,
+            specialInstructions: metadata.delivery_notes
+          })
+          try {
+            const whatsappResult = await sendWhatsAppBusinessMessage({
+              whatsappAccessToken,
+              whatsappPhoneNumberId,
+              whatsappRecipient,
+              whatsappApiVersion,
+              whatsappTemplateName,
+              whatsappTemplateLanguageCode,
+              whatsappTemplateParameters
+            })
+            console.log('[Stripe webhook] WhatsApp enviado', {
+              paymentIntentId: paymentIntent?.id,
+              recipient: whatsappResult?.recipient || 'unknown',
+              messageId: whatsappResult?.responsePayload?.messages?.[0]?.id || 'unknown'
+            })
+            await updatePaidOrderProcessingState({
+              paymentId,
+              orderId,
+              whatsappSentAt: new Date().toISOString()
+            })
+          } catch (error) {
+            console.warn('[Stripe webhook] fallo envio por WhatsApp:', error?.message || error)
+          }
+        } else {
+          console.log('[Stripe webhook] WhatsApp ya enviado previamente, se omite duplicado', { paymentId })
+        }
+
+        activeStripeEvents.delete(eventId)
       }
 
       return res.status(200).json({ received: true })
