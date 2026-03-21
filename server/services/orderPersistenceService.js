@@ -265,7 +265,7 @@ export async function upsertPaidOrder({
   if (!response.ok) {
     const errorPayload = await response.text()
     let errorData = {}
-    try { errorData = JSON.parse(errorPayload) } catch (_) {}
+    try { errorData = JSON.parse(errorPayload) } catch { /* payload no es JSON válido */ }
     // Race condition: otro webhook concurrente ya insertó el mismo payment_id.
     // Si hay UNIQUE constraint en Supabase, el INSERT falla con 23505.
     // Tratarlo como duplicado: re-fetch y devolver el registro existente.

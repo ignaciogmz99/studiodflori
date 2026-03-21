@@ -3,7 +3,6 @@ import { Router } from 'express'
 import crypto from 'node:crypto'
 import {
   buildWhatsAppTemplateParameters,
-  buildWhatsAppReceiptMessage,
   sendWhatsAppBusinessMessage
 } from '../../services/whatsappBusinessService.js'
 import {
@@ -282,7 +281,7 @@ export function createMercadoPagoWebhookRouter({
               orderId: normalizedOrderId
             })
             if (freshState) existingState = freshState
-          } catch (_) {}
+          } catch { /* ignorar error de re-fetch; se usa el estado previo */ }
 
           const whatsappTemplateParameters = buildWhatsAppTemplateParameters({
             orderId: metadata.order_id,

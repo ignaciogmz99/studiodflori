@@ -3,7 +3,6 @@ import { Router } from 'express'
 import crypto from 'node:crypto'
 import {
   buildWhatsAppTemplateParameters,
-  buildWhatsAppReceiptMessage,
   sendWhatsAppBusinessMessage
 } from '../../services/whatsappBusinessService.js'
 import { upsertPaidOrder, getPaidOrderProcessingState, updatePaidOrderProcessingState } from '../../services/orderPersistenceService.js'
