@@ -115,23 +115,9 @@ const webhooksRateLimiter = createMemoryRateLimiter({
 
 app.use(helmet())
 
-// Allow frontend origin configured in env (comma-separated list supported).
-const allowedOrigins = (process.env.FRONTEND_ORIGIN || 'http://localhost:5173')
-  .split(',')
-  .map((o) => o.trim())
-  .filter(Boolean)
-
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true)
-    } else {
-      callback(new Error(`CORS: origen no permitido: ${origin}`))
-    }
-  }
-}))
-
-// Stripe webhook must read raw body to verify signature exactly as received.
+// ── Webhooks — montados ANTES de CORS porque los servidores de pago
+// no envian header Origin y no deben ser bloqueados por CORS.
+// Stripe necesita raw body para verificar firma.
 app.use(
   '/api/webhooks/stripe',
   webhooksRateLimiter,
@@ -149,22 +135,7 @@ app.use(
     whatsappApiVersion: process.env.WHATSAPP_BUSINESS_API_VERSION || 'v22.0'
   })
 )
-
-// Normal JSON parser for the rest of API routes.
-app.use(express.json())
-
-app.get('/api/health', (_req, res) => {
-  res.json({ ok: true })
-})
-
-
-app.use('/api/mercadopago', paymentsRateLimiter, createMercadoPagoRouter({
-  mpClient,
-  mercadopagoToken,
-  mpCheckoutMode
-}))
-app.use('/api/stripe', paymentsRateLimiter, createStripeRouter({ stripeSecretKey }))
-app.use('/api/webhooks/mercadopago', webhooksRateLimiter, createMercadoPagoWebhookRouter({
+app.use('/api/webhooks/mercadopago', webhooksRateLimiter, express.json(), createMercadoPagoWebhookRouter({
   mpWebhookSecret: process.env.MP_WEBHOOK_SECRET,
   mercadopagoToken,
   whatsappAccessToken: process.env.WHATSAPP_BUSINESS_ACCESS_TOKEN,
@@ -174,6 +145,36 @@ app.use('/api/webhooks/mercadopago', webhooksRateLimiter, createMercadoPagoWebho
   whatsappTemplateLanguageCode: process.env.WHATSAPP_BUSINESS_TEMPLATE_LANGUAGE || 'es_MX',
   whatsappApiVersion: process.env.WHATSAPP_BUSINESS_API_VERSION || 'v22.0'
 }))
+
+// ── CORS — solo aplica a rutas del frontend, nunca a webhooks.
+const allowedOrigins = (process.env.FRONTEND_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean)
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error(`CORS: origen no permitido: ${origin}`))
+    }
+  }
+}))
+
+// Normal JSON parser for the rest of API routes.
+app.use(express.json())
+
+app.get('/api/health', (_req, res) => {
+  res.json({ ok: true })
+})
+
+app.use('/api/mercadopago', paymentsRateLimiter, createMercadoPagoRouter({
+  mpClient,
+  mercadopagoToken,
+  mpCheckoutMode
+}))
+app.use('/api/stripe', paymentsRateLimiter, createStripeRouter({ stripeSecretKey }))
 
 app.listen(port, async () => {
   console.log(`Servidor MP activo en http://localhost:${port}`)
