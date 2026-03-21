@@ -112,9 +112,20 @@ const webhooksRateLimiter = createMemoryRateLimiter({
   maxRequests: 120
 })
 
-// Allow frontend origin configured in env.
+// Allow frontend origin configured in env (comma-separated list supported).
+const allowedOrigins = (process.env.FRONTEND_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean)
+
 app.use(cors({
-  origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173'
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error(`CORS: origen no permitido: ${origin}`))
+    }
+  }
 }))
 
 // Stripe webhook must read raw body to verify signature exactly as received.
