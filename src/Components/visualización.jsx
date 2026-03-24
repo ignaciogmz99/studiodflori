@@ -148,6 +148,23 @@ const DateTrigger = forwardRef(function DateTrigger({ value, onClick }, ref) {
   )
 })
 
+function FloralDeco() {
+  return (
+    <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+      {[0, 60, 120, 180, 240, 300].map((angle) => (
+        <ellipse
+          key={angle}
+          cx="70" cy="70" rx="15" ry="36"
+          fill="#e87de8"
+          transform={`rotate(${angle}, 70, 70) translate(0, -22)`}
+        />
+      ))}
+      <circle cx="70" cy="70" r="14" fill="#f0c8ee" />
+      <circle cx="70" cy="70" r="7" fill="#fff0fc" />
+    </svg>
+  )
+}
+
 function Visualización() {
   const {
     selectedFlower,
@@ -228,6 +245,9 @@ function Visualización() {
 
   return (
     <div className="visualizacion">
+      <div className="visualizacion__deco visualizacion__deco--tr" aria-hidden="true"><FloralDeco /></div>
+      <div className="visualizacion__deco visualizacion__deco--bl" aria-hidden="true"><FloralDeco /></div>
+
       <button
         type="button"
         className="visualizacion__back"
@@ -311,6 +331,16 @@ function Visualización() {
                 : `${Math.round(preparationHours / 24)} día${preparationHours >= 48 ? 's' : ''}`}
             </p>
           )}
+
+          <div className="visualizacion__floral-divider" aria-hidden="true">
+            <svg viewBox="0 0 200 16" xmlns="http://www.w3.org/2000/svg">
+              <line x1="0" y1="8" x2="82" y2="8" stroke="#efb7ea" strokeWidth="1.2" strokeLinecap="round" />
+              <circle cx="90" cy="8" r="3" fill="#f894f4" opacity="0.55" />
+              <circle cx="100" cy="8" r="5" fill="#f894f4" opacity="0.8" />
+              <circle cx="110" cy="8" r="3" fill="#f894f4" opacity="0.55" />
+              <line x1="118" y1="8" x2="200" y2="8" stroke="#efb7ea" strokeWidth="1.2" strokeLinecap="round" />
+            </svg>
+          </div>
 
           <div className="visualizacion__schedule">
             <div className="visualizacion__schedule-field">
