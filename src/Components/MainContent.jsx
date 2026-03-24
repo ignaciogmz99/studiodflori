@@ -10,7 +10,7 @@ function MainContent() {
   const { isPaymentView, isCardView, selectedFlower } = useCart()
 
   return (
-    <main className="main-content" aria-label="Contenido principal">
+    <main className={`main-content${selectedFlower ? ' main-content--viz' : ''}`} aria-label="Contenido principal">
       {isPaymentView
         ? (isCardView ? <Tarjeta /> : <Pago />)
         : selectedFlower

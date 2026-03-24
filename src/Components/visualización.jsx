@@ -4,6 +4,7 @@ import { es } from 'date-fns/locale'
 import 'react-datepicker/dist/react-datepicker.css'
 import './visualización.css'
 import { useCart } from '../context/CartContext'
+import { DELIVERY_CITIES } from '../constants/deliveryCities'
 
 const POETIC_DESCRIPTIONS = {
   Amalfi:
@@ -148,19 +149,19 @@ const DateTrigger = forwardRef(function DateTrigger({ value, onClick }, ref) {
   )
 })
 
-function FloralDeco() {
+function FloralDeco({ petalColor = '#e87de8', centerColor = '#f0c8ee', innerColor = '#fff0fc' }) {
   return (
     <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
       {[0, 60, 120, 180, 240, 300].map((angle) => (
         <ellipse
           key={angle}
           cx="70" cy="70" rx="15" ry="36"
-          fill="#e87de8"
+          fill={petalColor}
           transform={`rotate(${angle}, 70, 70) translate(0, -22)`}
         />
       ))}
-      <circle cx="70" cy="70" r="14" fill="#f0c8ee" />
-      <circle cx="70" cy="70" r="7" fill="#fff0fc" />
+      <circle cx="70" cy="70" r="14" fill={centerColor} />
+      <circle cx="70" cy="70" r="7" fill={innerColor} />
     </svg>
   )
 }
@@ -172,7 +173,9 @@ function Visualización() {
     addToCart,
     selectedDeliveryDate,
     setSelectedDeliveryDate,
-    setSelectedDeliveryTime
+    setSelectedDeliveryTime,
+    selectedDeliveryCity,
+    setSelectedDeliveryCity
   } = useCart()
 
   const earliestDeliveryDateTime = useMemo(() => resolveEarliestDateTime(), [])
@@ -247,6 +250,12 @@ function Visualización() {
     <div className="visualizacion">
       <div className="visualizacion__deco visualizacion__deco--tr" aria-hidden="true"><FloralDeco /></div>
       <div className="visualizacion__deco visualizacion__deco--bl" aria-hidden="true"><FloralDeco /></div>
+      <div className="visualizacion__deco visualizacion__deco--tl" aria-hidden="true">
+        <FloralDeco petalColor="#e8c000" centerColor="#ffe566" innerColor="#fffbe0" />
+      </div>
+      <div className="visualizacion__deco visualizacion__deco--br" aria-hidden="true">
+        <FloralDeco petalColor="#e8c000" centerColor="#ffe566" innerColor="#fffbe0" />
+      </div>
 
       <button
         type="button"
@@ -343,15 +352,15 @@ function Visualización() {
           </div>
 
           <div className="visualizacion__schedule">
-            <div className="visualizacion__schedule-field">
-              <span className="visualizacion__schedule-label">Fecha de entrega</span>
+            <div className="visualizacion__schedule-col">
+              <span className="visualizacion__schedule-label">Fecha</span>
               <DatePicker
                 selected={effectiveDeliveryDate}
                 onChange={(date) => setDeliveryDate(date || minDeliveryDate)}
                 minDate={minDeliveryDate}
                 filterDate={(date) => hasEnabledSlots(date, earliestDeliveryDateTime)}
                 locale={es}
-                dateFormat="EEEE d 'de' MMMM"
+                dateFormat="EEE d MMM"
                 popperPlacement="bottom-start"
                 portalId="root"
                 calendarClassName="visualizacion__calendar"
@@ -360,10 +369,10 @@ function Visualización() {
               />
             </div>
 
-            <div className="visualizacion__schedule-field">
+            <div className="visualizacion__schedule-col">
               <span className="visualizacion__schedule-label">Horario</span>
               <select
-                className="visualizacion__time-select"
+                className="visualizacion__schedule-control"
                 value={effectiveDeliveryTime}
                 onChange={(e) => setDeliveryTime(e.target.value)}
                 aria-label="Elegir horario de entrega"
@@ -375,9 +384,25 @@ function Visualización() {
                 ))}
               </select>
             </div>
+
+            <div className="visualizacion__schedule-col">
+              <span className="visualizacion__schedule-label">Ciudad</span>
+              <select
+                className="visualizacion__schedule-control"
+                value={selectedDeliveryCity}
+                onChange={(e) => setSelectedDeliveryCity(e.target.value)}
+                aria-label="Elegir ciudad de entrega"
+              >
+                {DELIVERY_CITIES.map((city) => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </div>
+
+      <div className="visualizacion__spacer" />
 
       <div className="visualizacion__sticky-bar">
         <button

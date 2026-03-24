@@ -5,10 +5,19 @@
   background: #ffffff;
   padding: 0.9rem 1rem 1.25rem;
   box-sizing: border-box;
+  height: 0;
+}
+
+.main-content--viz {
+  padding-bottom: 0;
 }
 
 @media (max-width: 768px) {
   .main-content {
     padding: 0.8rem 0.75rem 1rem;
+  }
+
+  .main-content--viz {
+    padding-bottom: 0;
   }
 }

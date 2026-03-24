@@ -1,6 +1,8 @@
 .visualizacion {
   width: 100%;
-  padding-bottom: 5rem;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
   position: relative;
   overflow: clip;
 }
@@ -26,6 +28,20 @@
   height: 220px;
 }
 
+.visualizacion__deco--tl {
+  top: 20%;
+  left: -2rem;
+  width: 130px;
+  height: 130px;
+}
+
+.visualizacion__deco--br {
+  bottom: 8rem;
+  right: -2rem;
+  width: 150px;
+  height: 150px;
+}
+
 .visualizacion__floral-divider {
   width: 100%;
   margin: 0.25rem 0;
@@ -35,6 +51,11 @@
   width: 100%;
   height: 16px;
   display: block;
+}
+
+.visualizacion__spacer {
+  flex: 1;
+  min-height: 1rem;
 }
 
 .visualizacion__back,
@@ -232,44 +253,44 @@
   color: #4a4a4a;
 }
 
-/* Schedule (date + time) */
+/* Schedule (fecha + horario + ciudad) */
 
 .visualizacion__schedule {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.5rem;
   margin-top: 0.5rem;
-  padding: 1rem;
+  padding: 0.75rem;
   background: linear-gradient(135deg, #fff5fd 0%, #fce8fb 100%);
   border: 1px solid rgba(239, 183, 234, 0.45);
   border-radius: 14px;
 }
 
-.visualizacion__schedule-field {
+.visualizacion__schedule-col {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  flex-direction: column;
+  gap: 0.3rem;
 }
 
 .visualizacion__schedule-label {
   font-family: var(--font-ui);
-  font-size: 0.92rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  color: #2f2130;
-  white-space: nowrap;
-  flex-shrink: 0;
+  color: #a08898;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 /* Date trigger button */
 
 .visualizacion__date-trigger {
-  border: 0;
+  width: 100%;
+  border: 1px solid rgba(239, 183, 234, 0.8);
   background: #fff;
   border-radius: 8px;
-  padding: 0.45rem 0.75rem;
+  padding: 0.4rem 0.5rem;
   font-family: var(--font-ui);
-  font-size: 0.92rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: #2f2130;
   text-transform: capitalize;
@@ -277,11 +298,9 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border: 1px solid rgba(239, 183, 234, 0.8);
+  text-align: left;
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
-  flex: 1 1 auto;
-  min-width: 0;
-  text-align: right;
+  height: 34px;
 }
 
 .visualizacion__date-trigger:hover {
@@ -289,21 +308,20 @@
   box-shadow: 0 0 0 2px rgba(248, 148, 244, 0.2);
 }
 
-/* Time select */
+/* Shared control style (select) */
 
-.visualizacion__time-select {
-  flex: 1 1 auto;
-  min-width: 0;
+.visualizacion__schedule-control {
+  width: 100%;
   border: 1px solid rgba(239, 183, 234, 0.8);
   border-radius: 8px;
   background: #fff;
-  padding: 0.45rem 0.55rem;
+  padding: 0.4rem 0.4rem;
   font-family: var(--font-ui);
-  font-size: 0.92rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: #2f2130;
   cursor: pointer;
-  height: 36px;
+  height: 34px;
 }
 
 /* Calendar overrides */
@@ -352,7 +370,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 0.85rem 0 0.6rem;
+  padding: 0.85rem 0 0;
   background: linear-gradient(to top, #ffffff 70%, transparent);
   z-index: 10;
 }
@@ -416,19 +434,12 @@
   }
 
   .visualizacion__schedule {
-    padding: 0.85rem;
+    grid-template-columns: 1fr 1fr;
+    padding: 0.65rem;
   }
 
-  .visualizacion__schedule-field {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.3rem;
-  }
-
-  .visualizacion__date-trigger,
-  .visualizacion__time-select {
-    width: 100%;
-    text-align: left;
+  .visualizacion__schedule-col:first-child {
+    grid-column: 1 / -1;
   }
 
   .visualizacion__sticky-bar {
