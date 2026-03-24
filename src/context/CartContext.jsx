@@ -40,6 +40,7 @@ export function CartProvider({ children }) {
   const [items, setItems] = useState(() => readStoredCart())
   const [isPaymentView, setIsPaymentView] = useState(false)
   const [isCardView, setIsCardView] = useState(false)
+  const [selectedFlower, setSelectedFlower] = useState(null)
   const [selectedDeliveryDate, setSelectedDeliveryDate] = useState('')
   const [selectedDeliveryTime, setSelectedDeliveryTime] = useState('')
   const [selectedDeliveryCity, setSelectedDeliveryCity] = useState(DELIVERY_CITIES[0])
@@ -117,6 +118,10 @@ export function CartProvider({ children }) {
     setIsPaymentView(false)
   }
 
+  const clearSelectedFlower = () => {
+    setSelectedFlower(null)
+  }
+
   const totalItems = useMemo(() => {
     return items.reduce((sum, item) => sum + item.quantity, 0)
   }, [items])
@@ -147,6 +152,9 @@ export function CartProvider({ children }) {
     openCardView,
     backToPaymentForm,
     closePaymentView,
+    selectedFlower,
+    setSelectedFlower,
+    clearSelectedFlower,
     selectedDeliveryDate,
     selectedDeliveryTime,
     selectedDeliveryCity,
@@ -164,6 +172,7 @@ export function CartProvider({ children }) {
     isCardView,
     isPaymentView,
     items,
+    selectedFlower,
     selectedDeliveryDate,
     selectedDeliveryCity,
     selectedDeliveryTime,

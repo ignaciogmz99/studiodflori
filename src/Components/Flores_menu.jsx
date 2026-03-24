@@ -165,7 +165,7 @@ function FloresMenu() {
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
   const priceFiltersRef = useRef(null)
-  const { addToCart } = useCart()
+  const { addToCart, setSelectedFlower } = useCart()
 
   useEffect(() => {
     let isMounted = true
@@ -254,7 +254,8 @@ function FloresMenu() {
         price: Number.isNaN(parsedPrice) ? null : parsedPrice,
         stock: inventory?.stock ?? null,
         preparationHours: resolvePreparationHours(inventory),
-        hasInventoryRecord: Boolean(inventory)
+        hasInventoryRecord: Boolean(inventory),
+        descripcion: inventory?.descripcion ?? inventory?.descripción ?? null
       }
     })
   }, [inventoryById, imageIndexByProduct])
@@ -458,7 +459,14 @@ function FloresMenu() {
       <div className="flores-menu__shelf" aria-label="Estante de productos">
         {filteredProducts.map((product) => (
           <article className="flores-menu__card" key={product.id}>
-            <div className="flores-menu__image-wrap">
+            <div
+              className="flores-menu__image-wrap flores-menu__image-wrap--clickable"
+              role="button"
+              tabIndex={0}
+              aria-label={`Ver detalle de ${product.name}`}
+              onClick={() => setSelectedFlower(product)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedFlower(product) }}
+            >
               <img
                 className="flores-menu__image"
                 src={product.image}
@@ -471,7 +479,7 @@ function FloresMenu() {
                   <button
                     type="button"
                     className="flores-menu__image-nav flores-menu__image-nav--left"
-                    onClick={() => showPreviousImage(product)}
+                    onClick={(e) => { e.stopPropagation(); showPreviousImage(product) }}
                     aria-label={`Ver imagen anterior de ${product.name}`}
                   >
                     &#8249;
@@ -479,7 +487,7 @@ function FloresMenu() {
                   <button
                     type="button"
                     className="flores-menu__image-nav flores-menu__image-nav--right"
-                    onClick={() => showNextImage(product)}
+                    onClick={(e) => { e.stopPropagation(); showNextImage(product) }}
                     aria-label={`Ver imagen siguiente de ${product.name}`}
                   >
                     &#8250;

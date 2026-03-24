@@ -252,6 +252,10 @@
   transition: opacity 0.2s ease;
 }
 
+.flores-menu__image-wrap--clickable {
+  cursor: pointer;
+}
+
 .flores-menu__image-wrap:hover .flores-menu__image-nav,
 .flores-menu__image-wrap:hover .flores-menu__image-counter {
   opacity: 1;
