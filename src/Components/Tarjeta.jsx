@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import './Tarjeta.css'
 import { useCart } from '../context/CartContext'
 import { defaultPaymentProvider, getPaymentProvider, paymentProviders } from './payments'
@@ -19,6 +19,10 @@ function loadImage(url) {
 }
 
 function Tarjeta() {
+  useEffect(() => {
+    document.querySelector('.main-content')?.scrollTo({ top: 0, behavior: 'instant' })
+  }, [])
+
   const {
     items,
     totalPrice,
