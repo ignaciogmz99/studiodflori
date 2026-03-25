@@ -14,8 +14,8 @@ const PHONE_COUNTRY_CODES = [
   { value: '+51', label: '+51 PER' }
 ]
 const FULFILLMENT_OPTIONS = [
-  { value: 'delivery', label: 'Entrega a domicilio' },
-  { value: 'pickup', label: 'Recoger en tienda' }
+  { value: 'delivery', label: '🚚 A domicilio' },
+  { value: 'pickup', label: '🏪 Recoger en tienda' }
 ]
 const RECIPIENT_OPTIONS = [
   { value: 'self', label: 'Lo recibo yo' },
@@ -131,21 +131,22 @@ function Pago() {
         <section className="pago__delivery" aria-label="Informacion de entrega">
           <h3 className="pago__delivery-title">Informacion para entregar tu pedido</h3>
           <div className="pago__delivery-grid">
-            <label className="pago__field">
+            <div className="pago__field pago__field--wide">
               <span className="pago__field-label">Tipo de entrega</span>
-              <select
-                className="pago__field-input"
-                name="fulfillmentType"
-                value={fulfillmentType}
-                onChange={handleDeliveryContactChange}
-                aria-label="Seleccionar tipo de entrega"
-              >
+              <div className="pago__fulfillment-toggle">
                 {FULFILLMENT_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`pago__fulfillment-btn${fulfillmentType === option.value ? ' pago__fulfillment-btn--active' : ''}`}
+                    onClick={() => handleDeliveryContactChange({ target: { name: 'fulfillmentType', value: option.value } })}
+                  >
+                    {option.label}
+                  </button>
                 ))}
-              </select>
-            </label>
-            <label className="pago__field">
+              </div>
+            </div>
+            <label className="pago__field pago__field--wide">
               <span className="pago__field-label">Nombre completo</span>
               <input
                 className="pago__field-input"

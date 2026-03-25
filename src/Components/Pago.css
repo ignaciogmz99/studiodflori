@@ -138,6 +138,38 @@
   grid-column: 1 / -1;
 }
 
+.pago__fulfillment-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.pago__fulfillment-btn {
+  padding: 0.65rem 0.5rem;
+  border: 1.5px solid #d8c8dc;
+  border-radius: 12px;
+  background: #fff;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #5a3858;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease;
+  text-align: center;
+}
+
+.pago__fulfillment-btn:hover {
+  border-color: #f894f4;
+  background: #fef0fe;
+}
+
+.pago__fulfillment-btn--active {
+  border-color: #f894f4;
+  background: #f894f4;
+  color: #1f111f;
+}
+
 .pago__field-label {
   font-size: 0.82rem;
   font-weight: 700;
