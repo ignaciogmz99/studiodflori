@@ -24,7 +24,7 @@
 }
 
 .navbar__mobile-menu-button {
-  display: none;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 2.25rem;
@@ -60,11 +60,12 @@
 
 .navbar__mobile-drawer {
   width: min(82vw, 320px);
-  min-height: 100dvh;
+  height: 100dvh;
   box-sizing: border-box;
   padding: 1rem 0.9rem;
   background: #fff1fd;
   box-shadow: 16px 0 32px rgba(143, 58, 134, 0.18);
+  overflow-y: auto;
 }
 
 .navbar__mobile-drawer-header {
@@ -80,6 +81,19 @@
 .navbar__mobile-drawer-title {
   font-size: 1.1rem;
   font-weight: 800;
+}
+
+.navbar__mobile-drawer-categories {
+  margin-bottom: 1rem;
+}
+
+.navbar__mobile-drawer-section-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #b46ab0;
+  margin: 0 0 0.45rem 0.25rem;
 }
 
 .navbar__mobile-drawer-link {
@@ -98,6 +112,19 @@
   text-align: left;
   padding: 0.7rem 0.8rem;
   cursor: pointer;
+}
+
+.navbar__mobile-drawer-link--active {
+  background: #f5aaef;
+  border-color: #c760c0;
+  color: #6b006b;
+}
+
+.navbar__mobile-drawer-link--promo {
+  background: linear-gradient(135deg, #fffbe6 0%, #fff3b0 100%);
+  border-color: #c9a227;
+  color: #5a3a00;
+  font-weight: 800;
 }
 
 .navbar__brand-icon-wrap {
@@ -485,7 +512,6 @@
   }
 
   .navbar__mobile-menu-button {
-    display: inline-flex;
     flex-shrink: 0;
   }
 

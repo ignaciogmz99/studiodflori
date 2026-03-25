@@ -231,6 +231,16 @@
   font-size: 1.35rem;
   font-weight: 700;
   color: #222;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.visualizacion__price-original {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #999;
+  text-decoration: line-through;
 }
 
 .visualizacion__stock {

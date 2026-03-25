@@ -2,6 +2,7 @@ import './navbar.css'
 import { useState } from 'react'
 import logo from './assets/logo_bien.jpg'
 import { useCart } from './context/CartContext'
+import { PROMO_FILTER_KEY } from './constants/promoProducts'
 
 const panelContent = {
   regalos: {
@@ -47,7 +48,10 @@ function Navbar() {
     removeFromCart,
     clearCart,
     estimatedPreparationHours,
-    openPaymentView
+    openPaymentView,
+    selectedFlowerType,
+    setSelectedFlowerType,
+    flowerTypeTabs
   } = useCart()
 
   const handleOpen = (panelKey) => {
@@ -153,27 +157,55 @@ function Navbar() {
                 x
               </button>
             </div>
-            <button
-              type="button"
-              className="navbar__mobile-drawer-link"
-              onClick={() => handleOpenInfoPanel('regalos')}
-            >
-              Regalos
-            </button>
-            <button
-              type="button"
-              className="navbar__mobile-drawer-link"
-              onClick={() => handleOpenInfoPanel('contacto')}
-            >
-              Contacto
-            </button>
-            <button
-              type="button"
-              className="navbar__mobile-drawer-link"
-              onClick={() => handleOpenInfoPanel('direccion')}
-            >
-              Direccion
-            </button>
+            <div className="navbar__mobile-drawer-categories">
+              <p className="navbar__mobile-drawer-section-title">Promociones</p>
+              <button
+                type="button"
+                className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--promo${selectedFlowerType === PROMO_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
+                onClick={() => { setSelectedFlowerType(PROMO_FILTER_KEY); handleClose() }}
+              >
+                🌸 Ver ofertas especiales — $595 MXN
+              </button>
+            </div>
+            {flowerTypeTabs.length > 0 && (
+              <div className="navbar__mobile-drawer-categories">
+                <p className="navbar__mobile-drawer-section-title">Categorias</p>
+                {flowerTypeTabs.map((tab) => (
+                  <button
+                    key={tab.value}
+                    type="button"
+                    className={`navbar__mobile-drawer-link${selectedFlowerType === tab.value ? ' navbar__mobile-drawer-link--active' : ''}`}
+                    onClick={() => { setSelectedFlowerType(tab.value); handleClose() }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="navbar__mobile-drawer-categories">
+              <p className="navbar__mobile-drawer-section-title">Menu</p>
+              <button
+                type="button"
+                className="navbar__mobile-drawer-link"
+                onClick={() => handleOpenInfoPanel('regalos')}
+              >
+                Regalos
+              </button>
+              <button
+                type="button"
+                className="navbar__mobile-drawer-link"
+                onClick={() => handleOpenInfoPanel('contacto')}
+              >
+                Contacto
+              </button>
+              <button
+                type="button"
+                className="navbar__mobile-drawer-link"
+                onClick={() => handleOpenInfoPanel('direccion')}
+              >
+                Direccion
+              </button>
+            </div>
           </section>
         </div>
       )}

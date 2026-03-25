@@ -86,14 +86,23 @@
 }
 
 .flores-menu__filter {
-  border: 1px solid #444;
-  background: #f6f6f6;
+  border: 1.5px solid #c97ec5;
+  background: #fff7fe;
   border-radius: 999px;
-  padding: 0.55rem 1rem;
+  padding: 0.5rem 1.1rem;
   font-family: var(--font-ui);
   font-size: 1.05rem;
   font-weight: 700;
+  color: #6b006b;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.flores-menu__filter::after {
+  content: '▾';
+  font-size: 0.8em;
 }
 
 .flores-menu__count {
@@ -286,6 +295,15 @@
   text-transform: capitalize;
 }
 
+.flores-menu__name--clickable,
+.flores-menu__price--clickable {
+  cursor: pointer;
+}
+
+.flores-menu__name--clickable:hover {
+  color: #b44ab0;
+}
+
 .flores-menu__price {
   margin: 0;
   padding: 0 0.75rem 0.15rem;
@@ -293,6 +311,34 @@
   font-size: 0.98rem;
   font-weight: 700;
   color: #222;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.flores-menu__price-original {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #999;
+  text-decoration: line-through;
+}
+
+.flores-menu__promo-badge {
+  position: absolute;
+  top: 0.55rem;
+  left: 0.55rem;
+  z-index: 2;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #c9a227 0%, #f5d06a 50%, #c9a227 100%);
+  color: #5a3a00;
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 2px 6px rgba(180,130,0,0.35);
+  pointer-events: none;
 }
 
 .flores-menu__stock {
@@ -379,10 +425,12 @@
   }
 
   .flores-menu__filters-panel {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 0.6rem;
-    padding: 0.7rem;
-    width: min(500px, calc(100vw - 1rem));
+    padding: 0.85rem;
+    width: min(340px, calc(100vw - 2rem));
+    left: 0;
+    right: auto;
   }
 
   .flores-menu__shelf {

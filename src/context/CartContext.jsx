@@ -45,6 +45,8 @@ export function CartProvider({ children }) {
   const [selectedDeliveryTime, setSelectedDeliveryTime] = useState('')
   const [selectedDeliveryCity, setSelectedDeliveryCity] = useState(DELIVERY_CITIES[0])
   const [deliveryDetails, setDeliveryDetails] = useState(INITIAL_DELIVERY_DETAILS)
+  const [selectedFlowerType, setSelectedFlowerType] = useState('all')
+  const [flowerTypeTabs, setFlowerTypeTabs] = useState([])
 
   useEffect(() => {
     window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
@@ -165,7 +167,11 @@ export function CartProvider({ children }) {
     setDeliveryDetails,
     totalItems,
     totalPrice,
-    estimatedPreparationHours
+    estimatedPreparationHours,
+    selectedFlowerType,
+    setSelectedFlowerType,
+    flowerTypeTabs,
+    setFlowerTypeTabs
   }), [
     estimatedPreparationHours,
     deliveryDetails,
@@ -177,7 +183,9 @@ export function CartProvider({ children }) {
     selectedDeliveryCity,
     selectedDeliveryTime,
     totalItems,
-    totalPrice
+    totalPrice,
+    selectedFlowerType,
+    flowerTypeTabs
   ])
 
   return (

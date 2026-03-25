@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import './Flores_menu.css'
 import { supabase } from '../lib/supabaseClient'
 import { useCart } from '../context/CartContext'
+import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE, PROMO_FILTER_KEY } from '../constants/promoProducts'
 
 const assetModules = import.meta.glob('../assets/*/*.webp', {
   eager: true,
@@ -160,12 +161,11 @@ function FloresMenu() {
   const [inventoryStatus, setInventoryStatus] = useState(supabase ? 'loading' : 'unavailable')
   const [retryCount, setRetryCount] = useState(0)
   const [imageIndexByProduct, setImageIndexByProduct] = useState({})
-  const [selectedFlowerType, setSelectedFlowerType] = useState(ALL_FLOWER_TYPES)
   const [isPriceFilterOpen, setIsPriceFilterOpen] = useState(false)
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
   const priceFiltersRef = useRef(null)
-  const { addToCart, setSelectedFlower } = useCart()
+  const { addToCart, setSelectedFlower, selectedFlowerType, setFlowerTypeTabs } = useCart()
 
   useEffect(() => {
     let isMounted = true
@@ -279,21 +279,21 @@ function FloresMenu() {
     return tabs
   }, [products])
 
-  const activeFlowerType = useMemo(() => {
-    if (selectedFlowerType === ALL_FLOWER_TYPES) {
-      return ALL_FLOWER_TYPES
-    }
+  useEffect(() => {
+    setFlowerTypeTabs(flowerTypeTabs)
+  }, [flowerTypeTabs, setFlowerTypeTabs])
 
+  const activeFlowerType = useMemo(() => {
+    if (selectedFlowerType === ALL_FLOWER_TYPES) return ALL_FLOWER_TYPES
+    if (selectedFlowerType === PROMO_FILTER_KEY) return PROMO_FILTER_KEY
     const typeStillExists = flowerTypeTabs.some((tab) => tab.value === selectedFlowerType)
     return typeStillExists ? selectedFlowerType : ALL_FLOWER_TYPES
   }, [flowerTypeTabs, selectedFlowerType])
 
   const filteredProducts = useMemo(() => {
     const productsByFlowerType = products.filter((product) => {
-      if (activeFlowerType !== ALL_FLOWER_TYPES && product.flowerType !== activeFlowerType) {
-        return false
-      }
-
+      if (activeFlowerType === PROMO_FILTER_KEY) return PROMO_PRODUCT_IDS.has(product.id)
+      if (activeFlowerType !== ALL_FLOWER_TYPES && product.flowerType !== activeFlowerType) return false
       return true
     })
 
@@ -373,23 +373,6 @@ function FloresMenu() {
 
   return (
     <section className="flores-menu" id="catalogo-flores" aria-label="Catalogo de flores y plantas">
-      <div className="flores-menu__tabs-box">
-        <h2 className="flores-menu__tabs-title">Flores</h2>
-        <div className="flores-menu__tabs" role="tablist" aria-label="Categorias de flores">
-          {flowerTypeTabs.map((tab) => (
-            <button
-              key={tab.value}
-              type="button"
-              className={`flores-menu__tab ${activeFlowerType === tab.value ? 'flores-menu__tab--active' : ''}`}
-              onClick={() => setSelectedFlowerType(tab.value)}
-              aria-pressed={activeFlowerType === tab.value}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <h3 className="flores-menu__headline">{headline}</h3>
 
       <div className="flores-menu__actions">
@@ -474,6 +457,9 @@ function FloresMenu() {
                 loading="lazy"
                 decoding="async"
               />
+              {PROMO_PRODUCT_IDS.has(product.id) && (
+                <span className="flores-menu__promo-badge" aria-label="Promoción">Promoción</span>
+              )}
               {product.totalImages > 1 && (
                 <>
                   <button
@@ -498,12 +484,19 @@ function FloresMenu() {
                 </>
               )}
             </div>
-            <p className="flores-menu__name">{product.name}</p>
-            <p className="flores-menu__price">
+            <p className="flores-menu__name flores-menu__name--clickable" onClick={() => setSelectedFlower(product)}>{product.name}</p>
+            <p className="flores-menu__price flores-menu__price--clickable" onClick={() => setSelectedFlower(product)}>
               {inventoryStatus === 'loading'
                 ? 'Cargando precio...'
                 : typeof product.price === 'number'
-                  ? `$${product.price} MXN`
+                  ? (
+                    <>
+                      <span>${product.price} MXN</span>
+                      {PROMO_PRODUCT_IDS.has(product.id) && (
+                        <s className="flores-menu__price-original">${PROMO_ORIGINAL_PRICE} MXN</s>
+                      )}
+                    </>
+                  )
                   : 'Precio no disponible'}
             </p>
             {inventoryStatus === 'loading' && (

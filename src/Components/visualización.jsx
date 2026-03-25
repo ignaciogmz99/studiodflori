@@ -2,12 +2,29 @@ import { useEffect, useState } from 'react'
 import './visualización.css'
 import { useCart } from '../context/CartContext'
 import DeliverySchedulePicker from './DeliverySchedulePicker'
+import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE } from '../constants/promoProducts'
 
 const POETIC_DESCRIPTIONS = {
   Amalfi:
     'Como el perfume del mar en una tarde de verano, el Amalfi lleva en sus pétalos el espíritu de la costa italiana — luminoso, cálido y lleno de vida.',
   Bouquet:
     'Un abrazo hecho flores. Cada tallo escogido a mano para decir lo que las palabras no siempre alcanzan.',
+  Bouquet_2:
+    'El segundo encuentro siempre es más profundo. Este bouquet regresa con más confianza, más color y la certeza de que lo hermoso merece repetirse.',
+  Bouquet_Fiusha:
+    'Intenso, audaz, imposible de ignorar. El fucsia no pide permiso para entrar a una habitación — irrumpe con la energía de quien sabe exactamente cuánto vale.',
+  Bouquet_Fiusha_2:
+    'La segunda vez que el fucsia habla, lo hace con más calma y con más fuerza. Un bouquet que ya no necesita convencer — solo aparecer.',
+  Bouquet_Margarita:
+    'La margarita siempre ha sabido algo que otras flores tardan en aprender: que la sencillez bien llevada es la forma más pura de la belleza.',
+  Bouquet_mini:
+    'Grande no es sinónimo de poderoso. Este mini bouquet lo demuestra con cada pétalo: lo mejor a veces llega en el tamaño exacto para caber en el corazón.',
+  Bouquet_Pastel:
+    'Suave como la luz de la mañana, este bouquet nació de los colores que el alba deja antes de irse. Sus tonos pastel no gritan — susurran, y por eso llegan más lejos.',
+  Bouquet_Pastel_2:
+    'El segundo capítulo de una historia que se niega a terminar. Tonos suaves que evolucionan, como un amanecer que tarda en llegar pero vale cada minuto de espera.',
+  Bouquet_salmon:
+    'Entre el rosa y el naranja vive el salmón — ese tono cálido que recuerda al atardecer sobre el mar. Un bouquet que se siente como el final perfecto de un buen día.',
   Bouquet_Gerberas:
     'Gerberas que ríen al sol. Su color es una declaración de alegría, un recordatorio de que la vida también florece en los días simples.',
   Bouquet_rosas:
@@ -171,7 +188,14 @@ function Visualización() {
           )}
 
           <p className="visualizacion__price">
-            {typeof price === 'number' ? `$${price} MXN` : 'Precio no disponible'}
+            {typeof price === 'number' ? (
+              <>
+                <span>${price} MXN</span>
+                {PROMO_PRODUCT_IDS.has(id) && (
+                  <s className="visualizacion__price-original">${PROMO_ORIGINAL_PRICE} MXN</s>
+                )}
+              </>
+            ) : 'Precio no disponible'}
           </p>
 
           {typeof stock === 'number' && stock <= 0 && (
