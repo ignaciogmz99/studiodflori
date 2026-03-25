@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import './Pago.css'
 import { useCart } from '../context/CartContext'
 import { DELIVERY_CITIES } from '../constants/deliveryCities'
@@ -28,6 +28,10 @@ function onlyDigits(value) {
 }
 
 function Pago() {
+  useEffect(() => {
+    document.querySelector('.main-content')?.scrollTo({ top: 0, behavior: 'instant' })
+  }, [])
+
   const {
     items,
     totalPrice,
