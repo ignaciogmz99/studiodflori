@@ -19,8 +19,6 @@ const POETIC_DESCRIPTIONS = {
     'La margarita siempre ha sabido algo que otras flores tardan en aprender: que la sencillez bien llevada es la forma más pura de la belleza.',
   Bouquet_mini:
     'Grande no es sinónimo de poderoso. Este mini bouquet lo demuestra con cada pétalo: lo mejor a veces llega en el tamaño exacto para caber en el corazón.',
-  Bouquet_Pastel:
-    'Suave como la luz de la mañana, este bouquet nació de los colores que el alba deja antes de irse. Sus tonos pastel no gritan — susurran, y por eso llegan más lejos.',
   Bouquet_Pastel_2:
     'El segundo capítulo de una historia que se niega a terminar. Tonos suaves que evolucionan, como un amanecer que tarda en llegar pero vale cada minuto de espera.',
   Bouquet_salmon:
