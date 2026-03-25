@@ -6,6 +6,7 @@ import './Top_menu.css'
 import { useCart } from '../context/CartContext'
 import { DELIVERY_CITIES } from '../constants/deliveryCities'
 import ShippingPolicyPanel from './ShippingPolicyPanel.jsx'
+import { TimeSelect } from './DeliverySchedulePicker'
 
 const OPEN_HOUR = 10
 const CLOSE_HOUR = 19
@@ -198,16 +199,13 @@ function TopMenu() {
 
       <div className="top-menu__field top-menu__field--city" aria-label="Seleccionar ciudad de entrega">
         <span className="top-menu__field-label">Ciudad</span>
-        <select
-          className="top-menu__city-select"
-          value={selectedDeliveryCity}
-          onChange={(event) => setSelectedDeliveryCity(event.target.value)}
-          aria-label="Elegir ciudad de entrega"
-        >
-          {DELIVERY_CITIES.map((city) => (
-            <option key={city} value={city}>{city}</option>
-          ))}
-        </select>
+        <div className="top-menu__city-wrap">
+          <TimeSelect
+            slots={DELIVERY_CITIES.map((city) => ({ value: city, disabled: false }))}
+            value={selectedDeliveryCity}
+            onChange={setSelectedDeliveryCity}
+          />
+        </div>
       </div>
 
       <div className="top-menu__field top-menu__field--date" aria-label="Seleccionar fecha de entrega">
@@ -229,18 +227,13 @@ function TopMenu() {
 
       <div className="top-menu__field top-menu__field--time" aria-label="Seleccionar horario de entrega">
         <span className="top-menu__field-label">Horario</span>
-        <select
-          className="top-menu__time-select"
-          value={effectiveDeliveryTime}
-          onChange={(event) => setDeliveryTime(event.target.value)}
-          aria-label="Elegir horario de entrega"
-        >
-          {availableTimeSlots.map((timeSlot) => (
-            <option key={timeSlot.value} value={timeSlot.value} disabled={timeSlot.disabled}>
-              {timeSlot.value}
-            </option>
-          ))}
-        </select>
+        <div className="top-menu__time-wrap">
+          <TimeSelect
+            slots={availableTimeSlots}
+            value={effectiveDeliveryTime}
+            onChange={setDeliveryTime}
+          />
+        </div>
       </div>
 
       <div className="top-menu__actions" aria-label="Acciones de entrega">

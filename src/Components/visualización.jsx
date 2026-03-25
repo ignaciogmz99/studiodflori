@@ -1,10 +1,7 @@
-import { forwardRef, useEffect, useMemo, useState } from 'react'
-import DatePicker from 'react-datepicker'
-import { es } from 'date-fns/locale'
-import 'react-datepicker/dist/react-datepicker.css'
+import { useState } from 'react'
 import './visualización.css'
 import { useCart } from '../context/CartContext'
-import { DELIVERY_CITIES } from '../constants/deliveryCities'
+import DeliverySchedulePicker from './DeliverySchedulePicker'
 
 const POETIC_DESCRIPTIONS = {
   Amalfi:
@@ -59,96 +56,6 @@ const POETIC_DESCRIPTIONS = {
     'Como un canal veneciano al atardecer, Venezia es puro romanticismo flotando sobre el agua — majestuoso, sereno, imposible de olvidar.',
 }
 
-const OPEN_HOUR = 10
-const CLOSE_HOUR = 19
-const SLOT_MINUTES = 30
-
-function startOfDay(dateValue) {
-  const d = new Date(dateValue)
-  d.setHours(0, 0, 0, 0)
-  return d
-}
-
-function isSunday(dateValue) {
-  return new Date(dateValue).getDay() === 0
-}
-
-function formatSlot(totalMinutes) {
-  const hours = Math.floor(totalMinutes / 60)
-  const minutes = totalMinutes % 60
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
-}
-
-function formatISODate(dateValue) {
-  const year = dateValue.getFullYear()
-  const month = String(dateValue.getMonth() + 1).padStart(2, '0')
-  const day = String(dateValue.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-function resolveEarliestDateTime() {
-  const now = new Date()
-  const earliest = new Date(now)
-  earliest.setDate(earliest.getDate() + 1)
-  earliest.setHours(OPEN_HOUR, 0, 0, 0)
-  while (isSunday(earliest)) {
-    earliest.setDate(earliest.getDate() + 1)
-    earliest.setHours(OPEN_HOUR, 0, 0, 0)
-  }
-  return earliest
-}
-
-function buildTimeSlots(selectedDate, earliestDateTime) {
-  if (!selectedDate || isSunday(selectedDate)) {
-    return []
-  }
-  const date = startOfDay(selectedDate)
-  const isEarliestDay = startOfDay(earliestDateTime).getTime() === date.getTime()
-  const earliestMinutes = (earliestDateTime.getHours() * 60) + earliestDateTime.getMinutes()
-  const minAllowedMinutes = isEarliestDay
-    ? Math.max(OPEN_HOUR * 60, Math.ceil(earliestMinutes / SLOT_MINUTES) * SLOT_MINUTES)
-    : OPEN_HOUR * 60
-  const endMinutes = CLOSE_HOUR * 60
-  const slots = []
-  for (let minutes = OPEN_HOUR * 60; minutes <= endMinutes; minutes += SLOT_MINUTES) {
-    slots.push({ value: formatSlot(minutes), disabled: minutes < minAllowedMinutes })
-  }
-  return slots
-}
-
-function findNextAvailableDate(baseDate, earliestDateTime) {
-  let date = startOfDay(baseDate)
-  for (let i = 0; i < 30; i += 1) {
-    const hasEnabled = buildTimeSlots(date, earliestDateTime).some((s) => !s.disabled)
-    if (!isSunday(date) && hasEnabled) {
-      return date
-    }
-    date = new Date(date)
-    date.setDate(date.getDate() + 1)
-    date = startOfDay(date)
-  }
-  return date
-}
-
-function hasEnabledSlots(date, earliestDateTime) {
-  if (isSunday(date)) return false
-  return buildTimeSlots(date, earliestDateTime).some((s) => !s.disabled)
-}
-
-const DateTrigger = forwardRef(function DateTrigger({ value, onClick }, ref) {
-  return (
-    <button
-      type="button"
-      className="visualizacion__date-trigger"
-      onClick={onClick}
-      ref={ref}
-      aria-label="Elegir fecha de entrega"
-    >
-      {value || 'Seleccionar fecha'}
-    </button>
-  )
-})
-
 function FloralDeco({ petalColor = '#e87de8', centerColor = '#f0c8ee', innerColor = '#fff0fc' }) {
   return (
     <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
@@ -167,72 +74,12 @@ function FloralDeco({ petalColor = '#e87de8', centerColor = '#f0c8ee', innerColo
 }
 
 function Visualización() {
-  const {
-    selectedFlower,
-    clearSelectedFlower,
-    addToCart,
-    selectedDeliveryDate,
-    setSelectedDeliveryDate,
-    setSelectedDeliveryTime,
-    selectedDeliveryCity,
-    setSelectedDeliveryCity
-  } = useCart()
-
-  const earliestDeliveryDateTime = useMemo(() => resolveEarliestDateTime(), [])
-  const minDeliveryDate = useMemo(
-    () => startOfDay(earliestDeliveryDateTime),
-    [earliestDeliveryDateTime]
-  )
-
-  const [deliveryDate, setDeliveryDate] = useState(() => {
-    const earliest = resolveEarliestDateTime()
-    const minDate = startOfDay(earliest)
-    if (selectedDeliveryDate) {
-      const fromCtx = new Date(`${selectedDeliveryDate}T00:00:00`)
-      if (fromCtx >= minDate) return findNextAvailableDate(fromCtx, earliest)
-    }
-    return findNextAvailableDate(minDate, earliest)
-  })
-  const [deliveryTime, setDeliveryTime] = useState('')
-  const [isMobileDatePicker, setIsMobileDatePicker] = useState(
-    () => typeof window !== 'undefined' ? window.innerWidth <= 560 : false
-  )
+  const { selectedFlower, clearSelectedFlower, addToCart } = useCart()
   const [currentImageIndex, setCurrentImageIndex] = useState(
     selectedFlower?.principalIndex ?? 0
   )
 
-  const effectiveDeliveryDate = useMemo(() => {
-    const candidate = deliveryDate && deliveryDate >= minDeliveryDate
-      ? startOfDay(deliveryDate)
-      : minDeliveryDate
-    return findNextAvailableDate(candidate, earliestDeliveryDateTime)
-  }, [deliveryDate, earliestDeliveryDateTime, minDeliveryDate])
-
-  const availableTimeSlots = useMemo(
-    () => buildTimeSlots(effectiveDeliveryDate, earliestDeliveryDateTime),
-    [effectiveDeliveryDate, earliestDeliveryDateTime]
-  )
-  const firstEnabledTime = availableTimeSlots.find((s) => !s.disabled)?.value ?? ''
-  const selectedTimeIsEnabled = availableTimeSlots.some(
-    (s) => s.value === deliveryTime && !s.disabled
-  )
-  const effectiveDeliveryTime = selectedTimeIsEnabled ? deliveryTime : firstEnabledTime
-
-  useEffect(() => {
-    setSelectedDeliveryDate(formatISODate(effectiveDeliveryDate))
-    setSelectedDeliveryTime(effectiveDeliveryTime)
-  }, [effectiveDeliveryDate, effectiveDeliveryTime, setSelectedDeliveryDate, setSelectedDeliveryTime])
-
-  useEffect(() => {
-    const handleResize = () => setIsMobileDatePicker(window.innerWidth <= 560)
-    handleResize()
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-
-  if (!selectedFlower) {
-    return null
-  }
+  if (!selectedFlower) return null
 
   const { name, images, price, stock, preparationHours, hasInventoryRecord, descripcion, id } = selectedFlower
   const poetic = POETIC_DESCRIPTIONS[id] || null
@@ -257,11 +104,7 @@ function Visualización() {
         <FloralDeco petalColor="#e8c000" centerColor="#ffe566" innerColor="#fffbe0" />
       </div>
 
-      <button
-        type="button"
-        className="visualizacion__back"
-        onClick={clearSelectedFlower}
-      >
+      <button type="button" className="visualizacion__back" onClick={clearSelectedFlower}>
         ← Volver al catálogo
       </button>
 
@@ -351,54 +194,7 @@ function Visualización() {
             </svg>
           </div>
 
-          <div className="visualizacion__schedule">
-            <div className="visualizacion__schedule-col">
-              <span className="visualizacion__schedule-label">Fecha</span>
-              <DatePicker
-                selected={effectiveDeliveryDate}
-                onChange={(date) => setDeliveryDate(date || minDeliveryDate)}
-                minDate={minDeliveryDate}
-                filterDate={(date) => hasEnabledSlots(date, earliestDeliveryDateTime)}
-                locale={es}
-                dateFormat="EEE d MMM"
-                popperPlacement="bottom-start"
-                portalId="root"
-                calendarClassName="visualizacion__calendar"
-                customInput={<DateTrigger />}
-                withPortal={isMobileDatePicker}
-              />
-            </div>
-
-            <div className="visualizacion__schedule-col">
-              <span className="visualizacion__schedule-label">Horario</span>
-              <select
-                className="visualizacion__schedule-control"
-                value={effectiveDeliveryTime}
-                onChange={(e) => setDeliveryTime(e.target.value)}
-                aria-label="Elegir horario de entrega"
-              >
-                {availableTimeSlots.map((slot) => (
-                  <option key={slot.value} value={slot.value} disabled={slot.disabled}>
-                    {slot.value}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="visualizacion__schedule-col">
-              <span className="visualizacion__schedule-label">Ciudad</span>
-              <select
-                className="visualizacion__schedule-control"
-                value={selectedDeliveryCity}
-                onChange={(e) => setSelectedDeliveryCity(e.target.value)}
-                aria-label="Elegir ciudad de entrega"
-              >
-                {DELIVERY_CITIES.map((city) => (
-                  <option key={city} value={city}>{city}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+          <DeliverySchedulePicker showCity />
         </div>
       </div>
 

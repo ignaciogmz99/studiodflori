@@ -177,30 +177,66 @@
   cursor: default;
 }
 
-.top-menu__city-select {
-  border: 0;
-  background: transparent;
-  padding: 0;
-  min-width: 0;
+.top-menu__city-wrap {
   width: 100%;
-  font-family: var(--font-ui);
-  font-size: 0.98rem;
-  font-weight: 700;
-  color: #30343a;
-  cursor: pointer;
 }
 
-.top-menu__time-select {
+.top-menu__city-wrap .dsp__time {
+  width: 100%;
+}
+
+.top-menu__city-wrap .dsp__control--btn {
   border: 0;
   background: transparent;
   padding: 0;
-  min-width: 0;
-  width: 100%;
   font-family: var(--font-ui);
   font-size: 0.98rem;
   font-weight: 700;
   color: #30343a;
-  cursor: pointer;
+}
+
+.top-menu__city-wrap .dsp__control--btn::after {
+  color: #30343a;
+}
+
+/* en TopMenu el dropdown de ciudad abre hacia ABAJO */
+.top-menu__city-wrap .dsp__time-list {
+  bottom: auto;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+}
+
+
+.top-menu__time-wrap {
+  width: 100%;
+}
+
+/* botón del dropdown de horario hereda estilo del campo */
+.top-menu__time-wrap .dsp__time {
+  width: 100%;
+}
+
+.top-menu__time-wrap .dsp__control--btn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-family: var(--font-ui);
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #30343a;
+}
+
+.top-menu__time-wrap .dsp__control--btn::after {
+  color: #30343a;
+}
+
+/* en TopMenu el dropdown abre hacia ABAJO */
+.top-menu__time-wrap .dsp__time-list {
+  bottom: auto;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
 }
 
 .top-menu__actions {
@@ -394,15 +430,15 @@
     font-size: 0.82rem;
   }
 
-  .top-menu__time-select {
+  .top-menu__time-wrap .dsp__control--btn {
     font-size: 1rem;
   }
 
-  .top-menu__city-select {
+  .top-menu__city-wrap .dsp__control--btn {
     font-size: 1rem;
   }
 
-  .top-menu__date-trigger {
+.top-menu__date-trigger {
     font-size: 1rem;
   }
 

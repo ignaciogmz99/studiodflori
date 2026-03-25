@@ -87,7 +87,7 @@
 
 .visualizacion__layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 480px) 1fr;
   gap: 2.5rem;
   align-items: start;
 }
@@ -253,115 +253,6 @@
   color: #4a4a4a;
 }
 
-/* Schedule (fecha + horario + ciudad) */
-
-.visualizacion__schedule {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-  padding: 0.75rem;
-  background: linear-gradient(135deg, #fff5fd 0%, #fce8fb 100%);
-  border: 1px solid rgba(239, 183, 234, 0.45);
-  border-radius: 14px;
-}
-
-.visualizacion__schedule-col {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.visualizacion__schedule-label {
-  font-family: var(--font-ui);
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #a08898;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-/* Date trigger button */
-
-.visualizacion__date-trigger {
-  width: 100%;
-  border: 1px solid rgba(239, 183, 234, 0.8);
-  background: #fff;
-  border-radius: 8px;
-  padding: 0.4rem 0.5rem;
-  font-family: var(--font-ui);
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #2f2130;
-  text-transform: capitalize;
-  cursor: pointer;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: left;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
-  height: 34px;
-}
-
-.visualizacion__date-trigger:hover {
-  border-color: #f894f4;
-  box-shadow: 0 0 0 2px rgba(248, 148, 244, 0.2);
-}
-
-/* Shared control style (select) */
-
-.visualizacion__schedule-control {
-  width: 100%;
-  border: 1px solid rgba(239, 183, 234, 0.8);
-  border-radius: 8px;
-  background: #fff;
-  padding: 0.4rem 0.4rem;
-  font-family: var(--font-ui);
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #2f2130;
-  cursor: pointer;
-  height: 34px;
-}
-
-/* Calendar overrides */
-
-.visualizacion__calendar {
-  border: 1px solid #d9cfbf;
-  border-radius: 14px;
-  font-family: var(--font-ui);
-  box-shadow: 0 18px 34px rgba(41, 30, 18, 0.2);
-}
-
-.visualizacion__calendar .react-datepicker__month {
-  margin: 0.5rem;
-}
-
-.visualizacion__calendar .react-datepicker__day-name,
-.visualizacion__calendar .react-datepicker__day {
-  width: 2rem;
-  height: 2rem;
-  margin: 0.1rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-
-.visualizacion__calendar .react-datepicker__day:hover {
-  border-radius: 999px;
-}
-
-.visualizacion__calendar .react-datepicker__day--disabled {
-  cursor: not-allowed;
-}
-
-.visualizacion__calendar .react-datepicker__day--selected,
-.visualizacion__calendar .react-datepicker__day--selected:hover {
-  background-color: #f894f4;
-  border-radius: 999px;
-  color: #1f111f;
-}
 
 /* Sticky bar */
 
@@ -402,6 +293,14 @@
 
 /* Responsive */
 
+/* En desktop amplio (layout 2 columnas), los dropdowns abren hacia abajo */
+@media (min-width: 861px) {
+  .visualizacion .dsp__time-list {
+    bottom: auto;
+    top: calc(100% + 6px);
+  }
+}
+
 @media (max-width: 860px) {
   .visualizacion__layout {
     grid-template-columns: 1fr;
@@ -433,14 +332,6 @@
     height: 3.2rem;
   }
 
-  .visualizacion__schedule {
-    grid-template-columns: 1fr 1fr;
-    padding: 0.65rem;
-  }
-
-  .visualizacion__schedule-col:first-child {
-    grid-column: 1 / -1;
-  }
 
   .visualizacion__sticky-bar {
     padding: 0.75rem 0 0.5rem;
