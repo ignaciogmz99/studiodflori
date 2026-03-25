@@ -242,7 +242,9 @@
 .top-menu__actions {
   grid-column: 1 / -1;
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.65rem;
 }
 
 .top-menu__policy-button {
@@ -448,7 +450,11 @@
   }
 
   .top-menu__actions {
-    justify-content: flex-start;
+    align-items: flex-start;
+  }
+
+  .top-menu__policy-button {
+    text-align: left;
   }
 
   .top-menu__policy-button {

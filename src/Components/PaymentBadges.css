@@ -1,0 +1,44 @@
+.payment-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.payment-badges__label {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #9b82a0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.payment-badges__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+}
+
+.payment-badges__item {
+  display: flex;
+  align-items: center;
+}
+
+.payment-badges__item svg {
+  width: 44px;
+  height: 29px;
+  border-radius: 5px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  display: block;
+}
+
+/* Versión compacta para TopMenu */
+.payment-badges--compact .payment-badges__item svg {
+  width: 34px;
+  height: 22px;
+}

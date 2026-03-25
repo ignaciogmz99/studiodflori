@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import './Pago.css'
 import { useCart } from '../context/CartContext'
 import { DELIVERY_CITIES } from '../constants/deliveryCities'
-import DeliverySchedulePicker from './DeliverySchedulePicker'
+import PaymentBadges from './PaymentBadges'
 
 const PHONE_COUNTRY_CODES = [
   { value: '+52', label: '+52 MEX' },
@@ -32,6 +32,8 @@ function Pago() {
     items,
     totalPrice,
     closePaymentView,
+    selectedDeliveryDate,
+    selectedDeliveryTime,
     selectedDeliveryCity,
     setSelectedDeliveryCity,
     deliveryDetails,
@@ -111,7 +113,20 @@ function Pago() {
         </button>
       </header>
 
-      <DeliverySchedulePicker />
+      <div className="pago__schedule">
+        <p className="pago__schedule-row">
+          Fecha de entrega:{' '}
+          <strong>
+            {selectedDeliveryDate
+              ? new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })
+                  .format(new Date(`${selectedDeliveryDate}T00:00:00`))
+              : '—'}
+          </strong>
+        </p>
+        <p className="pago__schedule-row">
+          Horario deseado: <strong>{selectedDeliveryTime || '—'}</strong>
+        </p>
+      </div>
       <div className="pago__checkout-grid">
         <section className="pago__delivery" aria-label="Informacion de entrega">
           <h3 className="pago__delivery-title">Informacion para entregar tu pedido</h3>
@@ -286,6 +301,7 @@ function Pago() {
             </p>
           )}
           <div className="pago__actions">
+            <PaymentBadges />
             <button
               type="button"
               className="pago__next"
