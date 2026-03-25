@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './visualización.css'
 import { useCart } from '../context/CartContext'
 import DeliverySchedulePicker from './DeliverySchedulePicker'
@@ -78,6 +78,8 @@ function Visualización() {
   const [currentImageIndex, setCurrentImageIndex] = useState(
     selectedFlower?.principalIndex ?? 0
   )
+
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }) }, [])
 
   if (!selectedFlower) return null
 
