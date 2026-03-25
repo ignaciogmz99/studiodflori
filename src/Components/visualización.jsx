@@ -79,7 +79,9 @@ function Visualización() {
     selectedFlower?.principalIndex ?? 0
   )
 
-  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }) }, [])
+  useEffect(() => {
+    document.querySelector('.main-content')?.scrollTo({ top: 0, behavior: 'instant' })
+  }, [])
 
   if (!selectedFlower) return null
 
