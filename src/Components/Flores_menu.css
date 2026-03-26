@@ -519,12 +519,23 @@
   }
 
   .flores-menu__filters-group-wrap {
-    flex-wrap: wrap;
+    flex-direction: row;
+    flex-wrap: nowrap;
     gap: 0.5rem;
+    width: 100%;
+  }
+
+  .flores-menu__name-search {
+    flex: 1;
+  }
+
+  .flores-menu__name-search-control {
+    width: 100%;
   }
 
   .flores-menu__name-search-input {
-    width: 130px;
+    width: 100%;
+    min-width: 0;
   }
 
   .flores-menu__filter,

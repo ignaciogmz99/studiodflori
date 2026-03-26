@@ -67,6 +67,8 @@ const POETIC_DESCRIPTIONS = {
     'Más tulipanes, más primavera. Como si la estación hubiera decidido quedarse un poco más para seguir regalando color.',
   Tulipanes_3:
     'El tercer acto de la primavera. Estos tulipanes cierran el círculo de la estación con la misma gracia con que empezaron.',
+  Vita_verde:
+    'Verde como la promesa que hace la tierra cada primavera. Este arreglo respira vida con cada hoja y cada pétalo — fresco, sereno y lleno de la energía silenciosa de la naturaleza.',
   Venezia:
     'Como un canal veneciano al atardecer, Venezia es puro romanticismo flotando sobre el agua — majestuoso, sereno, imposible de olvidar.',
   Milan_2:

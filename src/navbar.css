@@ -134,6 +134,13 @@
   font-weight: 800;
 }
 
+.navbar__mobile-drawer-link--catalogo2026 {
+  background: linear-gradient(135deg, #1a0a0a 0%, #6e1a2c 100%);
+  border-color: #e05c7a;
+  color: #ffd6e0;
+  font-weight: 800;
+}
+
 .navbar__brand-icon-wrap {
   display: inline-flex;
   align-items: center;
