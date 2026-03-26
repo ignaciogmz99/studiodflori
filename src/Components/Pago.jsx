@@ -291,6 +291,7 @@ function Pago() {
                 onChange={handleDeliveryContactChange}
                 placeholder="Ej. Departamento 4B, tocar interfon 12, entregar en recepcion."
                 rows={3}
+                maxLength={500}
               />
             </label>
           </div>
