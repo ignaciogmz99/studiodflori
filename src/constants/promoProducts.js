@@ -6,7 +6,8 @@ export const PROMO_PRODUCT_IDS = new Set([
   'Bouquet_Gerberas',
   'Bouquet_Margarita',
   'Bouquet_mini',
-  'Bouquet_salmon'
+  'Bouquet_salmon',
+  'Bouquet_Pastel_2'
 ])
 
 export const PROMO_ORIGINAL_PRICE = 650
