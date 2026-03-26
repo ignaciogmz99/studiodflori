@@ -127,6 +127,13 @@
   font-weight: 800;
 }
 
+.navbar__mobile-drawer-link--collection {
+  background: linear-gradient(135deg, #1a1a2e 0%, #3d2c6e 100%);
+  border-color: #c9a227;
+  color: #f5d06a;
+  font-weight: 800;
+}
+
 .navbar__brand-icon-wrap {
   display: inline-flex;
   align-items: center;

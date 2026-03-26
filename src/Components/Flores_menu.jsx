@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import './Flores_menu.css'
 import { supabase } from '../lib/supabaseClient'
 import { useCart } from '../context/CartContext'
-import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE, PROMO_FILTER_KEY } from '../constants/promoProducts'
+import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE, PROMO_FILTER_KEY, KIRA_MILAN_COLLECTION_IDS, KIRA_MILAN_FILTER_KEY, KIRA_MILAN_ORIGINAL_PRICES } from '../constants/promoProducts'
 
 const assetModules = import.meta.glob('../assets/*/*.webp', {
   eager: true,
@@ -164,7 +164,10 @@ function FloresMenu() {
   const [isPriceFilterOpen, setIsPriceFilterOpen] = useState(false)
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
+  const [nameSearch, setNameSearch] = useState('')
+  const [nameSearchOpen, setNameSearchOpen] = useState(false)
   const priceFiltersRef = useRef(null)
+  const nameSearchRef = useRef(null)
   const { addToCart, setSelectedFlower, selectedFlowerType, setFlowerTypeTabs } = useCart()
 
   useEffect(() => {
@@ -235,6 +238,17 @@ function FloresMenu() {
     }
   }, [isPriceFilterOpen])
 
+  useEffect(() => {
+    if (!nameSearchOpen) return undefined
+    const handleOutside = (event) => {
+      if (nameSearchRef.current && !nameSearchRef.current.contains(event.target)) {
+        setNameSearchOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutside)
+    return () => document.removeEventListener('mousedown', handleOutside)
+  }, [nameSearchOpen])
+
   const products = useMemo(() => {
     return localProducts.map((product) => {
       const inventory = inventoryById[product.id]
@@ -259,6 +273,12 @@ function FloresMenu() {
       }
     })
   }, [inventoryById, imageIndexByProduct])
+
+  const nameSuggestions = useMemo(() => {
+    const q = nameSearch.trim().toLowerCase()
+    if (!q) return []
+    return products.filter((p) => p.name.toLowerCase().includes(q)).slice(0, 8)
+  }, [nameSearch, products])
 
   const flowerTypeTabs = useMemo(() => {
     const seen = new Set()
@@ -286,6 +306,7 @@ function FloresMenu() {
   const activeFlowerType = useMemo(() => {
     if (selectedFlowerType === ALL_FLOWER_TYPES) return ALL_FLOWER_TYPES
     if (selectedFlowerType === PROMO_FILTER_KEY) return PROMO_FILTER_KEY
+    if (selectedFlowerType === KIRA_MILAN_FILTER_KEY) return KIRA_MILAN_FILTER_KEY
     const typeStillExists = flowerTypeTabs.some((tab) => tab.value === selectedFlowerType)
     return typeStillExists ? selectedFlowerType : ALL_FLOWER_TYPES
   }, [flowerTypeTabs, selectedFlowerType])
@@ -293,6 +314,7 @@ function FloresMenu() {
   const filteredProducts = useMemo(() => {
     const productsByFlowerType = products.filter((product) => {
       if (activeFlowerType === PROMO_FILTER_KEY) return PROMO_PRODUCT_IDS.has(product.id)
+      if (activeFlowerType === KIRA_MILAN_FILTER_KEY) return KIRA_MILAN_COLLECTION_IDS.has(product.id)
       if (activeFlowerType !== ALL_FLOWER_TYPES && product.flowerType !== activeFlowerType) return false
       return true
     })
@@ -317,9 +339,14 @@ function FloresMenu() {
         }
       }
 
+      if (nameSearch.trim()) {
+        const q = nameSearch.trim().toLowerCase()
+        if (!product.name.toLowerCase().includes(q)) return false
+      }
+
       return true
     })
-  }, [activeFlowerType, maxPrice, minPrice, products])
+  }, [activeFlowerType, maxPrice, minPrice, nameSearch, products])
 
   useEffect(() => {
     filteredProducts.forEach((product) => {
@@ -376,6 +403,7 @@ function FloresMenu() {
       <h3 className="flores-menu__headline">{headline}</h3>
 
       <div className="flores-menu__actions">
+        <div className="flores-menu__filters-group-wrap">
         <div className="flores-menu__filters-dropdown" ref={priceFiltersRef}>
           <button
             type="button"
@@ -422,6 +450,44 @@ function FloresMenu() {
             </div>
           )}
           </div>
+          <div className="flores-menu__name-search" ref={nameSearchRef}>
+          <div className="flores-menu__name-search-control">
+            <input
+              className="flores-menu__name-search-input"
+              type="text"
+              placeholder="Buscar por nombre..."
+              value={nameSearch}
+              onChange={(e) => { setNameSearch(e.target.value); setNameSearchOpen(true) }}
+              onFocus={() => setNameSearchOpen(true)}
+              aria-label="Buscar flor por nombre"
+            />
+            {nameSearch && (
+              <button
+                type="button"
+                className="flores-menu__name-search-clear"
+                onClick={() => { setNameSearch(''); setNameSearchOpen(false) }}
+                aria-label="Limpiar búsqueda"
+              >✕</button>
+            )}
+          </div>
+          {nameSearchOpen && nameSuggestions.length > 0 && (
+            <ul className="flores-menu__name-search-list">
+              {nameSuggestions.map((p) => (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    className="flores-menu__name-search-option"
+                    onClick={() => { setNameSearch(p.name); setNameSearchOpen(false) }}
+                  >
+                    {p.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          </div>
+        </div>
+
         <span className="flores-menu__count">{filteredProducts.length} productos</span>
       </div>
 
@@ -460,6 +526,9 @@ function FloresMenu() {
               {PROMO_PRODUCT_IDS.has(product.id) && (
                 <span className="flores-menu__promo-badge" aria-label="Promoción">Promoción</span>
               )}
+              {KIRA_MILAN_COLLECTION_IDS.has(product.id) && (
+                <span className="flores-menu__collection-badge" aria-label="Kira Milan Collection">✨ Collection</span>
+              )}
               {product.totalImages > 1 && (
                 <>
                   <button
@@ -494,6 +563,9 @@ function FloresMenu() {
                       <span>${product.price} MXN</span>
                       {PROMO_PRODUCT_IDS.has(product.id) && (
                         <s className="flores-menu__price-original">${PROMO_ORIGINAL_PRICE} MXN</s>
+                      )}
+                      {KIRA_MILAN_COLLECTION_IDS.has(product.id) && KIRA_MILAN_ORIGINAL_PRICES[product.id] && (
+                        <s className="flores-menu__price-original">${KIRA_MILAN_ORIGINAL_PRICES[product.id]} MXN</s>
                       )}
                     </>
                   )

@@ -2,7 +2,7 @@ import './navbar.css'
 import { useState } from 'react'
 import logo from './assets/logo_bien.jpg'
 import { useCart } from './context/CartContext'
-import { PROMO_FILTER_KEY } from './constants/promoProducts'
+import { PROMO_FILTER_KEY, KIRA_MILAN_FILTER_KEY } from './constants/promoProducts'
 
 const panelContent = {
   regalos: {
@@ -165,6 +165,13 @@ function Navbar() {
                 onClick={() => { setSelectedFlowerType(PROMO_FILTER_KEY); handleClose() }}
               >
                 🌸 Ver ofertas especiales — $595 MXN
+              </button>
+              <button
+                type="button"
+                className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--collection${selectedFlowerType === KIRA_MILAN_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
+                onClick={() => { setSelectedFlowerType(KIRA_MILAN_FILTER_KEY); handleClose() }}
+              >
+                ✨ Kira Milan Collection 2025
               </button>
             </div>
             {flowerTypeTabs.length > 0 && (

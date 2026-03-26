@@ -112,6 +112,86 @@
   font-weight: 700;
 }
 
+.flores-menu__name-search {
+  position: relative;
+}
+
+.flores-menu__name-search-control {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid #c97ec5;
+  background: #fff7fe;
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  gap: 0.4rem;
+}
+
+.flores-menu__name-search-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  color: #6b006b;
+  width: 160px;
+}
+
+.flores-menu__name-search-input::placeholder {
+  color: #c97ec5;
+  font-weight: 500;
+}
+
+.flores-menu__name-search-clear {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #c97ec5;
+  font-size: 0.8rem;
+  padding: 0;
+  line-height: 1;
+}
+
+.flores-menu__name-search-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 100%;
+  background: #fff;
+  border: 1.5px solid #e8d0f0;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(180,80,180,0.12);
+  list-style: none;
+  margin: 0;
+  padding: 0.3rem 0;
+  z-index: 50;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.flores-menu__name-search-option {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0.55rem 1rem;
+  text-align: left;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  color: #3a003a;
+  cursor: pointer;
+}
+
+.flores-menu__name-search-option:hover {
+  background: #fce8fc;
+  color: #6b006b;
+}
+
+.flores-menu__filters-group-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
 .flores-menu__filters-dropdown {
   position: relative;
 }
@@ -341,6 +421,25 @@
   pointer-events: none;
 }
 
+.flores-menu__collection-badge {
+  position: absolute;
+  top: 0.55rem;
+  left: 0.55rem;
+  z-index: 2;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #3d2c6e 50%, #1a1a2e 100%);
+  color: #f5d06a;
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  box-shadow: 0 2px 8px rgba(61,44,110,0.45);
+  pointer-events: none;
+  border: 1px solid #c9a227;
+}
+
 .flores-menu__stock {
   margin: 0;
   padding: 0 0.75rem 0.75rem;
@@ -417,6 +516,15 @@
     align-items: flex-start;
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  .flores-menu__filters-group-wrap {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .flores-menu__name-search-input {
+    width: 130px;
   }
 
   .flores-menu__filter,

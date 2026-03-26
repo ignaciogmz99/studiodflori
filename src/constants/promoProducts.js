@@ -10,5 +10,24 @@ export const PROMO_PRODUCT_IDS = new Set([
   'Bouquet_Pastel_2'
 ])
 
+export const KIRA_MILAN_COLLECTION_IDS = new Set([
+  'Kira',
+  'London',
+  'Venezia',
+  'Milan_2',
+  'Rotterdam',
+  'Cerezo',
+])
+
+export const KIRA_MILAN_ORIGINAL_PRICES = {
+  Kira: 1350,
+  London: 1150,
+  Venezia: 780,
+  Milan_2: 850,
+  Rotterdam: 1300,
+  Cerezo: 1000,
+}
+
 export const PROMO_ORIGINAL_PRICE = 650
 export const PROMO_FILTER_KEY = 'promo'
+export const KIRA_MILAN_FILTER_KEY = 'kira_milan'

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import './visualización.css'
 import { useCart } from '../context/CartContext'
 import DeliverySchedulePicker from './DeliverySchedulePicker'
-import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE } from '../constants/promoProducts'
+import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE, KIRA_MILAN_COLLECTION_IDS, KIRA_MILAN_ORIGINAL_PRICES } from '../constants/promoProducts'
 
 const POETIC_DESCRIPTIONS = {
   Amalfi:
@@ -69,6 +69,12 @@ const POETIC_DESCRIPTIONS = {
     'El tercer acto de la primavera. Estos tulipanes cierran el círculo de la estación con la misma gracia con que empezaron.',
   Venezia:
     'Como un canal veneciano al atardecer, Venezia es puro romanticismo flotando sobre el agua — majestuoso, sereno, imposible de olvidar.',
+  Milan_2:
+    'Milán siempre vuelve con algo nuevo que decir. Esta segunda edición guarda la sofisticación de la ciudad de la moda en cada pétalo — refinado, moderno y sin esfuerzo.',
+  Rotterdam:
+    'Arquitectura en flor. Rotterdam combina la audacia de lo contemporáneo con la suavidad de la naturaleza, como un puente entre lo que el mundo construye y lo que la tierra hace crecer.',
+  Cerezo:
+    'Los cerezos florecen una sola vez al año y por eso su belleza duele un poco. Este ramo captura ese instante fugaz — delicado, rosado y lleno de la emoción de lo que no puede quedarse para siempre.',
 }
 
 function FloralDeco({ petalColor = '#e87de8', centerColor = '#f0c8ee', innerColor = '#fff0fc' }) {
@@ -191,6 +197,9 @@ function Visualización() {
                 <span>${price} MXN</span>
                 {PROMO_PRODUCT_IDS.has(id) && (
                   <s className="visualizacion__price-original">${PROMO_ORIGINAL_PRICE} MXN</s>
+                )}
+                {KIRA_MILAN_COLLECTION_IDS.has(id) && KIRA_MILAN_ORIGINAL_PRICES[id] && (
+                  <s className="visualizacion__price-original">${KIRA_MILAN_ORIGINAL_PRICES[id]} MXN</s>
                 )}
               </>
             ) : 'Precio no disponible'}
