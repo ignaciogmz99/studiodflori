@@ -300,6 +300,39 @@
   line-height: 1.4;
 }
 
+.navbar__panel-social {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.navbar__panel-social-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.navbar__panel-social-btn:hover {
+  opacity: 0.85;
+}
+
+.navbar__panel-social-btn--fb {
+  background: #1877f2;
+  color: #fff;
+}
+
+.navbar__panel-social-btn--ig {
+  background: linear-gradient(135deg, #f58529, #dd2a7b, #8134af);
+  color: #fff;
+}
+
 .navbar__cart-list {
   list-style: none;
   margin: 0.75rem 0 0;

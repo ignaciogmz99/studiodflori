@@ -13,7 +13,9 @@ const panelContent = {
   contacto: {
     title: 'Contacto',
     heading: 'Habla con nosotros',
-    text: 'Escribenos para pedidos, cotizaciones o dudas sobre disponibilidad. WhatsApp: +52 33 1025 9546. Horario de atencion: Lunes a Sabado de 9:00 a 18:00.'
+    text: 'Escribenos para pedidos, cotizaciones o dudas sobre disponibilidad. WhatsApp: +52 33 1025 9546. Horario de atencion: Lunes a Sabado de 9:00 a 18:00.',
+    facebook: 'https://www.facebook.com/share/1HVJZRXdDL/?mibextid=wwXIfr',
+    instagram: 'https://www.instagram.com/studiodeifiori?igsh=Zzlja3ZmeGg1Y3Bv&utm_source=qr'
   },
   direccion: {
     title: 'Direccion',
@@ -311,6 +313,20 @@ function Navbar() {
               >
                 {selectedContent.mapLabel || 'Abrir mapa'}
               </a>
+            )}
+            {(selectedContent.facebook || selectedContent.instagram) && (
+              <div className="navbar__panel-social">
+                {selectedContent.facebook && (
+                  <a className="navbar__panel-social-btn navbar__panel-social-btn--fb" href={selectedContent.facebook} target="_blank" rel="noreferrer">
+                    Facebook
+                  </a>
+                )}
+                {selectedContent.instagram && (
+                  <a className="navbar__panel-social-btn navbar__panel-social-btn--ig" href={selectedContent.instagram} target="_blank" rel="noreferrer">
+                    Instagram
+                  </a>
+                )}
+              </div>
             )}
           </section>
         </div>
