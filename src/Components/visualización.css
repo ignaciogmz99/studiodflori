@@ -270,7 +270,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 0.85rem 0 1rem;
+  padding: 0.85rem 0 max(1rem, env(safe-area-inset-bottom));
   background: linear-gradient(to top, #ffffff 80%, transparent);
   z-index: 10;
 }

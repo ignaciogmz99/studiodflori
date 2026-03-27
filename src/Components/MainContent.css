@@ -4,6 +4,7 @@
   overflow-x: hidden;
   background: #ffffff;
   padding: 0.9rem 1rem 1.25rem;
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
   box-sizing: border-box;
   height: 0;
 }
