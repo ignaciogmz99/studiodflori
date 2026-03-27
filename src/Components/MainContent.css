@@ -3,8 +3,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   background: #ffffff;
-  padding: 0.9rem 1rem 1.25rem;
-  padding-bottom: max(4rem, env(safe-area-inset-bottom, 4rem));
+  padding: 0.9rem 1rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
   height: 0;
 }
@@ -15,7 +14,7 @@
 
 @media (max-width: 768px) {
   .main-content {
-    padding: 0.8rem 0.75rem 1rem;
+    padding: 0.8rem 0.75rem calc(4.5rem + env(safe-area-inset-bottom, 0px));
   }
 
   .main-content--viz {
