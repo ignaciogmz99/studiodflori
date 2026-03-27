@@ -183,21 +183,6 @@ function Navbar() {
                 🌹 Catálogo 2026
               </button>
             </div>
-            {flowerTypeTabs.length > 0 && (
-              <div className="navbar__mobile-drawer-categories">
-                <p className="navbar__mobile-drawer-section-title">Categorias</p>
-                {flowerTypeTabs.map((tab) => (
-                  <button
-                    key={tab.value}
-                    type="button"
-                    className={`navbar__mobile-drawer-link${selectedFlowerType === tab.value ? ' navbar__mobile-drawer-link--active' : ''}`}
-                    onClick={() => { setSelectedFlowerType(tab.value); handleClose() }}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            )}
             <div className="navbar__mobile-drawer-categories">
               <p className="navbar__mobile-drawer-section-title">Menu</p>
               <button
@@ -222,6 +207,21 @@ function Navbar() {
                 Direccion
               </button>
             </div>
+            {flowerTypeTabs.length > 0 && (
+              <div className="navbar__mobile-drawer-categories">
+                <p className="navbar__mobile-drawer-section-title">Categorias</p>
+                {flowerTypeTabs.map((tab) => (
+                  <button
+                    key={tab.value}
+                    type="button"
+                    className={`navbar__mobile-drawer-link${selectedFlowerType === tab.value ? ' navbar__mobile-drawer-link--active' : ''}`}
+                    onClick={() => { setSelectedFlowerType(tab.value); handleClose() }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </section>
         </div>
       )}
