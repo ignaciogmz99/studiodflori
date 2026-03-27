@@ -96,6 +96,37 @@
   margin: 0 0 0.45rem 0.25rem;
 }
 
+.navbar__mobile-drawer-section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+  background: #f5e6f5;
+  border: 1.5px solid #d8a8d8;
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 0.45rem;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7a007a;
+}
+
+.navbar__mobile-drawer-section-arrow {
+  font-size: 1rem;
+  transition: transform 0.2s ease;
+  display: inline-block;
+  color: #b46ab0;
+}
+
+.navbar__mobile-drawer-section-arrow--open {
+  transform: rotate(180deg);
+}
+
 .navbar__mobile-drawer-link {
   display: block;
   width: 100%;

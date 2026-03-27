@@ -41,6 +41,7 @@ function formatPreparationTime(hours) {
 
 function Navbar() {
   const [activePanel, setActivePanel] = useState(null)
+  const [categoriesOpen, setCategoriesOpen] = useState(false)
   const {
     items,
     totalItems,
@@ -209,8 +210,15 @@ function Navbar() {
             </div>
             {flowerTypeTabs.length > 0 && (
               <div className="navbar__mobile-drawer-categories">
-                <p className="navbar__mobile-drawer-section-title">Categorias</p>
-                {flowerTypeTabs.map((tab) => (
+                <button
+                  type="button"
+                  className="navbar__mobile-drawer-section-toggle"
+                  onClick={() => setCategoriesOpen((v) => !v)}
+                >
+                  <span>Categorias</span>
+                  <span className={`navbar__mobile-drawer-section-arrow${categoriesOpen ? ' navbar__mobile-drawer-section-arrow--open' : ''}`}>▾</span>
+                </button>
+                {categoriesOpen && flowerTypeTabs.map((tab) => (
                   <button
                     key={tab.value}
                     type="button"
