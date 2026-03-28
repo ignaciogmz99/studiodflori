@@ -5,6 +5,14 @@ import DeliverySchedulePicker from './DeliverySchedulePicker'
 import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE, KIRA_MILAN_COLLECTION_IDS, KIRA_MILAN_ORIGINAL_PRICES } from '../constants/promoProducts'
 
 const POETIC_DESCRIPTIONS = {
+  Arreglo_Lilis:
+    'Las lilies llevan en su nombre la promesa de lo puro. Erguidas y perfumadas, iluminan cualquier espacio con la gracia de quien no necesita esforzarse para ser hermoso.',
+  Ceramica_Floral:
+    'Cuando la cerámica abraza las flores, nace algo que perdura más allá de la temporada. La tierra cocida sostiene la vida floreciente — una pieza que es regalo y obra de arte a la vez.',
+  Ramo_Margaritas:
+    'Las margaritas siempre supieron lo que tardamos en aprender: que la alegría más genuina viene en blanco y amarillo, sin complicaciones, sin pretensiones.',
+  Ramo_rosas_Inglesas:
+    'Las rosas inglesas son la poesía en flor. Con sus pétalos que se enredan en espiral infinita, guardan en cada capa un verso de belleza que nunca termina de escribirse.',
   Amalfi:
     'Como el perfume del mar en una tarde de verano, el Amalfi lleva en sus pétalos el espíritu de la costa italiana — luminoso, cálido y lleno de vida.',
   Bouquet:
