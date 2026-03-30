@@ -166,7 +166,7 @@ function FloresMenu() {
   const [maxPrice, setMaxPrice] = useState('')
   const [nameSearch, setNameSearch] = useState('')
   const [nameSearchOpen, setNameSearchOpen] = useState(false)
-  const [visibleCount, setVisibleCount] = useState(20)
+  const [visibleCount, setVisibleCount] = useState(10)
   const priceFiltersRef = useRef(null)
   const nameSearchRef = useRef(null)
   const loadMoreRef = useRef(null)
@@ -398,7 +398,7 @@ function FloresMenu() {
   }
 
   useEffect(() => {
-    setVisibleCount(20)
+    setVisibleCount(10)
   }, [nameSearch, minPrice, maxPrice, activeFlowerType])
 
   useEffect(() => {
@@ -406,7 +406,7 @@ function FloresMenu() {
     if (!sentinel) return
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) setVisibleCount((c) => c + 20)
+        if (entries[0].isIntersecting) setVisibleCount((c) => c + 10)
       },
       { rootMargin: '200px' }
     )
