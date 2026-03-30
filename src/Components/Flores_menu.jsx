@@ -22,7 +22,7 @@ const ROMAN_NUMERALS = {
   10: 'X'
 }
 
-function formatProductName(value) {
+export function formatProductName(value) {
   return String(value || '')
     .replace(/_/g, ' ')
     .split(/\s+/)
@@ -77,13 +77,13 @@ const OPEN_HOUR = 10
 const CLOSE_HOUR = 19
 const ALL_FLOWER_TYPES = 'all'
 
-function normalizeFlowerType(value) {
+export function normalizeFlowerType(value) {
   return String(value || '')
     .trim()
     .toLowerCase()
 }
 
-function formatFlowerTypeLabel(value) {
+export function formatFlowerTypeLabel(value) {
   const normalized = normalizeFlowerType(value)
 
   if (!normalized) {
@@ -101,7 +101,7 @@ function formatFlowerTypeLabel(value) {
     .join(' ')
 }
 
-function resolvePreparationHours(inventory) {
+export function resolvePreparationHours(inventory) {
   if (!inventory) {
     return 24
   }
@@ -129,7 +129,7 @@ function resolvePreparationHours(inventory) {
   return 24
 }
 
-function getPreparationLabel(hours) {
+export function getPreparationLabel(hours) {
   const parsedHours = Number(hours)
   const preparationHours = Number.isFinite(parsedHours) && parsedHours > 0 ? parsedHours : 24
   const now = new Date()
@@ -166,8 +166,10 @@ function FloresMenu() {
   const [maxPrice, setMaxPrice] = useState('')
   const [nameSearch, setNameSearch] = useState('')
   const [nameSearchOpen, setNameSearchOpen] = useState(false)
+  const [visibleCount, setVisibleCount] = useState(20)
   const priceFiltersRef = useRef(null)
   const nameSearchRef = useRef(null)
+  const loadMoreRef = useRef(null)
   const { addToCart, setSelectedFlower, selectedFlowerType, setFlowerTypeTabs } = useCart()
 
   useEffect(() => {
@@ -395,6 +397,23 @@ function FloresMenu() {
     })
   }
 
+  useEffect(() => {
+    setVisibleCount(20)
+  }, [nameSearch, minPrice, maxPrice, activeFlowerType])
+
+  useEffect(() => {
+    const sentinel = loadMoreRef.current
+    if (!sentinel) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) setVisibleCount((c) => c + 20)
+      },
+      { rootMargin: '200px' }
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [])
+
   const selectedFlowerTypeLabel = formatFlowerTypeLabel(activeFlowerType)
   const headline = activeFlowerType === ALL_FLOWER_TYPES
     ? 'Flores a domicilio en Guadalajara con entrega para cada ocasion'
@@ -508,7 +527,7 @@ function FloresMenu() {
       )}
 
       <div className="flores-menu__shelf" aria-label="Estante de productos">
-        {filteredProducts.map((product) => (
+        {filteredProducts.slice(0, visibleCount).map((product) => (
           <article className="flores-menu__card" key={product.id}>
             <div
               className="flores-menu__image-wrap flores-menu__image-wrap--clickable"
@@ -601,6 +620,7 @@ function FloresMenu() {
           </article>
         ))}
       </div>
+      <div ref={loadMoreRef} />
     </section>
   )
 }
