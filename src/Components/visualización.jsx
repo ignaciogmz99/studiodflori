@@ -85,6 +85,24 @@ const POETIC_DESCRIPTIONS = {
     'Arquitectura en flor. Rotterdam combina la audacia de lo contemporáneo con la suavidad de la naturaleza, como un puente entre lo que el mundo construye y lo que la tierra hace crecer.',
   Cerezo:
     'Los cerezos florecen una sola vez al año y por eso su belleza duele un poco. Este ramo captura ese instante fugaz — delicado, rosado y lleno de la emoción de lo que no puede quedarse para siempre.',
+  Verona:
+    'En Verona nació la historia de amor más famosa del mundo. Este arreglo lleva ese mismo peso — el de los sentimientos que no caben en palabras y que solo las flores saben cargar.',
+  Milan:
+    'Milán huele a diseño, a café temprano y a perfume caro. Este arreglo tiene esa misma energía: elegante sin esfuerzo, moderno sin prisa, bello sin pedir permiso.',
+  Versalles:
+    'Los jardines de Versalles fueron diseñados para impresionar a reyes. Este arreglo guarda ese mismo espíritu — generoso, grandioso y construido para quien merece lo mejor.',
+  York:
+    'Con la serenidad de las colinas inglesas y el carácter de sus piedras antiguas, York florece con una belleza discreta que no necesita adornos para quedarse en la memoria.',
+  Bari:
+    'Bari mira al mar Adriático con los ojos abiertos. Este arreglo tiene esa misma luz del sur de Italia — cálida, directa y llena de la energía de quien vive cerca del agua.',
+  Ramo_lisianthus:
+    'El lisianthus es la flor que parece una rosa pero no lo es — y esa diferencia lo hace extraordinario. Con sus pétalos en capas suaves guarda la ternura de lo que no necesita ser otra cosa para ser hermoso.',
+  Caja_floral_tulipanes:
+    'Una caja llena de primavera. Los tulipanes aprendieron hace siglos que la mejor forma de llegar a alguien es juntos — coloridos, generosos y sin disculpas.',
+  Niza:
+    'Como un paseo por la Promenade des Anglais al atardecer, Niza es luminosa, suave y cargada de esa alegría mediterránea que parece no tener fin.',
+  Ceramica_floral_2:
+    'La cerámica vuelve a abrazar flores — esta vez con una nueva historia que contar. La tierra y los pétalos encontraron otra forma de decirse que se necesitan.',
 }
 
 function FloralDeco({ petalColor = '#e87de8', centerColor = '#f0c8ee', innerColor = '#fff0fc' }) {

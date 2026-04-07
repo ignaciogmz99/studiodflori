@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import './Flores_menu.css'
 import { supabase } from '../lib/supabaseClient'
 import { useCart } from '../context/CartContext'
-import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE, PROMO_FILTER_KEY, KIRA_MILAN_COLLECTION_IDS, KIRA_MILAN_FILTER_KEY, KIRA_MILAN_ORIGINAL_PRICES, CATALOGO_2026_IDS, CATALOGO_2026_FILTER_KEY } from '../constants/promoProducts'
+import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE, PROMO_FILTER_KEY, KIRA_MILAN_COLLECTION_IDS, KIRA_MILAN_FILTER_KEY, KIRA_MILAN_ORIGINAL_PRICES, CATALOGO_2026_IDS, CATALOGO_2026_FILTER_KEY, CATALOGO_2023_IDS, CATALOGO_2023_FILTER_KEY } from '../constants/promoProducts'
 
 const assetModules = import.meta.glob('../assets/*/*.webp', {
   eager: true,
@@ -310,6 +310,7 @@ function FloresMenu() {
     if (selectedFlowerType === PROMO_FILTER_KEY) return PROMO_FILTER_KEY
     if (selectedFlowerType === KIRA_MILAN_FILTER_KEY) return KIRA_MILAN_FILTER_KEY
     if (selectedFlowerType === CATALOGO_2026_FILTER_KEY) return CATALOGO_2026_FILTER_KEY
+    if (selectedFlowerType === CATALOGO_2023_FILTER_KEY) return CATALOGO_2023_FILTER_KEY
     const typeStillExists = flowerTypeTabs.some((tab) => tab.value === selectedFlowerType)
     return typeStillExists ? selectedFlowerType : ALL_FLOWER_TYPES
   }, [flowerTypeTabs, selectedFlowerType])
@@ -319,6 +320,7 @@ function FloresMenu() {
       if (activeFlowerType === PROMO_FILTER_KEY) return PROMO_PRODUCT_IDS.has(product.id)
       if (activeFlowerType === KIRA_MILAN_FILTER_KEY) return KIRA_MILAN_COLLECTION_IDS.has(product.id)
       if (activeFlowerType === CATALOGO_2026_FILTER_KEY) return CATALOGO_2026_IDS.has(product.id)
+      if (activeFlowerType === CATALOGO_2023_FILTER_KEY) return CATALOGO_2023_IDS.has(product.id)
       if (activeFlowerType !== ALL_FLOWER_TYPES && product.flowerType !== activeFlowerType) return false
       return true
     })

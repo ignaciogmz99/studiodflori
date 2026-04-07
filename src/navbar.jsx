@@ -2,7 +2,7 @@ import './navbar.css'
 import { useState } from 'react'
 import logo from './assets/logo_bien.jpg'
 import { useCart } from './context/CartContext'
-import { PROMO_FILTER_KEY, KIRA_MILAN_FILTER_KEY, CATALOGO_2026_FILTER_KEY } from './constants/promoProducts'
+import { PROMO_FILTER_KEY, KIRA_MILAN_FILTER_KEY, CATALOGO_2026_FILTER_KEY, CATALOGO_2023_FILTER_KEY } from './constants/promoProducts'
 
 const panelContent = {
   regalos: {
@@ -54,7 +54,9 @@ function Navbar() {
     openPaymentView,
     selectedFlowerType,
     setSelectedFlowerType,
-    flowerTypeTabs
+    flowerTypeTabs,
+    clearSelectedFlower,
+    closePaymentView
   } = useCart()
 
   const handleOpen = (panelKey) => {
@@ -88,12 +90,17 @@ function Navbar() {
           </span>
         </button>
 
-        <a className="navbar__brand" href="#" aria-label="Studio dei Fiori">
+        <button
+          type="button"
+          className="navbar__brand"
+          aria-label="Ir a la página principal"
+          onClick={() => { clearSelectedFlower(); closePaymentView() }}
+        >
           <span className="navbar__brand-icon-wrap">
             <img className="navbar__logo-image" src={logo} alt="Logo de Studio dei Fiori" />
           </span>
           <span className="navbar__brand-text">Studio dei Fiori</span>
-        </a>
+        </button>
 
         <ul className="navbar__menu">
           <li className="navbar__menu-item navbar__menu-item--desktop">
@@ -182,6 +189,13 @@ function Navbar() {
                 onClick={() => { setSelectedFlowerType(CATALOGO_2026_FILTER_KEY); handleClose() }}
               >
                 🌹 Catálogo 2026
+              </button>
+              <button
+                type="button"
+                className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--catalogo2026${selectedFlowerType === CATALOGO_2023_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
+                onClick={() => { setSelectedFlowerType(CATALOGO_2023_FILTER_KEY); handleClose() }}
+              >
+                🌸 Catálogo 2023
               </button>
             </div>
             <div className="navbar__mobile-drawer-categories">

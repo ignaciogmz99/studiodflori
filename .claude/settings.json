@@ -5,7 +5,8 @@
       "Bash(npm audit:*)",
       "Bash(npm install:*)",
       "Bash(xargs grep:*)",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "Read(//c/studiodflori/src/assets/**)"
     ]
   }
 }
