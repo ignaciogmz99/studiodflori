@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './Pago.css'
 import { useCart } from '../context/CartContext'
 import { DELIVERY_CITIES } from '../constants/deliveryCities'
@@ -28,6 +29,7 @@ function onlyDigits(value) {
 }
 
 function Pago() {
+  const navigate = useNavigate()
   useEffect(() => {
     document.querySelector('.main-content')?.scrollTo({ top: 0, behavior: 'instant' })
   }, [])
@@ -112,7 +114,7 @@ function Pago() {
     <section className="pago" aria-label="Resumen de pago">
       <header className="pago__header">
         <h2 className="pago__title">Pago</h2>
-        <button type="button" className="pago__back" onClick={closePaymentView}>
+        <button type="button" className="pago__back" onClick={() => { closePaymentView(); navigate('/') }}>
           Volver al catalogo
         </button>
       </header>

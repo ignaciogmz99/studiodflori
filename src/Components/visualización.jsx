@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import './visualización.css'
 import { useCart } from '../context/CartContext'
 import DeliverySchedulePicker from './DeliverySchedulePicker'
 import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE, KIRA_MILAN_COLLECTION_IDS, KIRA_MILAN_ORIGINAL_PRICES } from '../constants/promoProducts'
+
+const SITE_URL = 'https://www.studiodeifiori.com'
 
 const POETIC_DESCRIPTIONS = {
   Arreglo_Lilis:
@@ -124,6 +128,7 @@ function FloralDeco({ petalColor = '#e87de8', centerColor = '#f0c8ee', innerColo
 
 function Visualización() {
   const { selectedFlower, clearSelectedFlower, addToCart } = useCart()
+  const navigate = useNavigate()
   const [currentImageIndex, setCurrentImageIndex] = useState(
     selectedFlower?.principalIndex ?? 0
   )
@@ -145,8 +150,37 @@ function Visualización() {
     : 0
   const currentImage = images?.[normalizedIndex] ?? selectedFlower.image
   const canAddToCart = typeof price === 'number' && typeof stock === 'number' && stock > 0
+  const metaDescription = displayDescripcion
+    ? displayDescripcion.slice(0, 155)
+    : `${name} — arreglo floral con entrega a domicilio en Guadalajara.`
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name,
+    description: metaDescription,
+    image: currentImage,
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'MXN',
+      price: typeof price === 'number' ? price : undefined,
+      availability: typeof stock === 'number' && stock > 0
+        ? 'https://schema.org/InStock'
+        : 'https://schema.org/OutOfStock',
+      seller: { '@type': 'Organization', name: 'Studio dei Fiori' }
+    }
+  }
 
   return (
+    <>
+    <Helmet>
+      <title>{name} — Studio dei Fiori | Flores a domicilio Guadalajara</title>
+      <meta name="description" content={metaDescription} />
+      <link rel="canonical" href={`${SITE_URL}/flores/${id}`} />
+      <meta property="og:title" content={`${name} — Studio dei Fiori`} />
+      <meta property="og:description" content={metaDescription} />
+      <meta property="og:url" content={`${SITE_URL}/flores/${id}`} />
+      <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+    </Helmet>
     <div className="visualizacion">
       <div className="visualizacion__deco visualizacion__deco--tr" aria-hidden="true"><FloralDeco /></div>
       <div className="visualizacion__deco visualizacion__deco--bl" aria-hidden="true"><FloralDeco /></div>
@@ -157,7 +191,7 @@ function Visualización() {
         <FloralDeco petalColor="#e8c000" centerColor="#ffe566" innerColor="#fffbe0" />
       </div>
 
-      <button type="button" className="visualizacion__back" onClick={clearSelectedFlower}>
+      <button type="button" className="visualizacion__back" onClick={() => { clearSelectedFlower(); navigate('/') }}>
         ← Volver al catálogo
       </button>
 
@@ -274,6 +308,7 @@ function Visualización() {
         </button>
       </div>
     </div>
+    </>
   )
 }
 

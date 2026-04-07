@@ -1,5 +1,6 @@
 import './navbar.css'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import logo from './assets/logo_bien.jpg'
 import { useCart } from './context/CartContext'
 import { PROMO_FILTER_KEY, KIRA_MILAN_FILTER_KEY, CATALOGO_2026_FILTER_KEY, CATALOGO_2023_FILTER_KEY, CATALOGO_2024_FILTER_KEY } from './constants/promoProducts'
@@ -42,6 +43,7 @@ function formatPreparationTime(hours) {
 function Navbar() {
   const [activePanel, setActivePanel] = useState(null)
   const [categoriesOpen, setCategoriesOpen] = useState(false)
+  const navigate = useNavigate()
   const {
     items,
     totalItems,
@@ -94,7 +96,7 @@ function Navbar() {
           type="button"
           className="navbar__brand"
           aria-label="Ir a la página principal"
-          onClick={() => { clearSelectedFlower(); closePaymentView() }}
+          onClick={() => { clearSelectedFlower(); closePaymentView(); navigate('/') }}
         >
           <span className="navbar__brand-icon-wrap">
             <img className="navbar__logo-image" src={logo} alt="Logo de Studio dei Fiori" />
@@ -303,6 +305,7 @@ function Navbar() {
                     className="navbar__cart-clear"
                     onClick={() => {
                       openPaymentView()
+                      navigate('/pago')
                       handleClose()
                     }}
                   >

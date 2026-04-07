@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './Flores_menu.css'
 import { supabase } from '../lib/supabaseClient'
 import { useCart } from '../context/CartContext'
@@ -58,7 +59,7 @@ const shelfProducts = Object.entries(assetModules).reduce((acc, [path, src]) => 
   return acc
 }, {})
 
-const localProducts = Object.entries(shelfProducts)
+export const localProducts = Object.entries(shelfProducts)
   .map(([name, images]) => {
     const sortedImages = images.sort((a, b) => a.file.localeCompare(b.file))
     const principalIndex = sortedImages.findIndex((image) => /^flor1\./i.test(image.file))
@@ -171,6 +172,12 @@ function FloresMenu() {
   const nameSearchRef = useRef(null)
   const loadMoreRef = useRef(null)
   const { addToCart, setSelectedFlower, selectedFlowerType, setFlowerTypeTabs } = useCart()
+  const navigate = useNavigate()
+
+  const openProduct = (product) => {
+    setSelectedFlower(product)
+    navigate('/flores/' + product.id)
+  }
 
   useEffect(() => {
     let isMounted = true
@@ -538,8 +545,8 @@ function FloresMenu() {
               role="button"
               tabIndex={0}
               aria-label={`Ver detalle de ${product.name}`}
-              onClick={() => setSelectedFlower(product)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedFlower(product) }}
+              onClick={() => openProduct(product)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openProduct(product) }}
             >
               <img
                 className="flores-menu__image"
@@ -578,8 +585,8 @@ function FloresMenu() {
                 </>
               )}
             </div>
-            <p className="flores-menu__name flores-menu__name--clickable" onClick={() => setSelectedFlower(product)}>{product.name}</p>
-            <p className="flores-menu__price flores-menu__price--clickable" onClick={() => setSelectedFlower(product)}>
+            <p className="flores-menu__name flores-menu__name--clickable" onClick={() => openProduct(product)}>{product.name}</p>
+            <p className="flores-menu__price flores-menu__price--clickable" onClick={() => openProduct(product)}>
               {inventoryStatus === 'loading'
                 ? 'Cargando precio...'
                 : typeof product.price === 'number'
