@@ -2,7 +2,7 @@ import './navbar.css'
 import { useState } from 'react'
 import logo from './assets/logo_bien.jpg'
 import { useCart } from './context/CartContext'
-import { PROMO_FILTER_KEY, KIRA_MILAN_FILTER_KEY, CATALOGO_2026_FILTER_KEY, CATALOGO_2023_FILTER_KEY } from './constants/promoProducts'
+import { PROMO_FILTER_KEY, KIRA_MILAN_FILTER_KEY, CATALOGO_2026_FILTER_KEY, CATALOGO_2023_FILTER_KEY, CATALOGO_2024_FILTER_KEY } from './constants/promoProducts'
 
 const panelContent = {
   regalos: {
@@ -189,6 +189,13 @@ function Navbar() {
                 onClick={() => { setSelectedFlowerType(CATALOGO_2026_FILTER_KEY); handleClose() }}
               >
                 🌹 Catálogo 2026
+              </button>
+              <button
+                type="button"
+                className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--catalogo2026${selectedFlowerType === CATALOGO_2024_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
+                onClick={() => { setSelectedFlowerType(CATALOGO_2024_FILTER_KEY); handleClose() }}
+              >
+                🌻 Catálogo 2024
               </button>
               <button
                 type="button"

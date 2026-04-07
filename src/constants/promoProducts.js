@@ -63,6 +63,16 @@ export const CATALOGO_2023_IDS = new Set([
 
 export const CATALOGO_2023_FILTER_KEY = 'catalogo_2023'
 
+export const CATALOGO_2024_IDS = new Set([
+  'Sylla',
+  'Caja_floral_Dorian',
+  'Floral_iris',
+  'Arreglo_floral_aqua',
+  'Ramo_Girasol_Jumbo',
+])
+
+export const CATALOGO_2024_FILTER_KEY = 'catalogo_2024'
+
 export const PROMO_ORIGINAL_PRICE = 650
 export const PROMO_FILTER_KEY = 'promo'
 export const KIRA_MILAN_FILTER_KEY = 'kira_milan'
