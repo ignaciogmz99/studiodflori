@@ -26,7 +26,7 @@ function PaymentRoute() {
     if (!isPaymentView) {
       openPaymentView()
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [items.length]) // eslint-disable-line react-hooks/exhaustive-deps
   return <MainContent />
 }
 

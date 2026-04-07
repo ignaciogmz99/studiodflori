@@ -96,7 +96,7 @@ function Navbar() {
           type="button"
           className="navbar__brand"
           aria-label="Ir a la página principal"
-          onClick={() => { clearSelectedFlower(); closePaymentView(); navigate('/') }}
+          onClick={() => { clearSelectedFlower(); closePaymentView(); handleClose(); navigate('/') }}
         >
           <span className="navbar__brand-icon-wrap">
             <img className="navbar__logo-image" src={logo} alt="Logo de Studio dei Fiori" />

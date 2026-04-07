@@ -176,8 +176,12 @@ app.use('/api/mercadopago', paymentsRateLimiter, createMercadoPagoRouter({
 }))
 app.use('/api/stripe', paymentsRateLimiter, createStripeRouter({ stripeSecretKey }))
 
-app.listen(port, async () => {
-  console.log(`Servidor MP activo en http://localhost:${port}`)
-  // Optional context logging to verify token owner/test mode at startup.
-  await logMercadoPagoCredentialContext()
-})
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(port, async () => {
+    console.log(`Servidor MP activo en http://localhost:${port}`)
+    // Optional context logging to verify token owner/test mode at startup.
+    await logMercadoPagoCredentialContext()
+  })
+}
+
+export { app }
