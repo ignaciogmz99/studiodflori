@@ -73,6 +73,26 @@ export const CATALOGO_2024_IDS = new Set([
 
 export const CATALOGO_2024_FILTER_KEY = 'catalogo_2024'
 
+export const CATALOGO_2025_IDS = new Set([
+  'Mauve',
+  'Amalfi',
+  'Carollo',
+  'Arreglo_Ezio',
+  'Manarola',
+  'Tourneso',
+  'Jardin_floral',
+  'Bouquet_Rosas_3',
+  'Pink_Love',
+  'Sunrise',
+  'Longiflorum',
+  'Lilium',
+  'Alabaster_Garden',
+  'Admiral',
+  'Docena_gerberas',
+])
+
+export const CATALOGO_2025_FILTER_KEY = 'catalogo_2025'
+
 export const PROMO_ORIGINAL_PRICE = 650
 export const PROMO_FILTER_KEY = 'promo'
 export const KIRA_MILAN_FILTER_KEY = 'kira_milan'

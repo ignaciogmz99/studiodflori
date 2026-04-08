@@ -107,6 +107,30 @@ const POETIC_DESCRIPTIONS = {
     'Como un paseo por la Promenade des Anglais al atardecer, Niza es luminosa, suave y cargada de esa alegría mediterránea que parece no tener fin.',
   Ceramica_floral_2:
     'La cerámica vuelve a abrazar flores — esta vez con una nueva historia que contar. La tierra y los pétalos encontraron otra forma de decirse que se necesitan.',
+  Arreglo_Ezio:
+    'Ezio lleva el nombre de un guerrero y la delicadeza de un poeta. Lisianthus bicolor, gerberas y limonium conviven aquí con la armonia de quienes siempre supieron que eran complementos perfectos.',
+  Manarola:
+    'Manarola se aferra a su roca sobre el mar Ligure con la misma terquedad con que las hortensias se niegan a pasar desapercibidas. Un arreglo que sabe exactamente dónde quiere estar.',
+  Tourneso:
+    'El girasol nunca ha necesitado que le expliquen qué es la alegría — la vive. Tourneso es ese ramo que llega a una habitación y hace que todo parezca más sencillo y más luminoso.',
+  Jardin_floral:
+    'Un jardín que cabe en las manos. Flores que se eligieron entre sí para convivir, como vecinos que llevan años compartiendo la misma barda y se quieren sin decirlo.',
+  Bouquet_Rosas_3:
+    'Cincuenta rosas son cincuenta razones. Este bouquet no deja espacio para la duda — es la declaración más clara y más perfumada que existe.',
+  Pink_Love:
+    'El amor en rosa ruso. Roxana, clavel y lisianthus se entrelazan en un bouquet que sabe exactamente cómo decir lo que el corazón lleva tiempo queriendo confesar.',
+  Sunrise:
+    'Matiola, rosas y gerberas se despiertan juntas en este ramo que lleva el nombre del amanecer. Porque hay días que empiezan tan bien que merecen ser recordados.',
+  Longiflorum:
+    'Las lilies longiflorum son las que no caben en un susurro. Rosas, claveles y hortensias las acompañan aquí como quienes saben que estar cerca de algo extraordinario te hace mejor.',
+  Lilium:
+    'Simple y elegante, como todas las grandes cosas. El lilium no necesita competir — solo aparecer para recordarle a la habitación quién manda.',
+  Alabaster_Garden:
+    'Un jardín de alabastro: blanco, generoso, construido para reyes. Este arreglo en caja floral no pide permiso para ser el más imponente de la sala.',
+  Admiral:
+    'Hortensias, rosas y lisianthus navegan juntas bajo el mando de esta composición que tiene la autoridad serena de quien ha visto muchos mares y nunca ha perdido el rumbo.',
+  Docena_gerberas:
+    'Doce gerberas amarillas con margarita blanca y limonium — doce razones para sonreír sin necesitar una excusa. Simples, directas y completamente irresistibles.',
 }
 
 function FloralDeco({ petalColor = '#e87de8', centerColor = '#f0c8ee', innerColor = '#fff0fc' }) {
