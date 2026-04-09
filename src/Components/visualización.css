@@ -126,11 +126,11 @@
 }
 
 .visualizacion__image-wrap--dm {
-  background: #f5ede4;
+  aspect-ratio: 2 / 1;
 }
 
 .visualizacion__image--dm {
-  object-fit: contain;
+  object-fit: cover;
 }
 
 .visualizacion__nav {

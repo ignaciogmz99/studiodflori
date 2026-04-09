@@ -154,12 +154,7 @@ function Visualización() {
   const { selectedFlower, clearSelectedFlower, addToCart } = useCart()
   const navigate = useNavigate()
   const isDM = selectedFlower ? DIA_MADRES_IDS.has(selectedFlower.id) : false
-  const detailStartIndex = isDM
-    ? (selectedFlower.images?.findIndex((src) => /flor2/i.test(src)) ?? -1) >= 0
-      ? selectedFlower.images.findIndex((src) => /flor2/i.test(src))
-      : selectedFlower?.principalIndex ?? 0
-    : selectedFlower?.principalIndex ?? 0
-  const [currentImageIndex, setCurrentImageIndex] = useState(detailStartIndex)
+  const [currentImageIndex, setCurrentImageIndex] = useState(selectedFlower?.principalIndex ?? 0)
 
   useEffect(() => {
     document.querySelector('.main-content')?.scrollTo({ top: 0, behavior: 'instant' })
