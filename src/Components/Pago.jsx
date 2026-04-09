@@ -36,7 +36,8 @@ function Pago() {
 
   const {
     items,
-    totalPrice,
+    totalWithDelivery,
+    deliveryFee,
     closePaymentView,
     selectedDeliveryDate,
     selectedDeliveryTime,
@@ -46,6 +47,8 @@ function Pago() {
     setDeliveryDetails,
     openCardView
   } = useCart()
+
+  const isDelivery = deliveryDetails.fulfillmentType === 'delivery'
 
   const cityIsSupported = useMemo(
     () => DELIVERY_CITIES.includes(selectedDeliveryCity),
@@ -342,7 +345,15 @@ function Pago() {
                 ))}
               </ul>
 
-              <p className="pago__total">Total: ${totalPrice.toFixed(2)} MXN</p>
+              {isDelivery && (
+                <li className="pago__item pago__item--delivery">
+                  <div className="pago__item-main">
+                    <p className="pago__name">🚚 Envío a domicilio</p>
+                  </div>
+                  <p className="pago__subtotal">${deliveryFee.toFixed(2)} MXN</p>
+                </li>
+              )}
+              <p className="pago__total">Total: ${totalWithDelivery.toFixed(2)} MXN</p>
             </>
           )}
         </section>

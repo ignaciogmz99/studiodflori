@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { DELIVERY_CITIES } from '../constants/deliveryCities'
+import { supabase } from '../lib/supabaseClient'
 
 const CartContext = createContext(null)
 const CART_STORAGE_KEY = 'studiodflori_cart_v1'
@@ -132,6 +133,34 @@ export function CartProvider({ children }) {
     return items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
   }, [items])
 
+  const DELIVERY_FEE_PRODUCT_ID = 'Envio_Domicilio'
+  const [deliveryFee, setDeliveryFee] = useState(100)
+
+  useEffect(() => {
+    supabase
+      .from('productos')
+      .select('precio')
+      .eq('id', DELIVERY_FEE_PRODUCT_ID)
+      .single()
+      .then(({ data }) => {
+        if (data?.precio) setDeliveryFee(Number(data.precio))
+      })
+  }, [])
+
+  const isDelivery = deliveryDetails.fulfillmentType === 'delivery'
+
+  const itemsForPayment = useMemo(() => {
+    if (!isDelivery) return items
+    return [
+      ...items,
+      { id: DELIVERY_FEE_PRODUCT_ID, name: 'Envío a domicilio', price: deliveryFee, quantity: 1, image: null }
+    ]
+  }, [items, isDelivery, deliveryFee])
+
+  const totalWithDelivery = useMemo(() => {
+    return totalPrice + (isDelivery ? deliveryFee : 0)
+  }, [totalPrice, isDelivery, deliveryFee])
+
   const estimatedPreparationHours = useMemo(() => {
     return items.reduce((maxHours, item) => {
       const itemHours = typeof item.preparationHours === 'number' && item.preparationHours > 0
@@ -167,6 +196,9 @@ export function CartProvider({ children }) {
     setDeliveryDetails,
     totalItems,
     totalPrice,
+    totalWithDelivery,
+    itemsForPayment,
+    deliveryFee,
     estimatedPreparationHours,
     selectedFlowerType,
     setSelectedFlowerType,
@@ -184,6 +216,9 @@ export function CartProvider({ children }) {
     selectedDeliveryTime,
     totalItems,
     totalPrice,
+    totalWithDelivery,
+    itemsForPayment,
+    deliveryFee,
     selectedFlowerType,
     flowerTypeTabs
   ])

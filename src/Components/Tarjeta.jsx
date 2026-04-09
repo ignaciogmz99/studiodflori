@@ -25,7 +25,8 @@ function Tarjeta() {
 
   const {
     items,
-    totalPrice,
+    itemsForPayment,
+    totalWithDelivery,
     backToPaymentForm,
     clearCart,
     deliveryDetails,
@@ -37,7 +38,7 @@ function Tarjeta() {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
   const mpPublicKey = String(import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY || '').trim()
   const stripePublishableKey = String(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '').trim()
-  const payableAmount = Number(totalPrice.toFixed(2))
+  const payableAmount = Number(totalWithDelivery.toFixed(2))
   const [paymentProvider, setPaymentProvider] = useState(defaultPaymentProvider)
   const [receiptData, setReceiptData] = useState(null)
   const orderIdRef = useRef(
@@ -348,7 +349,7 @@ function Tarjeta() {
     mpPublicKey,
     stripePublishableKey,
     payableAmount,
-    items,
+    items: itemsForPayment,
     hasApprovedPayment,
     deliveryDetails: normalizedDeliveryDetails,
     selectedDeliveryCity,
