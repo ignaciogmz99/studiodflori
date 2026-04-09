@@ -93,6 +93,38 @@ export const CATALOGO_2025_IDS = new Set([
 
 export const CATALOGO_2025_FILTER_KEY = 'catalogo_2025'
 
+export const DIA_MADRES_IDS = new Set([
+  'DM_Tulipanes',
+  'DM_Ramo_Lisianthus',
+  'DM_Lisianthus_Vidrio',
+  'DM_Ramo_Anturios',
+  'DM_Lisianthus_Blanco',
+  'DM_Canasta_Amarilla',
+  'DM_Canasta_Roja',
+  'DM_Canasta_Lisianthus',
+  'DM_Ceramica_Amarilla',
+  'DM_Ceramica_Salmon',
+  'DM_Ramo_Girasoles',
+  'DM_Rosas_Inglesas',
+])
+
+export const DIA_MADRES_FILTER_KEY = 'dia_madres'
+
+export const DIA_MADRES_ORDER = {
+  DM_Tulipanes: 1,
+  DM_Ramo_Lisianthus: 2,
+  DM_Lisianthus_Vidrio: 3,
+  DM_Ramo_Anturios: 4,
+  DM_Lisianthus_Blanco: 5,
+  DM_Canasta_Amarilla: 6,
+  DM_Canasta_Roja: 7,
+  DM_Canasta_Lisianthus: 8,
+  DM_Ceramica_Amarilla: 9,
+  DM_Ceramica_Salmon: 10,
+  DM_Ramo_Girasoles: 11,
+  DM_Rosas_Inglesas: 12,
+}
+
 export const PROMO_ORIGINAL_PRICE = 650
 export const PROMO_FILTER_KEY = 'promo'
 export const KIRA_MILAN_FILTER_KEY = 'kira_milan'

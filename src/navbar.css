@@ -176,6 +176,13 @@
   font-weight: 800;
 }
 
+.navbar__mobile-drawer-link--dm {
+  background: linear-gradient(135deg, #5c2a0e 0%, #c8956c 100%);
+  border-color: #e8b48a;
+  color: #fff3ec;
+  font-weight: 800;
+}
+
 .navbar__brand-icon-wrap {
   display: inline-flex;
   align-items: center;

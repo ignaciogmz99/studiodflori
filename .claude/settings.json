@@ -6,7 +6,8 @@
       "Bash(npm install:*)",
       "Bash(xargs grep:*)",
       "Bash(node -e \":*)",
-      "Read(//c/studiodflori/src/assets/**)"
+      "Read(//c/studiodflori/src/assets/**)",
+      "Bash(python -)"
     ]
   }
 }

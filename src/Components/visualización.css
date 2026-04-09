@@ -110,11 +110,19 @@
   box-shadow: 0 4px 20px rgba(200, 80, 190, 0.1);
 }
 
+.visualizacion__image-wrap--landscape {
+  aspect-ratio: 2 / 1;
+}
+
 .visualizacion__image {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.visualizacion__image--contain {
+  object-fit: cover;
 }
 
 .visualizacion__nav {
@@ -299,6 +307,16 @@
 .visualizacion__add-button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.visualizacion__add-button--dm {
+  background: #c8956c;
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(200, 120, 80, 0.35);
+}
+
+.visualizacion__add-button--dm:not(:disabled):hover {
+  box-shadow: 0 6px 20px rgba(200, 120, 80, 0.5);
 }
 
 /* Responsive */

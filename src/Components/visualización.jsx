@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async'
 import './visualización.css'
 import { useCart } from '../context/CartContext'
 import DeliverySchedulePicker from './DeliverySchedulePicker'
-import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE, KIRA_MILAN_COLLECTION_IDS, KIRA_MILAN_ORIGINAL_PRICES } from '../constants/promoProducts'
+import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE, KIRA_MILAN_COLLECTION_IDS, KIRA_MILAN_ORIGINAL_PRICES, DIA_MADRES_IDS } from '../constants/promoProducts'
 
 const SITE_URL = 'https://www.studiodeifiori.com'
 
@@ -221,9 +221,9 @@ function Visualización() {
 
       <div className="visualizacion__layout">
         <div className="visualizacion__gallery">
-          <div className="visualizacion__image-wrap">
+          <div className={`visualizacion__image-wrap${DIA_MADRES_IDS.has(id) ? ' visualizacion__image-wrap--landscape' : ''}`}>
             <img
-              className="visualizacion__image"
+              className={`visualizacion__image${DIA_MADRES_IDS.has(id) ? ' visualizacion__image--contain' : ''}`}
               src={currentImage}
               alt={name}
               decoding="async"
@@ -324,7 +324,7 @@ function Visualización() {
       <div className="visualizacion__sticky-bar">
         <button
           type="button"
-          className="visualizacion__add-button"
+          className={`visualizacion__add-button${DIA_MADRES_IDS.has(id) ? ' visualizacion__add-button--dm' : ''}`}
           onClick={() => addToCart(selectedFlower)}
           disabled={!canAddToCart}
         >

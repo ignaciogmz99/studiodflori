@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import './Flores_menu.css'
 import { supabase } from '../lib/supabaseClient'
 import { useCart } from '../context/CartContext'
-import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE, PROMO_FILTER_KEY, KIRA_MILAN_COLLECTION_IDS, KIRA_MILAN_FILTER_KEY, KIRA_MILAN_ORIGINAL_PRICES, CATALOGO_2026_IDS, CATALOGO_2026_FILTER_KEY, CATALOGO_2025_IDS, CATALOGO_2025_FILTER_KEY, CATALOGO_2023_IDS, CATALOGO_2023_FILTER_KEY, CATALOGO_2024_IDS, CATALOGO_2024_FILTER_KEY } from '../constants/promoProducts'
+import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE, PROMO_FILTER_KEY, KIRA_MILAN_COLLECTION_IDS, KIRA_MILAN_FILTER_KEY, KIRA_MILAN_ORIGINAL_PRICES, CATALOGO_2026_IDS, CATALOGO_2026_FILTER_KEY, CATALOGO_2025_IDS, CATALOGO_2025_FILTER_KEY, CATALOGO_2023_IDS, CATALOGO_2023_FILTER_KEY, CATALOGO_2024_IDS, CATALOGO_2024_FILTER_KEY, DIA_MADRES_IDS, DIA_MADRES_FILTER_KEY, DIA_MADRES_ORDER } from '../constants/promoProducts'
 
-const assetModules = import.meta.glob('../assets/*/*.webp', {
-  eager: true,
-  import: 'default'
-})
+const assetModulesL1 = import.meta.glob('../assets/*/*.webp', { eager: true, import: 'default' })
+const assetModulesL2 = import.meta.glob('../assets/*/*/*.webp', { eager: true, import: 'default' })
+const assetModules = { ...assetModulesL1, ...assetModulesL2 }
+
+const dmEncabezado = '/dm-encabezado.webp'
 
 const ROMAN_NUMERALS = {
   1: 'I',
@@ -40,8 +41,8 @@ export function formatProductName(value) {
 }
 
 const shelfProducts = Object.entries(assetModules).reduce((acc, [path, src]) => {
-  const normalized = path.replace('\\', '/')
-  const match = normalized.match(/\.\.\/assets\/([^/]+)\/([^/]+)$/)
+  const normalized = path.replaceAll('\\', '/')
+  const match = normalized.match(/([^/]+)\/([^/]+)$/)
 
   if (!match) {
     return acc
@@ -316,6 +317,7 @@ function FloresMenu() {
     if (selectedFlowerType === ALL_FLOWER_TYPES) return ALL_FLOWER_TYPES
     if (selectedFlowerType === PROMO_FILTER_KEY) return PROMO_FILTER_KEY
     if (selectedFlowerType === KIRA_MILAN_FILTER_KEY) return KIRA_MILAN_FILTER_KEY
+    if (selectedFlowerType === DIA_MADRES_FILTER_KEY) return DIA_MADRES_FILTER_KEY
     if (selectedFlowerType === CATALOGO_2026_FILTER_KEY) return CATALOGO_2026_FILTER_KEY
     if (selectedFlowerType === CATALOGO_2025_FILTER_KEY) return CATALOGO_2025_FILTER_KEY
     if (selectedFlowerType === CATALOGO_2023_FILTER_KEY) return CATALOGO_2023_FILTER_KEY
@@ -328,6 +330,9 @@ function FloresMenu() {
     const productsByFlowerType = products.filter((product) => {
       if (activeFlowerType === PROMO_FILTER_KEY) return PROMO_PRODUCT_IDS.has(product.id)
       if (activeFlowerType === KIRA_MILAN_FILTER_KEY) return KIRA_MILAN_COLLECTION_IDS.has(product.id)
+      if (activeFlowerType === DIA_MADRES_FILTER_KEY) {
+        return DIA_MADRES_IDS.has(product.id)
+      }
       if (activeFlowerType === CATALOGO_2026_FILTER_KEY) return CATALOGO_2026_IDS.has(product.id)
       if (activeFlowerType === CATALOGO_2025_FILTER_KEY) return CATALOGO_2025_IDS.has(product.id)
       if (activeFlowerType === CATALOGO_2023_FILTER_KEY) return CATALOGO_2023_IDS.has(product.id)
@@ -343,7 +348,7 @@ function FloresMenu() {
     const lowerBound = hasMinPrice && hasMaxPrice ? Math.min(parsedMinPrice, parsedMaxPrice) : parsedMinPrice
     const upperBound = hasMinPrice && hasMaxPrice ? Math.max(parsedMinPrice, parsedMaxPrice) : parsedMaxPrice
 
-    return productsByFlowerType.filter((product) => {
+    const result = productsByFlowerType.filter((product) => {
       if (lowerBound != null) {
         if (typeof product.price !== 'number' || product.price < lowerBound) {
           return false
@@ -362,6 +367,13 @@ function FloresMenu() {
       }
 
       return true
+    })
+
+    return result.sort((a, b) => {
+      const aOrder = DIA_MADRES_ORDER[a.id] ?? null
+      const bOrder = DIA_MADRES_ORDER[b.id] ?? null
+      if (aOrder !== null && bOrder !== null) return aOrder - bOrder
+      return 0
     })
   }, [activeFlowerType, maxPrice, minPrice, nameSearch, products])
 
@@ -539,11 +551,19 @@ function FloresMenu() {
         </p>
       )}
 
+      {activeFlowerType === DIA_MADRES_FILTER_KEY && dmEncabezado && (
+        <img
+          src={dmEncabezado}
+          alt="Catálogo Día de las Madres — Studio dei Fiori"
+          className="flores-menu__dm-banner"
+        />
+      )}
+
       <div className="flores-menu__shelf" aria-label="Estante de productos">
         {filteredProducts.slice(0, visibleCount).map((product) => (
           <article className="flores-menu__card" key={product.id}>
             <div
-              className="flores-menu__image-wrap flores-menu__image-wrap--clickable"
+              className={`flores-menu__image-wrap flores-menu__image-wrap--clickable${DIA_MADRES_IDS.has(product.id) ? ' flores-menu__image-wrap--landscape' : ''}`}
               role="button"
               tabIndex={0}
               aria-label={`Ver detalle de ${product.name}`}
@@ -551,7 +571,7 @@ function FloresMenu() {
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openProduct(product) }}
             >
               <img
-                className="flores-menu__image"
+                className={`flores-menu__image${DIA_MADRES_IDS.has(product.id) ? ' flores-menu__image--contain' : ''}`}
                 src={product.image}
                 alt={product.name}
                 loading="lazy"
@@ -619,7 +639,7 @@ function FloresMenu() {
             )}
             <button
               type="button"
-              className="flores-menu__add-button"
+              className={`flores-menu__add-button${DIA_MADRES_IDS.has(product.id) ? ' flores-menu__add-button--dm' : ''}`}
               onClick={() => addToCart(product)}
               disabled={
                 inventoryStatus === 'loading'

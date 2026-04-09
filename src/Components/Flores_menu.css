@@ -297,6 +297,22 @@
   border-radius: 14px;
 }
 
+.flores-menu__dm-banner {
+  width: 100%;
+  max-width: 50%;
+  margin: 0 auto 1rem;
+  border-radius: 14px;
+  display: block;
+}
+
+.flores-menu__image-wrap--landscape {
+  aspect-ratio: 2 / 1;
+}
+
+.flores-menu__image--contain {
+  object-fit: cover;
+}
+
 .flores-menu__image-nav {
   position: absolute;
   top: 50%;
@@ -472,6 +488,15 @@
 .flores-menu__add-button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.flores-menu__add-button--dm {
+  background: #c8956c;
+  color: #fff;
+}
+
+.flores-menu__add-button--dm:not(:disabled):hover {
+  box-shadow: 0 4px 12px rgba(200, 120, 80, 0.35);
 }
 
 @media (max-width: 900px) {
