@@ -153,9 +153,13 @@ function FloralDeco({ petalColor = '#e87de8', centerColor = '#f0c8ee', innerColo
 function Visualización() {
   const { selectedFlower, clearSelectedFlower, addToCart } = useCart()
   const navigate = useNavigate()
-  const [currentImageIndex, setCurrentImageIndex] = useState(
-    selectedFlower?.principalIndex ?? 0
-  )
+  const isDM = selectedFlower ? DIA_MADRES_IDS.has(selectedFlower.id) : false
+  const detailStartIndex = isDM
+    ? (selectedFlower.images?.findIndex((src) => /flor2/i.test(src)) ?? -1) >= 0
+      ? selectedFlower.images.findIndex((src) => /flor2/i.test(src))
+      : selectedFlower?.principalIndex ?? 0
+    : selectedFlower?.principalIndex ?? 0
+  const [currentImageIndex, setCurrentImageIndex] = useState(detailStartIndex)
 
   useEffect(() => {
     document.querySelector('.main-content')?.scrollTo({ top: 0, behavior: 'instant' })
@@ -221,9 +225,9 @@ function Visualización() {
 
       <div className="visualizacion__layout">
         <div className="visualizacion__gallery">
-          <div className={`visualizacion__image-wrap${DIA_MADRES_IDS.has(id) ? ' visualizacion__image-wrap--landscape' : ''}`}>
+          <div className={`visualizacion__image-wrap${isDM ? ' visualizacion__image-wrap--dm' : ''}`}>
             <img
-              className={`visualizacion__image${DIA_MADRES_IDS.has(id) ? ' visualizacion__image--contain' : ''}`}
+              className={`visualizacion__image${isDM ? ' visualizacion__image--dm' : ''}`}
               src={currentImage}
               alt={name}
               decoding="async"

@@ -125,6 +125,14 @@
   object-fit: cover;
 }
 
+.visualizacion__image-wrap--dm {
+  background: #f5ede4;
+}
+
+.visualizacion__image--dm {
+  object-fit: contain;
+}
+
 .visualizacion__nav {
   position: absolute;
   top: 50%;
