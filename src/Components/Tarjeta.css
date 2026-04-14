@@ -61,6 +61,22 @@
   color: #1f111f;
 }
 
+.tarjeta__stripe-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 4px;
+  background: #635bff;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 900;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+  letter-spacing: 0;
+}
+
 .tarjeta__brands-label {
   display: inline-block;
   margin-bottom: 0.35rem;
@@ -195,6 +211,17 @@
   font-size: 0.72rem;
   font-weight: 800;
   color: #2f2130;
+  transition: opacity 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.tarjeta__stripe-brand--active {
+  border-color: #e86ee0;
+  background: #fce8fc;
+  color: #a020a0;
+}
+
+.tarjeta__stripe-brand--dim {
+  opacity: 0.28;
 }
 
 .tarjeta__stripe-row {

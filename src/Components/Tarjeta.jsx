@@ -367,7 +367,7 @@ function Tarjeta() {
       <p className="tarjeta__secure-note">
         {hasApprovedPayment
           ? 'Tu pago fue aprobado correctamente. Ya puedes descargar tu comprobante en PDF.'
-          : 'Completa tu pago con Mercado Pago sin salir de esta pagina.'}
+          : selectedProvider.summary}
       </p>
       {!hasApprovedPayment && paymentProviders.length > 1 && (
         <div className="tarjeta__provider-switch" role="radiogroup" aria-label="Proveedor de pago">
@@ -375,10 +375,13 @@ function Tarjeta() {
             <button
               key={provider.id}
               type="button"
-              className={`tarjeta__provider-option ${paymentProvider === provider.id ? 'tarjeta__provider-option--active' : ''}`}
+              className={`tarjeta__provider-option tarjeta__provider-option--${provider.id} ${paymentProvider === provider.id ? 'tarjeta__provider-option--active' : ''}`}
               onClick={() => setPaymentProvider(provider.id)}
               aria-pressed={paymentProvider === provider.id}
             >
+              {provider.id === 'stripe' && (
+                <span className="tarjeta__stripe-badge" aria-hidden="true">S</span>
+              )}
               {provider.label}
             </button>
           ))}

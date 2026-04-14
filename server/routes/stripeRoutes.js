@@ -93,6 +93,8 @@ export function createStripeRouter({ stripeSecretKey }) {
             .join(' | ')
         )
       )
+      params.append('metadata[recipient_name]', toMetadataValue(delivery?.recipientName))
+      params.append('metadata[flower_message]', toMetadataValue(delivery?.flowerMessage))
 
       const receiptEmail = String(customer?.email || '').trim()
       if (receiptEmail) {

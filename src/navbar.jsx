@@ -1,5 +1,5 @@
 import './navbar.css'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import logo from './assets/logo_bien.jpg'
 import { useCart } from './context/CartContext'
@@ -43,6 +43,7 @@ function formatPreparationTime(hours) {
 function Navbar() {
   const [activePanel, setActivePanel] = useState(null)
   const [categoriesOpen, setCategoriesOpen] = useState(false)
+  const prevTotalItemsRef = useRef(0)
   const navigate = useNavigate()
   const {
     items,
@@ -60,6 +61,13 @@ function Navbar() {
     clearSelectedFlower,
     closePaymentView
   } = useCart()
+
+  useEffect(() => {
+    if (prevTotalItemsRef.current === 0 && totalItems === 1) {
+      setActivePanel('cart')
+    }
+    prevTotalItemsRef.current = totalItems
+  }, [totalItems])
 
   const handleOpen = (panelKey) => {
     setActivePanel((current) => (current === panelKey ? null : panelKey))

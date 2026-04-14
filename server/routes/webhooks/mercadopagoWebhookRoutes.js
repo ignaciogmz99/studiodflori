@@ -297,7 +297,8 @@ export function createMercadoPagoWebhookRouter({
             deliveryPostalCode: metadata.delivery_postal_code,
             customerPhone: metadata.customer_phone,
             flowerMessage: metadata.flower_message,
-            specialInstructions: metadata.delivery_notes
+            specialInstructions: metadata.delivery_notes,
+            deliveryType: metadata.fulfillment_type
           })
           const hasWhatsapp = Boolean(existingState?.whatsapp_sent_at)
           if (!hasWhatsapp) {

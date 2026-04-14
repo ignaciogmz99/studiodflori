@@ -6,6 +6,7 @@ import {
   sendWhatsAppBusinessMessage
 } from '../../services/whatsappBusinessService.js'
 import { upsertPaidOrder, getPaidOrderProcessingState, updatePaidOrderProcessingState } from '../../services/orderPersistenceService.js'
+import { createStripeReceiptPdf } from '../../services/receiptPdfService.js'
 
 const activeStripeEvents = new Set()
 
@@ -197,77 +198,90 @@ export function createStripeWebhookRouter({
         }
         activeStripeEvents.add(eventId)
 
-        const paymentIntent = event?.data?.object || {}
-        const metadata = paymentIntent?.metadata || {}
-
-        // Persist the order to Supabase — critical step, return 500 if it fails so Stripe retries.
+        // try/finally garantiza que el eventId siempre se libera del Set,
+        // incluso si ocurre un error inesperado que escape los try/catch internos.
         try {
-          const amountMxn = Number(paymentIntent?.amount_received ?? paymentIntent?.amount ?? 0) / 100
-          await upsertPaidOrder({
-            amountMxn,
-            customerName: String(metadata.customer_name || '').trim(),
-            customerPhone: String(metadata.customer_phone || '').trim(),
-            metadata: {
-              order_id: String(metadata.order_id || '').trim(),
-              customer_name: String(metadata.customer_name || '').trim(),
-              customer_phone: String(metadata.customer_phone || '').trim(),
-              cart_items_summary: String(metadata.cart_items_summary || '').trim(),
-              delivery_city: String(metadata.delivery_city || '').trim(),
-              delivery_address: String(metadata.delivery_address || '').trim(),
-              delivery_neighborhood: String(metadata.delivery_neighborhood || '').trim(),
-              delivery_postal_code: String(metadata.delivery_postal_code || '').trim(),
-              delivery_date: String(metadata.delivery_date || '').trim(),
-              delivery_time: String(metadata.delivery_time || '').trim()
-            },
-            paidAt: new Date().toISOString(),
-            paymentId: String(paymentIntent?.id || '').trim(),
-            orderId: String(metadata.order_id || '').trim(),
-            source: 'stripe_webhook'
-          })
-          console.log('[Stripe webhook] comprobante guardado en Supabase', { paymentIntentId: paymentIntent?.id })
-        } catch (error) {
-          console.error('[Stripe webhook] fallo guardando comprobante en Supabase:', error?.message || error)
-          activeStripeEvents.delete(eventId)
-          return res.status(500).json({ error: 'Error guardando comprobante, Stripe reintentará' })
-        }
+          const paymentIntent = event?.data?.object || {}
+          const metadata = paymentIntent?.metadata || {}
+          const paymentId = String(paymentIntent?.id || '').trim()
+          const orderId = String(metadata.order_id || '').trim()
+          const stageErrors = []
 
-        const { text, html } = buildOrderEmailContent(paymentIntent)
-        const recipient = String(orderNotificationToEmail || '').trim()
-        const sender = String(orderNotificationFromEmail || '').trim()
-        const apiKey = String(resendApiKey || '').trim()
+          // 1. Leer estado actual en DB ANTES del upsert — igual que MP.
+          //    Permite early-exit sin escribir nada si el pago ya fue procesado completo.
+          let existingState = await getPaidOrderProcessingState({ paymentId, orderId })
 
-        if (recipient && sender && apiKey) {
-          await sendResendEmail({
-            resendApiKey: apiKey,
-            fromEmail: sender,
-            toEmail: recipient,
-            subject: `Nuevo pedido pagado - ${paymentIntent?.id || 'Stripe'}`,
-            text,
-            html
-          })
-          console.log('[Stripe webhook] email enviado', { recipient, paymentIntentId: paymentIntent?.id })
-        } else {
-          console.warn('[Stripe webhook] faltan variables para envio de email (RESEND_API_KEY, ORDER_NOTIFICATION_FROM_EMAIL, ORDER_NOTIFICATION_TO_EMAIL)')
-        }
+          if (existingState?.pdf_generated_at && existingState?.whatsapp_sent_at) {
+            console.log('[Stripe webhook] pago ya procesado completamente, omitiendo duplicado', { paymentId })
+            return res.status(200).json({ received: true, duplicated: true })
+          }
 
-        const paymentId = String(paymentIntent?.id || '').trim()
-        const orderId = String(metadata.order_id || '').trim()
+          // 2. Persistir en Supabase — paso critico: si falla devolver 500 para que Stripe reintente.
+          let persistenceSucceeded = false
+          try {
+            const amountMxn = Number(paymentIntent?.amount_received ?? paymentIntent?.amount ?? 0) / 100
+            const persistenceResult = await upsertPaidOrder({
+              amountMxn,
+              customerName: String(metadata.customer_name || '').trim(),
+              customerPhone: String(metadata.customer_phone || '').trim(),
+              metadata: {
+                order_id: orderId,
+                customer_name: String(metadata.customer_name || '').trim(),
+                customer_phone: String(metadata.customer_phone || '').trim(),
+                cart_items_summary: String(metadata.cart_items_summary || '').trim(),
+                delivery_city: String(metadata.delivery_city || '').trim(),
+                delivery_address: String(metadata.delivery_address || '').trim(),
+                delivery_neighborhood: String(metadata.delivery_neighborhood || '').trim(),
+                delivery_postal_code: String(metadata.delivery_postal_code || '').trim(),
+                delivery_date: String(metadata.delivery_date || '').trim(),
+                delivery_time: String(metadata.delivery_time || '').trim()
+              },
+              paidAt: new Date().toISOString(),
+              paymentId,
+              orderId,
+              source: 'stripe_webhook'
+            })
+            persistenceSucceeded = Boolean(persistenceResult?.persisted)
+            existingState = persistenceResult?.row || existingState
+            console.log('[Stripe webhook] comprobante en Supabase', { paymentId, duplicate: persistenceResult?.duplicate })
+          } catch (error) {
+            stageErrors.push(`persistencia: ${error?.message || error}`)
+            console.warn('[Stripe webhook] fallo persistiendo comprobante:', error?.message || error)
+          }
 
-        // Verificar en DB si ya se envio WhatsApp para evitar duplicados en reintentos de Stripe.
-        let alreadySentWhatsapp = false
-        try {
-          const state = await getPaidOrderProcessingState({ paymentId, orderId })
-          alreadySentWhatsapp = Boolean(state?.whatsapp_sent_at)
-        } catch (error) {
-          console.warn('[Stripe webhook] no se pudo verificar estado de WhatsApp:', error?.message || error)
-        }
+          if (!persistenceSucceeded) {
+            return res.status(500).json({ error: `Fallo post-pago Stripe (${stageErrors.join(' | ')}), reintentando` })
+          }
 
-        if (!alreadySentWhatsapp) {
+          // 3. Generar PDF server-side si no existe.
+          if (!existingState?.pdf_generated_at) {
+            try {
+              const pdfResult = await createStripeReceiptPdf(paymentIntent)
+              await updatePaidOrderProcessingState({
+                paymentId,
+                orderId,
+                pdfPath: pdfResult.filePath,
+                pdfGeneratedAt: new Date().toISOString()
+              })
+              console.log('[Stripe webhook] PDF generado', { paymentId, filePath: pdfResult.filePath })
+            } catch (error) {
+              stageErrors.push(`pdf: ${error?.message || error}`)
+              console.warn('[Stripe webhook] fallo generando PDF:', error?.message || error)
+            }
+          }
+
+          // 4. Re-leer estado desde DB antes de WhatsApp para detectar webhook concurrente — igual que MP.
+          try {
+            const freshState = await getPaidOrderProcessingState({ paymentId, orderId })
+            if (freshState) existingState = freshState
+          } catch { /* usar estado previo */ }
+
+          // 5. Enviar WhatsApp si no se ha enviado.
           const whatsappTemplateParameters = buildWhatsAppTemplateParameters({
             orderId: metadata.order_id,
             paymentId: paymentIntent?.id,
             customerName: metadata.customer_name,
-            recipientName: metadata.recipient_name || metadata.customer_name,
+            recipientName: String(metadata.recipient_name || metadata.customer_name || '').trim(),
             cartItemsSummary: metadata.cart_items_summary,
             deliveryDate: metadata.delivery_date,
             deliveryTime: metadata.delivery_time,
@@ -277,36 +291,68 @@ export function createStripeWebhookRouter({
             deliveryPostalCode: metadata.delivery_postal_code,
             customerPhone: metadata.customer_phone,
             flowerMessage: metadata.flower_message,
-            specialInstructions: metadata.delivery_notes
+            specialInstructions: metadata.delivery_notes,
+            deliveryType: metadata.fulfillment_type
           })
-          try {
-            const whatsappResult = await sendWhatsAppBusinessMessage({
-              whatsappAccessToken,
-              whatsappPhoneNumberId,
-              whatsappRecipient,
-              whatsappApiVersion,
-              whatsappTemplateName,
-              whatsappTemplateLanguageCode,
-              whatsappTemplateParameters
-            })
-            console.log('[Stripe webhook] WhatsApp enviado', {
-              paymentIntentId: paymentIntent?.id,
-              recipient: whatsappResult?.recipient || 'unknown',
-              messageId: whatsappResult?.responsePayload?.messages?.[0]?.id || 'unknown'
-            })
-            await updatePaidOrderProcessingState({
-              paymentId,
-              orderId,
-              whatsappSentAt: new Date().toISOString()
-            })
-          } catch (error) {
-            console.warn('[Stripe webhook] fallo envio por WhatsApp:', error?.message || error)
+          const hasWhatsapp = Boolean(existingState?.whatsapp_sent_at)
+          if (!hasWhatsapp) {
+            try {
+              const whatsappResult = await sendWhatsAppBusinessMessage({
+                whatsappAccessToken,
+                whatsappPhoneNumberId,
+                whatsappRecipient,
+                whatsappApiVersion,
+                whatsappTemplateName,
+                whatsappTemplateLanguageCode,
+                whatsappTemplateParameters
+              })
+              await updatePaidOrderProcessingState({
+                paymentId,
+                orderId,
+                whatsappSentAt: new Date().toISOString()
+              })
+              console.log('[Stripe webhook] WhatsApp enviado', {
+                paymentId,
+                recipient: whatsappResult?.recipient || 'unknown',
+                messageId: whatsappResult?.responsePayload?.messages?.[0]?.id || 'unknown'
+              })
+            } catch (error) {
+              stageErrors.push(`notificacion: ${error?.message || error}`)
+              console.warn('[Stripe webhook] fallo enviando WhatsApp:', error?.message || error)
+            }
+          } else {
+            console.log('[Stripe webhook] WhatsApp ya enviado previamente, omitiendo duplicado', { paymentId })
           }
-        } else {
-          console.log('[Stripe webhook] WhatsApp ya enviado previamente, se omite duplicado', { paymentId })
-        }
 
-        activeStripeEvents.delete(eventId)
+          // 6. Email opcional via Resend (no critico, no bloquea el flujo).
+          try {
+            const recipient = String(orderNotificationToEmail || '').trim()
+            const sender = String(orderNotificationFromEmail || '').trim()
+            const apiKey = String(resendApiKey || '').trim()
+            if (recipient && sender && apiKey) {
+              const { text, html } = buildOrderEmailContent(paymentIntent)
+              await sendResendEmail({
+                resendApiKey: apiKey,
+                fromEmail: sender,
+                toEmail: recipient,
+                subject: `Nuevo pedido pagado - ${paymentId || 'Stripe'}`,
+                text,
+                html
+              })
+              console.log('[Stripe webhook] email enviado', { recipient, paymentId })
+            }
+          } catch (error) {
+            console.warn('[Stripe webhook] fallo enviando email (no critico):', error?.message || error)
+          }
+
+          if (stageErrors.length > 0) {
+            console.warn('[Stripe webhook] post-pago parcial completado', { paymentId, errors: stageErrors })
+            return res.status(200).json({ received: true, processedWithWarnings: true })
+          }
+        } finally {
+          // Siempre liberar el eventId del Set, sin importar el resultado.
+          activeStripeEvents.delete(eventId)
+        }
       }
 
       return res.status(200).json({ received: true })

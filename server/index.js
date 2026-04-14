@@ -27,6 +27,9 @@ if (!mercadopagoToken) {
 if (!stripeSecretKey) {
   console.error('Falta STRIPE_SECRET_KEY en server/.env')
 }
+if (!process.env.STRIPE_WEBHOOK_SECRET) {
+  console.error('Falta STRIPE_WEBHOOK_SECRET en server/.env; el webhook de Stripe rechazara todas las peticiones')
+}
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   console.warn('Falta SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en server/.env')
 }
@@ -154,7 +157,8 @@ const allowedOrigins = (process.env.FRONTEND_ORIGIN || 'http://localhost:5173')
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (allowedOrigins.includes(origin)) {
+    // Allow requests with no Origin (curl, health monitors, server-to-server).
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true)
     } else {
       callback(new Error(`CORS: origen no permitido: ${origin}`))
