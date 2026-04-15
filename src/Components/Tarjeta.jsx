@@ -18,6 +18,21 @@ function loadImage(url) {
   })
 }
 
+function resolveApiBaseUrl() {
+  const configuredBaseUrl = String(import.meta.env.VITE_API_BASE_URL || '').trim()
+  if (configuredBaseUrl) {
+    return configuredBaseUrl.replace(/\/+$/, '')
+  }
+
+  // In production prefer same-origin requests so the frontend bundle never
+  // falls back to localhost.
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin.replace(/\/+$/, '')
+  }
+
+  return 'http://localhost:3001'
+}
+
 function Tarjeta() {
   useEffect(() => {
     document.querySelector('.main-content')?.scrollTo({ top: 0, behavior: 'instant' })
@@ -35,7 +50,7 @@ function Tarjeta() {
     selectedDeliveryTime
   } = useCart()
 
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+  const apiBaseUrl = resolveApiBaseUrl()
   const mpPublicKey = String(import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY || '').trim()
   const stripePublishableKey = String(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '').trim()
   const payableAmount = Number(totalWithDelivery.toFixed(2))

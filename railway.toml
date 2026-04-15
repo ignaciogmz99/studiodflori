@@ -1,10 +1,2 @@
 [build]
 builder = "nixpacks"
-buildCommand = "npm run build"
-
-[deploy]
-startCommand = "npx serve -s dist -l $PORT"
-
-[[rewrites]]
-source = "/*"
-destination = "/index.html"
