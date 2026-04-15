@@ -16,12 +16,15 @@ test.describe('storefront smoke flow', () => {
 
     await page.goto('/')
 
-    await expect(page.getByRole('heading', { name: 'Flores y Plantas' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /Flores a domicilio/i })).toBeVisible()
     await expect(page.getByText(/productos/i)).toBeVisible()
 
-    await page.getByRole('button', { name: 'Agregar al carrito' }).first().click()
-    await page.getByRole('button', { name: /Carrito con 1 producto/i }).click()
+    // Adding first product auto-opens the cart (new behavior).
+    const addButton = page.getByRole('button', { name: 'Agregar al carrito' }).first()
+    await addButton.waitFor({ state: 'visible' })
+    await addButton.click()
 
+    // Cart should already be open — do NOT click the cart button (that would toggle it closed).
     await expect(page.getByRole('dialog', { name: 'Carrito de compras' })).toBeVisible()
     await expect(page.getByText(/Total:/i)).toBeVisible()
 
@@ -40,7 +43,9 @@ test.describe('storefront smoke flow', () => {
     await page.getByRole('button', { name: 'Siguiente' }).click()
 
     await expect(page.getByRole('heading', { name: 'Pagar con tarjeta' })).toBeVisible()
-    await expect(page.getByText(/Mercado Pago o Stripe/i)).toBeVisible()
+    // Both payment provider tabs must be present.
+    await expect(page.getByRole('button', { name: 'Mercado Pago' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Stripe' })).toBeVisible()
 
     expect(pageErrors).toEqual([])
   })

@@ -7,7 +7,8 @@
       "Bash(xargs grep:*)",
       "Bash(node -e \":*)",
       "Read(//c/studiodflori/src/assets/**)",
-      "Bash(python -)"
+      "Bash(python -)",
+      "Bash(npx playwright:*)"
     ]
   }
 }

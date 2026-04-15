@@ -12,7 +12,7 @@ const activeStripeEvents = new Set()
 
 const DEFAULT_WEBHOOK_TOLERANCE_SECONDS = 300
 
-function parseStripeSignatureHeader(signatureHeader) {
+export function parseStripeSignatureHeader(signatureHeader) {
   if (!signatureHeader) {
     return { timestamp: null, signatures: [] }
   }
@@ -51,7 +51,7 @@ function secureCompareHex(a, b) {
   return crypto.timingSafeEqual(aBuffer, bBuffer)
 }
 
-function verifyStripeSignature({ rawBody, signatureHeader, webhookSecret, toleranceSeconds = DEFAULT_WEBHOOK_TOLERANCE_SECONDS }) {
+export function verifyStripeSignature({ rawBody, signatureHeader, webhookSecret, toleranceSeconds = DEFAULT_WEBHOOK_TOLERANCE_SECONDS }) {
   if (!webhookSecret) {
     throw new Error('Falta STRIPE_WEBHOOK_SECRET para validar firma del webhook')
   }
@@ -79,7 +79,7 @@ function verifyStripeSignature({ rawBody, signatureHeader, webhookSecret, tolera
   }
 }
 
-function formatAmount(amountInCents, currencyCode) {
+export function formatAmount(amountInCents, currencyCode) {
   const amount = Number(amountInCents) / 100
   if (!Number.isFinite(amount)) {
     return '0.00'
