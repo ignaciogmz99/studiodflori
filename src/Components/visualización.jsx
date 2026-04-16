@@ -162,7 +162,7 @@ function Visualización() {
 
   if (!selectedFlower) return null
 
-  const { name, images, price, stock, preparationHours, hasInventoryRecord, descripcion, id } = selectedFlower
+  const { name, images, price, stock, preparationHours, hasInventoryRecord, isInventoryLoading, descripcion, id } = selectedFlower
   const poetic = POETIC_DESCRIPTIONS[id] || null
   const displayDescripcion = descripcion && poetic
     ? `${descripcion} ${poetic}`
@@ -277,7 +277,7 @@ function Visualización() {
           )}
 
           <p className="visualizacion__price">
-            {typeof price === 'number' ? (
+            {isInventoryLoading ? 'Cargando precio...' : typeof price === 'number' ? (
               <>
                 <span>${price} MXN</span>
                 {PROMO_PRODUCT_IDS.has(id) && (
@@ -327,7 +327,7 @@ function Visualización() {
           onClick={() => addToCart(selectedFlower)}
           disabled={!canAddToCart}
         >
-          {canAddToCart ? 'Agregar al carrito' : (typeof stock === 'number' && stock <= 0 ? 'Agotado' : 'No disponible')}
+          {isInventoryLoading ? 'Cargando...' : canAddToCart ? 'Agregar al carrito' : (typeof stock === 'number' && stock <= 0 ? 'Agotado' : 'No disponible')}
         </button>
       </div>
     </div>
