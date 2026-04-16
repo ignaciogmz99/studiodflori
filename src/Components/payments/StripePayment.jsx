@@ -10,8 +10,56 @@ const BRAND_LABELS = {
   mastercard: 'MC',
   amex:       'AMEX'
 }
+const PAYMENT_REQUEST_TIMEOUT_MS = 30000
 
 let stripeScriptPromise = null
+
+function withTimeout(promiseFactory, timeoutMs = PAYMENT_REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController()
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs)
+
+  return promiseFactory(controller.signal)
+    .finally(() => {
+      window.clearTimeout(timeoutId)
+    })
+}
+
+function getStripeStatusMessage(status) {
+  const normalizedStatus = String(status || '').trim().toLowerCase()
+
+  if (normalizedStatus === 'processing' || normalizedStatus === 'requires_capture') {
+    return {
+      type: 'info',
+      message: 'Tu pago esta en proceso. Te confirmaremos cuando Stripe lo acredite.'
+    }
+  }
+
+  if (normalizedStatus === 'requires_payment_method') {
+    return {
+      type: 'error',
+      message: 'Tu tarjeta fue rechazada o requiere otro metodo de pago. Intenta con otra tarjeta.'
+    }
+  }
+
+  if (normalizedStatus === 'canceled') {
+    return {
+      type: 'error',
+      message: 'El pago fue cancelado. Intenta nuevamente si deseas completar tu compra.'
+    }
+  }
+
+  if (normalizedStatus === 'requires_action') {
+    return {
+      type: 'error',
+      message: 'El banco requiere una validacion adicional. Intenta nuevamente para completar la autenticacion.'
+    }
+  }
+
+  return {
+    type: 'error',
+    message: `Estado de pago no esperado: ${normalizedStatus || 'sin estado'}`
+  }
+}
 
 function ensureStripeSdk() {
   if (window.Stripe) return Promise.resolve()
@@ -147,9 +195,10 @@ function StripePayment({
       setPaymentMessage('')
 
       const isStorePickup = deliveryDetails.fulfillmentType === 'pickup'
-      const createIntentResponse = await fetch(`${apiBaseUrl}/api/stripe/create-payment-intent`, {
+      const createIntentResponse = await withTimeout((signal) => fetch(`${apiBaseUrl}/api/stripe/create-payment-intent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal,
         body: JSON.stringify({
           orderId,
           amount: payableAmount,
@@ -174,7 +223,7 @@ function StripePayment({
             specialInstructions: deliveryDetails.specialInstructions
           }
         })
-      })
+      }))
 
       let createIntentPayload = null
       try { createIntentPayload = await createIntentResponse.json() } catch {
@@ -209,12 +258,22 @@ function StripePayment({
         return
       }
       if (status === 'processing' || status === 'requires_capture') {
-        setPaymentMessage('Pago en proceso. Te confirmaremos cuando se acredite.')
+        setPaymentMessage('Tu pago esta en proceso. Te confirmaremos cuando Stripe lo acredite.')
         return
       }
-      throw new Error(`Estado de pago no esperado: ${status || 'sin estado'}`)
+      const statusResolution = getStripeStatusMessage(status)
+      if (statusResolution.type === 'info') {
+        setPaymentMessage(statusResolution.message)
+        return
+      }
+      throw new Error(statusResolution.message)
     } catch (error) {
-      setErrorMessage(error?.message || 'No se pudo procesar el pago con Stripe')
+      const isAbort = error?.name === 'AbortError'
+      setErrorMessage(
+        isAbort
+          ? 'Stripe tardo demasiado en responder. Revisa si el cargo se genero antes de intentar nuevamente.'
+          : (error?.message || 'No se pudo procesar el pago con Stripe')
+      )
     } finally {
       setIsStripePaying(false)
     }

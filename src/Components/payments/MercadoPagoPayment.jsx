@@ -2,8 +2,50 @@ import { useEffect, useRef, useState } from 'react'
 
 const MP_SDK_URL = 'https://sdk.mercadopago.com/js/v2'
 const BRICK_CONTAINER_ID = 'mp-card-payment-brick-container'
+const PAYMENT_REQUEST_TIMEOUT_MS = 30000
 
 let mercadoPagoScriptPromise = null
+
+function withTimeout(promiseFactory, timeoutMs = PAYMENT_REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController()
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs)
+
+  return promiseFactory(controller.signal)
+    .finally(() => {
+      window.clearTimeout(timeoutId)
+    })
+}
+
+function getMercadoPagoStatusMessage(payload = {}) {
+  const status = String(payload?.status || '').trim().toLowerCase()
+  const statusDetail = String(payload?.status_detail || '').trim()
+
+  if (status === 'approved') {
+    return {
+      type: 'success',
+      message: 'Pago aprobado. Tu pedido fue registrado correctamente.'
+    }
+  }
+
+  if (status === 'in_process' || status === 'pending') {
+    return {
+      type: 'info',
+      message: 'Tu pago esta en revision o en proceso. Te avisaremos cuando Mercado Pago lo acredite.'
+    }
+  }
+
+  if (status === 'rejected' || status === 'cancelled') {
+    return {
+      type: 'error',
+      message: `Tu pago no fue aprobado. ${statusDetail || 'Intenta con otra tarjeta o verifica los datos.'}`
+    }
+  }
+
+  return {
+    type: 'error',
+    message: `No se pudo completar el pago. ${statusDetail || status || 'Intenta de nuevo.'}`
+  }
+}
 
 function ensureMercadoPagoSdk() {
   if (window.MercadoPago) {
@@ -161,65 +203,77 @@ function MercadoPagoPayment({
               }
             },
             onSubmit: async (cardFormData) => {
-              setErrorMessage('')
-              setPaymentMessage('')
-              const currentPayload = payloadRef.current
-              const isStorePickup = currentPayload.deliveryDetails.fulfillmentType === 'pickup'
-              const response = await fetch(`${apiBaseUrl}/api/mercadopago/process-payment`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  orderId,
-                  ...cardFormData,
-                  items: currentPayload.items,
-                  customer: {
-                    fullName: currentPayload.deliveryDetails.fullName,
-                    phone: currentPayload.deliveryDetails.phone,
-                    email: ''
+              try {
+                setErrorMessage('')
+                setPaymentMessage('')
+                const currentPayload = payloadRef.current
+                const isStorePickup = currentPayload.deliveryDetails.fulfillmentType === 'pickup'
+                const response = await withTimeout((signal) => fetch(`${apiBaseUrl}/api/mercadopago/process-payment`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
                   },
-                  delivery: {
-                    fulfillmentType: currentPayload.deliveryDetails.fulfillmentType || 'delivery',
-                    city: isStorePickup ? null : currentPayload.selectedDeliveryCity,
-                    date: currentPayload.selectedDeliveryDate,
-                    time: currentPayload.selectedDeliveryTime,
-                    recipientType: currentPayload.deliveryDetails.recipientType || 'self',
-                    recipientName: currentPayload.deliveryDetails.recipientType === 'other'
-                      ? currentPayload.deliveryDetails.recipientName
-                      : null,
-                    streetAddress: isStorePickup ? null : currentPayload.deliveryDetails.streetAddress,
-                    neighborhood: isStorePickup ? null : currentPayload.deliveryDetails.neighborhood,
-                    postalCode: isStorePickup ? null : currentPayload.deliveryDetails.postalCode,
-                    flowerMessage: currentPayload.deliveryDetails.flowerMessage,
-                    specialInstructions: currentPayload.deliveryDetails.specialInstructions
-                  }
-                })
-              })
+                  signal,
+                  body: JSON.stringify({
+                    orderId,
+                    ...cardFormData,
+                    items: currentPayload.items,
+                    customer: {
+                      fullName: currentPayload.deliveryDetails.fullName,
+                      phone: currentPayload.deliveryDetails.phone,
+                      email: ''
+                    },
+                    delivery: {
+                      fulfillmentType: currentPayload.deliveryDetails.fulfillmentType || 'delivery',
+                      city: isStorePickup ? null : currentPayload.selectedDeliveryCity,
+                      date: currentPayload.selectedDeliveryDate,
+                      time: currentPayload.selectedDeliveryTime,
+                      recipientType: currentPayload.deliveryDetails.recipientType || 'self',
+                      recipientName: currentPayload.deliveryDetails.recipientType === 'other'
+                        ? currentPayload.deliveryDetails.recipientName
+                        : null,
+                      streetAddress: isStorePickup ? null : currentPayload.deliveryDetails.streetAddress,
+                      neighborhood: isStorePickup ? null : currentPayload.deliveryDetails.neighborhood,
+                      postalCode: isStorePickup ? null : currentPayload.deliveryDetails.postalCode,
+                      flowerMessage: currentPayload.deliveryDetails.flowerMessage,
+                      specialInstructions: currentPayload.deliveryDetails.specialInstructions
+                    }
+                  })
+                }))
 
-              const payload = await response.json()
-              if (!response.ok) {
-                throw new Error(payload?.error || 'No se pudo procesar el pago')
+                const payload = await response.json()
+                if (!response.ok) {
+                  throw new Error(payload?.error || 'No se pudo procesar el pago')
+                }
+
+                const statusResolution = getMercadoPagoStatusMessage(payload)
+                if (statusResolution.type === 'success') {
+                  setPaymentMessage(statusResolution.message)
+                  onPaymentApproved?.({
+                    provider: 'mercadopago',
+                    paymentId: payload?.id || '',
+                    approvedAt: new Date().toISOString(),
+                    amount: payableAmount,
+                    currency: 'MXN'
+                  })
+                  return
+                }
+
+                if (statusResolution.type === 'info') {
+                  setPaymentMessage(statusResolution.message)
+                  return
+                }
+
+                throw new Error(statusResolution.message)
+              } catch (error) {
+                const isAbort = error?.name === 'AbortError'
+                setErrorMessage(
+                  isAbort
+                    ? 'Mercado Pago tardo demasiado en responder. Revisa si el cargo se genero antes de intentar nuevamente.'
+                    : (error?.message || 'No se pudo procesar el pago con Mercado Pago')
+                )
+                throw error
               }
-
-              if (payload.status === 'approved') {
-                setPaymentMessage('Pago aprobado. Tu pedido fue registrado correctamente.')
-                onPaymentApproved?.({
-                  provider: 'mercadopago',
-                  paymentId: payload?.id || '',
-                  approvedAt: new Date().toISOString(),
-                  amount: payableAmount,
-                  currency: 'MXN'
-                })
-                return
-              }
-
-              if (payload.status === 'in_process' || payload.status === 'pending') {
-                setPaymentMessage('Pago en proceso. Te confirmaremos cuando se acredite.')
-                return
-              }
-
-              throw new Error(`Pago rechazado: ${payload.status_detail || payload.status || 'sin detalle'}`)
             },
             onError: (error) => {
               const errorCode = error?.cause?.[0]?.code ? ` (${error.cause[0].code})` : ''
@@ -237,7 +291,12 @@ function MercadoPagoPayment({
         }
       } catch (error) {
         if (isMounted) {
-          setErrorMessage(error?.message || 'No se pudo iniciar el formulario de pago')
+          const isAbort = error?.name === 'AbortError'
+          setErrorMessage(
+            isAbort
+              ? 'Mercado Pago tardo demasiado en responder. Revisa si el cargo se genero antes de intentar nuevamente.'
+              : (error?.message || 'No se pudo iniciar el formulario de pago')
+          )
           setIsLoading(false)
         }
       }
