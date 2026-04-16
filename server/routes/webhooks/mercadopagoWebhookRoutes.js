@@ -1,15 +1,8 @@
 /* global Buffer */
 import { Router } from 'express'
 import crypto from 'node:crypto'
-import {
-  buildWhatsAppTemplateParameters,
-  sendWhatsAppBusinessMessage
-} from '../../services/whatsappBusinessService.js'
-import {
-  getPaidOrderProcessingState,
-  updatePaidOrderProcessingState,
-  upsertPaidOrder
-} from '../../services/orderPersistenceService.js'
+import { getPaidOrderProcessingState } from '../../services/orderPersistenceService.js'
+import { processPaidOrder } from '../../services/paidOrderProcessingService.js'
 import { createMercadoPagoReceiptPdf } from '../../services/receiptPdfService.js'
 
 function createHttpError(message, statusCode = 400) {
@@ -118,9 +111,6 @@ function extractPaymentIdFromResource(resource) {
   return String(match?.[1] || '').trim()
 }
 
-// Set en memoria para bloquear procesamiento concurrente del mismo paymentId
-// dentro del mismo proceso. Previene doble envío de WhatsApp si MP manda
-// el mismo webhook dos veces casi simultáneamente.
 const activePayments = new Set()
 
 export function createMercadoPagoWebhookRouter({
@@ -174,7 +164,6 @@ export function createMercadoPagoWebhookRouter({
         || action.startsWith('payment.')
 
       if (shouldCheckPayment && dataId) {
-        // Always verify latest payment state directly in MP API.
         const payment = await fetchMercadoPagoPaymentById({
           paymentId: dataId,
           accessToken: mercadopagoToken
@@ -185,12 +174,10 @@ export function createMercadoPagoWebhookRouter({
         })
 
         if (String(payment?.status || '').toLowerCase() === 'approved') {
-          const stageErrors = []
           const normalizedPaymentId = String(payment?.id || dataId || '').trim()
           const metadata = payment?.metadata || {}
           const normalizedOrderId = String(metadata.order_id || '').trim()
 
-          // Bloquear procesamiento concurrente del mismo pago en este proceso.
           if (activePayments.has(normalizedPaymentId)) {
             console.log('[MP webhook] pago ya en proceso en esta instancia, omitiendo', {
               paymentId: normalizedPaymentId
@@ -200,152 +187,70 @@ export function createMercadoPagoWebhookRouter({
           activePayments.add(normalizedPaymentId)
 
           try {
-          let existingState = await getPaidOrderProcessingState({
-            paymentId: normalizedPaymentId,
-            orderId: normalizedOrderId
-          })
-
-          if (existingState?.pdf_generated_at && existingState?.whatsapp_sent_at) {
-            console.log('[MP webhook] pago ya procesado, se omiten acciones duplicadas', {
-              paymentId: normalizedPaymentId
+            const existingState = await getPaidOrderProcessingState({
+              paymentId: normalizedPaymentId,
+              orderId: normalizedOrderId
             })
-            return res.status(200).json({ received: true, duplicated: true })
-          }
 
-          const persistenceMetadata = {
-            customer_name: String(metadata.customer_name || '').trim(),
-            customer_phone: String(metadata.customer_phone || '').trim(),
-            cart_items_summary: String(metadata.cart_items_summary || '').trim(),
-            delivery_city: String(metadata.delivery_city || '').trim(),
-            delivery_address: String(metadata.delivery_address || '').trim(),
-            delivery_neighborhood: String(metadata.delivery_neighborhood || '').trim(),
-            delivery_postal_code: String(metadata.delivery_postal_code || '').trim(),
-            delivery_date: String(metadata.delivery_date || '').trim(),
-            delivery_time: String(metadata.delivery_time || '').trim()
-          }
+            if (existingState?.pdf_generated_at && existingState?.whatsapp_sent_at) {
+              console.log('[MP webhook] pago ya procesado, se omiten acciones duplicadas', {
+                paymentId: normalizedPaymentId
+              })
+              return res.status(200).json({ received: true, duplicated: true })
+            }
 
-          let persistenceSucceeded = false
-          try {
-            const persistenceResult = await upsertPaidOrder({
+            const processingResult = await processPaidOrder({
               amountMxn: payment?.transaction_amount,
-              customerName: persistenceMetadata.customer_name,
-              customerPhone: persistenceMetadata.customer_phone,
+              customerName: String(metadata.customer_name || '').trim(),
+              customerPhone: String(metadata.customer_phone || '').trim(),
               metadata: {
-                ...persistenceMetadata,
-                order_id: normalizedOrderId
+                order_id: normalizedOrderId,
+                customer_name: String(metadata.customer_name || '').trim(),
+                customer_phone: String(metadata.customer_phone || '').trim(),
+                recipient_name: String(metadata.recipient_name || '').trim(),
+                cart_items_summary: String(metadata.cart_items_summary || '').trim(),
+                delivery_city: String(metadata.delivery_city || '').trim(),
+                delivery_address: String(metadata.delivery_address || '').trim(),
+                delivery_neighborhood: String(metadata.delivery_neighborhood || '').trim(),
+                delivery_postal_code: String(metadata.delivery_postal_code || '').trim(),
+                delivery_date: String(metadata.delivery_date || '').trim(),
+                delivery_time: String(metadata.delivery_time || '').trim(),
+                flower_message: String(metadata.flower_message || '').trim(),
+                delivery_notes: String(metadata.delivery_notes || '').trim(),
+                fulfillment_type: String(metadata.fulfillment_type || 'delivery').trim()
               },
               paidAt: payment?.date_approved || payment?.date_created || new Date().toISOString(),
               paymentId: normalizedPaymentId,
               orderId: normalizedOrderId,
-              source: 'mercadopago_webhook'
+              source: 'mercadopago_webhook',
+              createReceiptPdf: () => createMercadoPagoReceiptPdf(payment),
+              logLabel: 'MP webhook',
+              whatsappAccessToken,
+              whatsappPhoneNumberId,
+              whatsappRecipient,
+              whatsappTemplateName,
+              whatsappTemplateLanguageCode,
+              whatsappApiVersion
             })
-            persistenceSucceeded = Boolean(persistenceResult?.persisted)
-            existingState = persistenceResult?.row || existingState
-          } catch (error) {
-            stageErrors.push(`persistencia: ${error?.message || error}`)
-            console.warn('[MP webhook] fallo persistiendo comprobante:', error?.message || error)
-          }
 
-          if (!persistenceSucceeded) {
-            throw createHttpError(
-              `Fallo post-pago de Mercado Pago (${stageErrors.join(' | ')})`,
-              500
-            )
-          }
-
-          const hasPdf = Boolean(existingState?.pdf_generated_at)
-          if (!hasPdf) {
-            try {
-              const pdfResult = await createMercadoPagoReceiptPdf(payment)
-              await updatePaidOrderProcessingState({
-                paymentId: normalizedPaymentId,
-                orderId: normalizedOrderId,
-                pdfPath: pdfResult.filePath,
-                pdfGeneratedAt: new Date().toISOString()
-              })
-              console.log('[MP webhook] PDF generado', {
-                paymentId: normalizedPaymentId,
-                filePath: pdfResult.filePath
-              })
-            } catch (error) {
-              stageErrors.push(`pdf: ${error?.message || error}`)
-              console.warn('[MP webhook] fallo generando PDF:', error?.message || error)
-            }
-          }
-
-          // Re-leer estado más reciente de DB antes de enviar WhatsApp para
-          // detectar si un webhook concurrente ya lo envió y evitar duplicados.
-          try {
-            const freshState = await getPaidOrderProcessingState({
-              paymentId: normalizedPaymentId,
-              orderId: normalizedOrderId
-            })
-            if (freshState) existingState = freshState
-          } catch { /* ignorar error de re-fetch; se usa el estado previo */ }
-
-          const whatsappTemplateParameters = buildWhatsAppTemplateParameters({
-            orderId: metadata.order_id,
-            paymentId: payment?.id || dataId,
-            customerName: metadata.customer_name,
-            recipientName: String(metadata.recipient_name || metadata.customer_name || '').trim(),
-            cartItemsSummary: metadata.cart_items_summary,
-            deliveryDate: metadata.delivery_date,
-            deliveryTime: metadata.delivery_time,
-            deliveryCity: metadata.delivery_city,
-            deliveryAddress: metadata.delivery_address,
-            deliveryNeighborhood: metadata.delivery_neighborhood,
-            deliveryPostalCode: metadata.delivery_postal_code,
-            customerPhone: metadata.customer_phone,
-            flowerMessage: metadata.flower_message,
-            specialInstructions: metadata.delivery_notes,
-            deliveryType: metadata.fulfillment_type
-          })
-          const hasWhatsapp = Boolean(existingState?.whatsapp_sent_at)
-          if (!hasWhatsapp) {
-            try {
-              const whatsappResult = await sendWhatsAppBusinessMessage({
-                whatsappAccessToken,
-                whatsappPhoneNumberId,
-                whatsappRecipient,
-                whatsappApiVersion,
-                whatsappTemplateName,
-                whatsappTemplateLanguageCode,
-                whatsappTemplateParameters
-              })
-              await updatePaidOrderProcessingState({
-                paymentId: normalizedPaymentId,
-                orderId: normalizedOrderId,
-                whatsappSentAt: new Date().toISOString()
-              })
-              console.log('[MP webhook] WhatsApp enviado', {
-                paymentId: normalizedPaymentId,
-                recipient: whatsappResult?.recipient || 'unknown',
-                messageId: whatsappResult?.responsePayload?.messages?.[0]?.id || 'unknown'
-              })
-            } catch (error) {
-              stageErrors.push(`notificacion: ${error?.message || error}`)
-              console.warn('[MP webhook] fallo enviando notificacion:', error?.message || error)
-            }
-          }
-
-          if (stageErrors.length > 0) {
-            if (!persistenceSucceeded) {
+            if (!processingResult.processed) {
               throw createHttpError(
-                `Fallo post-pago de Mercado Pago (${stageErrors.join(' | ')})`,
+                `Fallo post-pago de Mercado Pago (${processingResult.stageErrors.join(' | ')})`,
                 500
               )
             }
 
-            console.warn('[MP webhook] post-pago parcial completado', {
-              paymentId: normalizedPaymentId,
-              errors: stageErrors
-            })
+            if (processingResult.processedWithWarnings) {
+              console.warn('[MP webhook] post-pago parcial completado', {
+                paymentId: normalizedPaymentId,
+                errors: processingResult.stageErrors
+              })
 
-            return res.status(200).json({
-              received: true,
-              processedWithWarnings: true
-            })
-          }
+              return res.status(200).json({
+                received: true,
+                processedWithWarnings: true
+              })
+            }
           } finally {
             activePayments.delete(normalizedPaymentId)
           }

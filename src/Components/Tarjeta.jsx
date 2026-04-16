@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './Tarjeta.css'
 import { useCart } from '../context/CartContext'
+import { PAYMENT_RECEIPT_STORAGE_KEY } from '../constants/paymentReceiptStorage.js'
 import { defaultPaymentProvider, getPaymentProvider, paymentProviders } from './payments'
 import PaymentProviderBoundary from './payments/PaymentProviderBoundary'
 import logoBien from '../assets/logo_bien.jpg'
@@ -34,6 +35,23 @@ function resolveApiBaseUrl() {
   return 'http://localhost:3001'
 }
 
+function readStoredReceipt() {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  try {
+    const rawValue = window.sessionStorage.getItem(PAYMENT_RECEIPT_STORAGE_KEY)
+    if (!rawValue) {
+      return null
+    }
+    const parsedValue = JSON.parse(rawValue)
+    return parsedValue && typeof parsedValue === 'object' ? parsedValue : null
+  } catch {
+    return null
+  }
+}
+
 function Tarjeta() {
   const navigate = useNavigate()
   useEffect(() => {
@@ -58,7 +76,7 @@ function Tarjeta() {
   const stripePublishableKey = String(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '').trim()
   const payableAmount = Number(totalWithDelivery.toFixed(2))
   const [paymentProvider, setPaymentProvider] = useState(defaultPaymentProvider)
-  const [receiptData, setReceiptData] = useState(null)
+  const [receiptData, setReceiptData] = useState(() => readStoredReceipt())
   const orderIdRef = useRef(
     `ord_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`
   )
@@ -83,6 +101,25 @@ function Tarjeta() {
 
   const SelectedPaymentComponent = selectedProvider.Component
 
+  useEffect(() => {
+    if (receiptData?.orderId) {
+      orderIdRef.current = receiptData.orderId
+    }
+  }, [receiptData])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    if (receiptData) {
+      window.sessionStorage.setItem(PAYMENT_RECEIPT_STORAGE_KEY, JSON.stringify(receiptData))
+      return
+    }
+
+    window.sessionStorage.removeItem(PAYMENT_RECEIPT_STORAGE_KEY)
+  }, [receiptData])
+
   const handlePaymentApproved = (approvedPayload = {}) => {
     const now = new Date()
     const basePayload = {
@@ -106,6 +143,7 @@ function Tarjeta() {
   }
 
   const handleExitAfterPayment = () => {
+    setReceiptData(null)
     clearCart()
     closePaymentView()
     navigate('/', { replace: true })

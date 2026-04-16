@@ -7,11 +7,8 @@ import {
   buildTrustedOrderFromClientItems,
   validateOrderId
 } from '../services/trustedOrderService.js'
-import {
-  upsertPaidOrder,
-  updatePaidOrderProcessingState
-} from '../services/orderPersistenceService.js'
 import { createMercadoPagoReceiptPdf } from '../services/receiptPdfService.js'
+import { processPaidOrder } from '../services/paidOrderProcessingService.js'
 
 const ORDER_TTL_MS = 30 * 60 * 1000
 // In-memory order state to reduce duplicate charges on retries.
@@ -49,7 +46,7 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
     }
 
     try {
-      await upsertPaidOrder({
+      const processingResult = await processPaidOrder({
         amountMxn: paymentResponse?.transaction_amount,
         customerName: metadata.customer_name,
         customerPhone: metadata.customer_phone,
@@ -57,29 +54,32 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
         paidAt: paymentResponse?.date_approved || paymentResponse?.date_created || new Date().toISOString(),
         paymentId: String(paymentResponse?.id || '').trim(),
         orderId,
-        source: 'mercadopago_process_payment'
+        source: 'mercadopago_process_payment',
+        createReceiptPdf: () => createMercadoPagoReceiptPdf({
+          ...paymentResponse,
+          currency_id: paymentResponse?.currency_id || 'MXN',
+          payer: {
+            email: String(paymentResponse?.payer?.email || customer?.email || '').trim()
+          },
+          metadata
+        }),
+        logLabel: 'MP process-payment fallback',
+        whatsappAccessToken: process.env.WHATSAPP_BUSINESS_ACCESS_TOKEN,
+        whatsappPhoneNumberId: process.env.WHATSAPP_BUSINESS_PHONE_NUMBER_ID,
+        whatsappRecipient: process.env.WHATSAPP_BUSINESS_TO,
+        whatsappTemplateName: process.env.WHATSAPP_BUSINESS_TEMPLATE_NAME,
+        whatsappTemplateLanguageCode: process.env.WHATSAPP_BUSINESS_TEMPLATE_LANGUAGE || 'es_MX',
+        whatsappApiVersion: process.env.WHATSAPP_BUSINESS_API_VERSION || 'v22.0'
       })
 
-      const pdfResult = await createMercadoPagoReceiptPdf({
-        ...paymentResponse,
-        currency_id: paymentResponse?.currency_id || 'MXN',
-        payer: {
-          email: String(paymentResponse?.payer?.email || customer?.email || '').trim()
-        },
-        metadata
-      })
-
-      await updatePaidOrderProcessingState({
-        paymentId: String(paymentResponse?.id || '').trim(),
-        orderId,
-        pdfPath: pdfResult.filePath,
-        pdfGeneratedAt: new Date().toISOString()
-      })
+      if (!processingResult.processed) {
+        throw new Error(processingResult.stageErrors.join(' | ') || 'No se pudo completar fallback post-pago')
+      }
 
       console.log('[MP process-payment] fallback post-pago completado', {
         orderId,
         paymentId: paymentResponse?.id,
-        pdfPath: pdfResult.filePath
+        warnings: processingResult.stageErrors
       })
     } catch (error) {
       console.warn('[MP process-payment] fallo fallback post-pago:', {

@@ -15,6 +15,94 @@ function sanitizeFileSegment(value, fallback = 'sin-folio') {
   return normalized || fallback
 }
 
+async function uploadReceiptToSupabaseStorage({ fileName, pdfBuffer, folder = 'generated_receipts' } = {}) {
+  const supabaseUrl = String(process.env.SUPABASE_URL || '').trim()
+  const supabaseKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
+  const bucket = String(process.env.SUPABASE_RECEIPTS_BUCKET || '').trim()
+
+  if (!supabaseUrl || !supabaseKey || !bucket || !pdfBuffer) {
+    return { uploaded: false, skipped: true }
+  }
+
+  const objectPath = `${folder}/${fileName}`.replace(/^\/+/, '')
+  const uploadUrl = new URL(`/storage/v1/object/${bucket}/${objectPath}`, supabaseUrl)
+
+  const response = await fetch(uploadUrl.toString(), {
+    method: 'POST',
+    headers: {
+      apikey: supabaseKey,
+      Authorization: `Bearer ${supabaseKey}`,
+      'Content-Type': 'application/pdf',
+      'x-upsert': 'false'
+    },
+    body: pdfBuffer
+  })
+
+  if (response.ok) {
+    return {
+      uploaded: true,
+      objectPath,
+      filePath: `supabase://${bucket}/${objectPath}`
+    }
+  }
+
+  if (response.status === 409) {
+    return {
+      uploaded: true,
+      objectPath,
+      filePath: `supabase://${bucket}/${objectPath}`,
+      alreadyExisted: true
+    }
+  }
+
+  const details = await response.text()
+  throw new Error(`No se pudo subir PDF a Supabase Storage (${response.status}): ${details}`)
+}
+
+async function persistReceiptFile({ fileName, pdfBuffer } = {}) {
+  try {
+    const storageResult = await uploadReceiptToSupabaseStorage({ fileName, pdfBuffer })
+    if (storageResult.uploaded) {
+      return {
+        fileName,
+        filePath: storageResult.filePath,
+        pdfBuffer: null,
+        alreadyExisted: Boolean(storageResult.alreadyExisted),
+        storageObjectPath: storageResult.objectPath,
+        storageProvider: 'supabase'
+      }
+    }
+  } catch (error) {
+    console.warn('[receipt pdf] fallo subiendo a Supabase Storage; se usara filesystem local:', error?.message || error)
+  }
+
+  await mkdir(receiptsDir, { recursive: true })
+  const filePath = path.join(receiptsDir, fileName)
+
+  try {
+    await access(filePath)
+    return {
+      fileName,
+      filePath,
+      pdfBuffer: null,
+      alreadyExisted: true,
+      storageProvider: 'local'
+    }
+  } catch {
+    // File does not exist yet; continue with generation.
+  }
+
+  await writeFile(filePath, pdfBuffer)
+
+  return {
+    fileName,
+    filePath,
+    pdfBuffer,
+    alreadyExisted: false,
+    storageProvider: 'local'
+  }
+}
+
 function drawSectionTitle(doc, colors, marginX, contentWidth, cursorY, title) {
   doc.setFillColor(...colors.accent)
   doc.roundedRect(marginX, cursorY, contentWidth, 24, 6, 6, 'F')
@@ -169,30 +257,7 @@ export async function createMercadoPagoReceiptPdf(payment = {}) {
   const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
   const safePaymentId = sanitizeFileSegment(receipt.paymentId)
   const fileName = `comprobante-${safePaymentId}.pdf`
-
-  await mkdir(receiptsDir, { recursive: true })
-  const filePath = path.join(receiptsDir, fileName)
-
-  try {
-    await access(filePath)
-    return {
-      fileName,
-      filePath,
-      pdfBuffer: null,
-      alreadyExisted: true
-    }
-  } catch {
-    // File does not exist yet; continue with generation.
-  }
-
-  await writeFile(filePath, pdfBuffer)
-
-  return {
-    fileName,
-    filePath,
-    pdfBuffer,
-    alreadyExisted: false
-  }
+  return persistReceiptFile({ fileName, pdfBuffer })
 }
 
 export async function createStripeReceiptPdf(paymentIntent = {}) {
@@ -269,17 +334,5 @@ export async function createStripeReceiptPdf(paymentIntent = {}) {
   const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
   const safePaymentId = sanitizeFileSegment(receipt.paymentId)
   const fileName = `comprobante-stripe-${safePaymentId}.pdf`
-
-  await mkdir(receiptsDir, { recursive: true })
-  const filePath = path.join(receiptsDir, fileName)
-
-  try {
-    await access(filePath)
-    return { fileName, filePath, pdfBuffer: null, alreadyExisted: true }
-  } catch {
-    // File does not exist yet; continue with generation.
-  }
-
-  await writeFile(filePath, pdfBuffer)
-  return { fileName, filePath, pdfBuffer, alreadyExisted: false }
+  return persistReceiptFile({ fileName, pdfBuffer })
 }
