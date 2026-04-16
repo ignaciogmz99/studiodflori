@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './Tarjeta.css'
 import { useCart } from '../context/CartContext'
 import { defaultPaymentProvider, getPaymentProvider, paymentProviders } from './payments'
@@ -34,6 +35,7 @@ function resolveApiBaseUrl() {
 }
 
 function Tarjeta() {
+  const navigate = useNavigate()
   useEffect(() => {
     document.querySelector('.main-content')?.scrollTo({ top: 0, behavior: 'instant' })
   }, [])
@@ -43,6 +45,7 @@ function Tarjeta() {
     itemsForPayment,
     totalWithDelivery,
     backToPaymentForm,
+    closePaymentView,
     clearCart,
     deliveryDetails,
     selectedDeliveryCity,
@@ -100,9 +103,12 @@ function Tarjeta() {
       ...basePayload,
       ...approvedPayload
     })
+  }
 
-    // Persistence is handled server-side by the MercadoPago and Stripe webhooks.
+  const handleExitAfterPayment = () => {
     clearCart()
+    closePaymentView()
+    navigate('/', { replace: true })
   }
 
   const downloadReceiptPdf = async () => {
@@ -417,12 +423,18 @@ function Tarjeta() {
       </p>
 
       <div className="tarjeta__summary">
-        <p className="tarjeta__summary-text">{selectedProvider.summary}</p>
+        <p className="tarjeta__summary-text">
+          {hasApprovedPayment
+            ? 'Tu comprobante ya esta listo. Puedes descargarlo antes de volver al catalogo.'
+            : selectedProvider.summary}
+        </p>
       </div>
 
-      <PaymentProviderBoundary providerKey={paymentProvider}>
-        <SelectedPaymentComponent key={paymentProvider} {...paymentSharedProps} />
-      </PaymentProviderBoundary>
+      {!hasApprovedPayment && (
+        <PaymentProviderBoundary providerKey={paymentProvider}>
+          <SelectedPaymentComponent key={paymentProvider} {...paymentSharedProps} />
+        </PaymentProviderBoundary>
+      )}
 
       <div className="tarjeta__actions">
         {receiptData && (
@@ -430,8 +442,12 @@ function Tarjeta() {
             Descargar comprobante PDF
           </button>
         )}
-        <button type="button" className="tarjeta__button tarjeta__button--secondary" onClick={backToPaymentForm}>
-          Volver
+        <button
+          type="button"
+          className="tarjeta__button tarjeta__button--secondary"
+          onClick={hasApprovedPayment ? handleExitAfterPayment : backToPaymentForm}
+        >
+          {hasApprovedPayment ? 'Volver al catalogo' : 'Volver'}
         </button>
       </div>
     </section>
