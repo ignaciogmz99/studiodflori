@@ -109,6 +109,55 @@
   gap: 0.7rem;
 }
 
+.tarjeta__receipt-info {
+  margin: 0 0 0.9rem;
+  padding: 0.85rem;
+  border: 1px solid #efb7ea;
+  border-radius: 12px;
+  background: #fff7fe;
+}
+
+.tarjeta__receipt-title {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #1f6d44;
+}
+
+.tarjeta__receipt-text {
+  margin: 0 0 0.65rem;
+  font-size: 0.86rem;
+  color: #4b3f48;
+}
+
+.tarjeta__receipt-list {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.tarjeta__receipt-row {
+  display: grid;
+  grid-template-columns: minmax(0, 8.5rem) minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: start;
+}
+
+.tarjeta__receipt-row dt {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #8b6a86;
+}
+
+.tarjeta__receipt-row dd {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #2f2130;
+  overflow-wrap: anywhere;
+}
+
 .tarjeta__summary-text {
   margin: 0;
   font-size: 0.9rem;

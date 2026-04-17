@@ -301,6 +301,27 @@ function Tarjeta() {
         {hasApprovedPayment ? 'Total pagado:' : 'Total a pagar:'} ${displayedAmount.toFixed(2)} MXN
       </p>
 
+      {receiptData && (
+        <div className="tarjeta__receipt-info" role="status" aria-live="polite">
+          <p className="tarjeta__receipt-title">Tu compra ya fue aprobada.</p>
+          <p className="tarjeta__receipt-text">
+            Guarda este numero por si necesitas ayuda con tu pedido o comprobante.
+          </p>
+          <dl className="tarjeta__receipt-list">
+            <div className="tarjeta__receipt-row">
+              <dt>No. de orden</dt>
+              <dd>{receiptData.orderId || orderId}</dd>
+            </div>
+            {receiptData.paymentId && (
+              <div className="tarjeta__receipt-row">
+                <dt>Folio de pago</dt>
+                <dd>{receiptData.paymentId}</dd>
+              </div>
+            )}
+          </dl>
+        </div>
+      )}
+
       <div className="tarjeta__summary">
         <p className="tarjeta__summary-text">
           {hasApprovedPayment
