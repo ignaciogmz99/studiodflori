@@ -204,6 +204,43 @@ export async function getPaidOrderProcessingState({ paymentId, orderId } = {}) {
   })
 }
 
+export async function getPaidOrderReceiptReference({ paymentId, orderId } = {}) {
+  const { supabaseUrl, supabaseKey } = getSupabaseCredentials()
+  if (!supabaseUrl || !supabaseKey) {
+    return null
+  }
+
+  const normalizedPaymentId = String(paymentId || '').trim()
+  const normalizedOrderId = String(orderId || '').trim()
+  if (!normalizedPaymentId || !normalizedOrderId) {
+    return null
+  }
+
+  const schemaSupport = await detectComprobantesSchemaSupport({ supabaseUrl, supabaseKey })
+  if (!schemaSupport.paymentColumns || !schemaSupport.webhookStateColumns) {
+    return null
+  }
+
+  const url = new URL('/rest/v1/comprobantes', supabaseUrl)
+  url.searchParams.set('select', 'payment_id,order_id,pdf_path,pdf_generated_at,whatsapp_sent_at')
+  url.searchParams.set('payment_id', `eq.${normalizedPaymentId}`)
+  url.searchParams.set('order_id', `eq.${normalizedOrderId}`)
+  url.searchParams.set('limit', '1')
+
+  const response = await supabaseRequest({
+    url: url.toString(),
+    supabaseKey
+  })
+
+  if (!response.ok) {
+    const details = await response.text()
+    throw new Error(`No se pudo consultar comprobante para descarga: ${response.status} ${details}`)
+  }
+
+  const rows = await response.json()
+  return Array.isArray(rows) && rows.length > 0 ? rows[0] : null
+}
+
 export async function upsertPaidOrder({
   amountMxn,
   customerName,

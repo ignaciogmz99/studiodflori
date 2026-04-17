@@ -240,6 +240,9 @@
 }
 
 .tarjeta__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 0;
   border-radius: 999px;
   background: #f894f4;
@@ -249,6 +252,8 @@
   font-weight: 700;
   padding: 0.55rem 1.2rem;
   cursor: pointer;
+  text-align: center;
+  text-decoration: none;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -265,6 +270,12 @@
 .tarjeta__button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.tarjeta__button--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .tarjeta__error {

@@ -8,6 +8,7 @@ import path from 'node:path'
 import { MercadoPagoConfig } from 'mercadopago'
 import { createMercadoPagoRouter } from './routes/mercadopagoRoutes.js'
 import { createStripeRouter } from './routes/stripeRoutes.js'
+import { createComprobantesRouter } from './routes/comprobantesRoutes.js'
 import { createMercadoPagoWebhookRouter } from './routes/webhooks/mercadopagoWebhookRoutes.js'
 import { createStripeWebhookRouter } from './routes/webhooks/stripeWebhookRoutes.js'
 
@@ -179,6 +180,7 @@ app.use('/api/mercadopago', paymentsRateLimiter, createMercadoPagoRouter({
   mpCheckoutMode
 }))
 app.use('/api/stripe', paymentsRateLimiter, createStripeRouter({ stripeSecretKey }))
+app.use('/api/comprobantes', paymentsRateLimiter, createComprobantesRouter())
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, async () => {
