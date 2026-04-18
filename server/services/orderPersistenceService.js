@@ -104,6 +104,7 @@ async function detectComprobantesSchemaSupport({ supabaseUrl, supabaseKey }) {
     }
   } catch (error) {
     console.warn('[comprobantes] no se pudo verificar soporte de columnas:', error?.message || error)
+    return support
   }
 
   comprobantesSchemaSupport = support

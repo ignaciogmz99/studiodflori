@@ -307,8 +307,9 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
         statusDetail: response.status_detail
       })
 
-      if (String(response?.status || '').toLowerCase() === 'approved') {
-        await runApprovedPaymentFallback({
+      const shouldQueuePostPaymentFallback = String(response?.status || '').toLowerCase() === 'approved'
+      if (shouldQueuePostPaymentFallback) {
+        void runApprovedPaymentFallback({
           paymentResponse: response,
           orderId: normalizedOrderId,
           customer,

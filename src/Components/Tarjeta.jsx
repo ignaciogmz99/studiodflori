@@ -14,6 +14,24 @@ function createOrderId() {
   return `ord_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`
 }
 
+const STORED_RECEIPT_TTL_MS = 2 * 60 * 60 * 1000
+
+function buildCartFingerprint(items = []) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return ''
+  }
+
+  return JSON.stringify(
+    items
+      .map((item) => ({
+        id: String(item?.id || '').trim(),
+        price: Number.isFinite(Number(item?.price)) ? Number(Number(item.price).toFixed(2)) : 0,
+        quantity: Number(item?.quantity || 0)
+      }))
+      .sort((left, right) => left.id.localeCompare(right.id))
+  )
+}
+
 function resolveApiBaseUrl() {
   const configuredBaseUrl = String(import.meta.env.VITE_API_BASE_URL || '').trim()
   if (configuredBaseUrl) {
@@ -27,7 +45,7 @@ function resolveApiBaseUrl() {
   return 'http://localhost:3001'
 }
 
-function readStoredReceipt() {
+function readStoredReceipt(currentItems = []) {
   if (typeof window === 'undefined') {
     return null
   }
@@ -38,7 +56,34 @@ function readStoredReceipt() {
       return null
     }
     const parsedValue = JSON.parse(rawValue)
-    return parsedValue && typeof parsedValue === 'object' ? parsedValue : null
+    if (!parsedValue || typeof parsedValue !== 'object') {
+      return null
+    }
+
+    const storedReceipt = parsedValue.receiptData && typeof parsedValue.receiptData === 'object'
+      ? parsedValue.receiptData
+      : parsedValue
+    if (!storedReceipt || typeof storedReceipt !== 'object') {
+      return null
+    }
+
+    const storedAt = Number(parsedValue.storedAt || storedReceipt.storedAt || 0)
+    if (storedAt && Date.now() - storedAt > STORED_RECEIPT_TTL_MS) {
+      return null
+    }
+
+    const currentFingerprint = buildCartFingerprint(currentItems)
+    const storedFingerprint = String(
+      parsedValue.cartFingerprint
+      || storedReceipt.cartFingerprint
+      || buildCartFingerprint(storedReceipt.items)
+      || ''
+    )
+    if (currentFingerprint && storedFingerprint && currentFingerprint !== storedFingerprint) {
+      return null
+    }
+
+    return storedReceipt
   } catch {
     return null
   }
@@ -81,7 +126,7 @@ function Tarjeta() {
   const payableAmount = Number(totalWithDelivery.toFixed(2))
   const [paymentProvider, setPaymentProvider] = useState(defaultPaymentProvider)
   const [paymentState, setPaymentState] = useState(() => {
-    const storedReceipt = readStoredReceipt()
+    const storedReceipt = readStoredReceipt(items)
     return {
       orderId: storedReceipt?.orderId || createOrderId(),
       receiptData: storedReceipt
@@ -138,12 +183,16 @@ function Tarjeta() {
     }
 
     if (receiptData) {
-      window.sessionStorage.setItem(PAYMENT_RECEIPT_STORAGE_KEY, JSON.stringify(receiptData))
+      window.sessionStorage.setItem(PAYMENT_RECEIPT_STORAGE_KEY, JSON.stringify({
+        storedAt: Date.now(),
+        cartFingerprint: buildCartFingerprint(receiptData.items) || buildCartFingerprint(items),
+        receiptData
+      }))
       return
     }
 
     window.sessionStorage.removeItem(PAYMENT_RECEIPT_STORAGE_KEY)
-  }, [receiptData])
+  }, [items, receiptData])
 
   useEffect(() => {
     if (!receiptData) {
