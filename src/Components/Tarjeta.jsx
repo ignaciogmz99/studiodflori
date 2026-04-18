@@ -227,6 +227,12 @@ function Tarjeta() {
           return
         }
 
+        if (!response.ok && response.status !== 202) {
+          setReceiptStatus('error')
+          setReceiptStatusMessage(payload?.error || 'No se pudo consultar el comprobante. Intenta abrirlo de nuevo en unos segundos.')
+          return
+        }
+
         if (payload?.ready) {
           setReceiptStatus('ready')
           setReceiptStatusMessage('Comprobante listo. Puedes abrirlo en PDF.')

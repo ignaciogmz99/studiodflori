@@ -271,7 +271,9 @@ export function createStripeWebhookRouter({
               paymentId,
               errors: processingResult.stageErrors
             })
-            return res.status(200).json({ received: true, processedWithWarnings: true })
+            return res.status(500).json({
+              error: `Post-pago Stripe incompleto (${processingResult.stageErrors.join(' | ')}), reintentando`
+            })
           }
         } finally {
           activeStripeEvents.delete(eventId)

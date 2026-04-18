@@ -1,5 +1,7 @@
 /* global process */
 
+const PROCESSING_CLAIM_TIMEOUT_MS = 10 * 60 * 1000
+
 let comprobantesSchemaSupport = null
 
 export function resetComprobantesSchemaSupportCache() {
@@ -58,8 +60,10 @@ async function detectComprobantesSchemaSupport({ supabaseUrl, supabaseKey }) {
   }
 
   const support = {
+    schemaInspected: false,
     paymentColumns: false,
-    webhookStateColumns: false
+    webhookStateColumns: false,
+    processingClaimColumns: false
   }
 
   const paymentColumnsUrl = new URL('/rest/v1/comprobantes', supabaseUrl)
@@ -102,13 +106,53 @@ async function detectComprobantesSchemaSupport({ supabaseUrl, supabaseKey }) {
         throw new Error(`No se pudo inspeccionar columnas de estado de webhook: ${webhookStateResponse.status} ${details}`)
       }
     }
+
+    const processingClaimUrl = new URL('/rest/v1/comprobantes', supabaseUrl)
+    processingClaimUrl.searchParams.set('select', 'pdf_processing_started_at,whatsapp_processing_started_at')
+    processingClaimUrl.searchParams.set('limit', '1')
+
+    const processingClaimResponse = await supabaseRequest({
+      url: processingClaimUrl.toString(),
+      supabaseKey
+    })
+
+    if (processingClaimResponse.ok) {
+      support.processingClaimColumns = true
+    } else {
+      const details = await processingClaimResponse.text()
+      if (processingClaimResponse.status === 400 && /pdf_processing_started_at|whatsapp_processing_started_at/i.test(details)) {
+        console.warn('[comprobantes] la tabla no tiene columnas de claim; se usara bloqueo en memoria de la instancia')
+      } else {
+        throw new Error(`No se pudo inspeccionar columnas de claim de webhook: ${processingClaimResponse.status} ${details}`)
+      }
+    }
   } catch (error) {
     console.warn('[comprobantes] no se pudo verificar soporte de columnas:', error?.message || error)
     return support
   }
 
+  support.schemaInspected = true
   comprobantesSchemaSupport = support
   return support
+}
+
+function assertModernComprobantesSchema(schemaSupport) {
+  if (!schemaSupport.schemaInspected) {
+    throw new Error('No se pudo verificar el esquema de comprobantes; se reintentara para evitar registros incompletos')
+  }
+
+  if (!schemaSupport.paymentColumns || !schemaSupport.webhookStateColumns) {
+    throw new Error('La tabla comprobantes necesita las columnas de webhook. Ejecuta docs/alter_comprobantes_for_webhooks.sql en Supabase.')
+  }
+}
+
+function buildProcessingSelect(schemaSupport) {
+  const baseColumns = 'payment_id,order_id,source,pdf_path,pdf_generated_at,whatsapp_sent_at'
+  if (schemaSupport?.processingClaimColumns) {
+    return `${baseColumns},pdf_processing_started_at,whatsapp_processing_started_at`
+  }
+
+  return baseColumns
 }
 
 async function findExistingPaidOrder({
@@ -127,10 +171,7 @@ async function findExistingPaidOrder({
   }
 
   const url = new URL('/rest/v1/comprobantes', supabaseUrl)
-  url.searchParams.set(
-    'select',
-    'payment_id,order_id,source,pdf_path,pdf_generated_at,whatsapp_sent_at'
-  )
+  url.searchParams.set('select', buildProcessingSelect(schemaSupport))
   url.searchParams.set('limit', '1')
 
   if (paymentId) {
@@ -261,6 +302,7 @@ export async function upsertPaidOrder({
   const normalizedPaymentId = String(paymentId || '').trim()
   const normalizedOrderId = String(orderId || metadata?.order_id || '').trim()
   const schemaSupport = await detectComprobantesSchemaSupport({ supabaseUrl, supabaseKey })
+  assertModernComprobantesSchema(schemaSupport)
   const existingRow = await findExistingPaidOrder({
     supabaseUrl,
     supabaseKey,
@@ -347,7 +389,9 @@ export async function updatePaidOrderProcessingState({
   orderId,
   pdfPath,
   pdfGeneratedAt,
-  whatsappSentAt
+  whatsappSentAt,
+  pdfProcessingStartedAt,
+  whatsappProcessingStartedAt
 } = {}) {
   const { supabaseUrl, supabaseKey } = getSupabaseCredentials()
   if (!supabaseUrl || !supabaseKey) {
@@ -358,7 +402,7 @@ export async function updatePaidOrderProcessingState({
   const normalizedOrderId = String(orderId || '').trim()
   const schemaSupport = await detectComprobantesSchemaSupport({ supabaseUrl, supabaseKey })
 
-  if (!schemaSupport.paymentColumns || !schemaSupport.webhookStateColumns || (!normalizedPaymentId && !normalizedOrderId)) {
+  if (!schemaSupport.schemaInspected || !schemaSupport.paymentColumns || !schemaSupport.webhookStateColumns || (!normalizedPaymentId && !normalizedOrderId)) {
     return { updated: false, skipped: true, reason: 'schema_not_supported' }
   }
 
@@ -372,13 +416,19 @@ export async function updatePaidOrderProcessingState({
   if (whatsappSentAt !== undefined) {
     patch.whatsapp_sent_at = whatsappSentAt || null
   }
+  if (schemaSupport.processingClaimColumns && pdfProcessingStartedAt !== undefined) {
+    patch.pdf_processing_started_at = pdfProcessingStartedAt || null
+  }
+  if (schemaSupport.processingClaimColumns && whatsappProcessingStartedAt !== undefined) {
+    patch.whatsapp_processing_started_at = whatsappProcessingStartedAt || null
+  }
 
   if (Object.keys(patch).length === 0) {
     return { updated: false, skipped: true, reason: 'empty_patch' }
   }
 
   const url = new URL('/rest/v1/comprobantes', supabaseUrl)
-  url.searchParams.set('select', 'payment_id,order_id,pdf_path,pdf_generated_at,whatsapp_sent_at')
+  url.searchParams.set('select', buildProcessingSelect(schemaSupport))
   url.searchParams.set('limit', '1')
 
   if (normalizedPaymentId) {
@@ -404,5 +454,86 @@ export async function updatePaidOrderProcessingState({
   return {
     updated: true,
     row: Array.isArray(rows) ? rows[0] || null : null
+  }
+}
+
+export async function claimPaidOrderProcessingStage({
+  paymentId,
+  orderId,
+  stage,
+  claimTimeoutMs = PROCESSING_CLAIM_TIMEOUT_MS
+} = {}) {
+  const { supabaseUrl, supabaseKey } = getSupabaseCredentials()
+  if (!supabaseUrl || !supabaseKey) {
+    return { claimed: true, skipped: true, reason: 'supabase_not_configured' }
+  }
+
+  const normalizedPaymentId = String(paymentId || '').trim()
+  const normalizedOrderId = String(orderId || '').trim()
+  if (!normalizedPaymentId && !normalizedOrderId) {
+    return { claimed: false, skipped: true, reason: 'missing_order_reference' }
+  }
+
+  const schemaSupport = await detectComprobantesSchemaSupport({ supabaseUrl, supabaseKey })
+  assertModernComprobantesSchema(schemaSupport)
+
+  if (!schemaSupport.processingClaimColumns) {
+    return {
+      claimed: true,
+      unsupported: true,
+      reason: 'processing_claim_columns_not_available'
+    }
+  }
+
+  const normalizedStage = String(stage || '').trim().toLowerCase()
+  const stageConfig = {
+    pdf: {
+      claimColumn: 'pdf_processing_started_at',
+      finalColumn: 'pdf_generated_at'
+    },
+    whatsapp: {
+      claimColumn: 'whatsapp_processing_started_at',
+      finalColumn: 'whatsapp_sent_at'
+    }
+  }[normalizedStage]
+
+  if (!stageConfig) {
+    throw new Error(`Etapa de procesamiento invalida: ${stage}`)
+  }
+
+  const now = new Date()
+  const cutoff = new Date(now.getTime() - claimTimeoutMs).toISOString()
+  const url = new URL('/rest/v1/comprobantes', supabaseUrl)
+  url.searchParams.set('select', buildProcessingSelect(schemaSupport))
+  url.searchParams.set('limit', '1')
+  url.searchParams.set(stageConfig.finalColumn, 'is.null')
+  url.searchParams.set('or', `(${stageConfig.claimColumn}.is.null,${stageConfig.claimColumn}.lt.${cutoff})`)
+
+  if (normalizedPaymentId) {
+    url.searchParams.set('payment_id', `eq.${normalizedPaymentId}`)
+  } else {
+    url.searchParams.set('order_id', `eq.${normalizedOrderId}`)
+  }
+
+  const response = await supabaseRequest({
+    url: url.toString(),
+    supabaseKey,
+    method: 'PATCH',
+    body: {
+      [stageConfig.claimColumn]: now.toISOString()
+    },
+    prefer: 'return=representation'
+  })
+
+  if (!response.ok) {
+    const details = await response.text()
+    throw new Error(`No se pudo tomar claim de ${normalizedStage}: ${response.status} ${details}`)
+  }
+
+  const rows = await response.json()
+  const row = Array.isArray(rows) ? rows[0] || null : null
+  return {
+    claimed: Boolean(row),
+    row
   }
 }

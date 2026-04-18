@@ -4,11 +4,67 @@ import {
 } from './whatsappBusinessService.js'
 import {
   getPaidOrderProcessingState,
+  claimPaidOrderProcessingStage,
   updatePaidOrderProcessingState,
   upsertPaidOrder
 } from './orderPersistenceService.js'
 
+const activePaidOrderProcesses = new Map()
+
 export async function processPaidOrder({
+  amountMxn,
+  customerName,
+  customerPhone,
+  metadata = {},
+  paidAt,
+  paymentId,
+  orderId,
+  source,
+  createReceiptPdf,
+  logLabel = 'payment',
+  whatsappAccessToken,
+  whatsappPhoneNumberId,
+  whatsappRecipient,
+  whatsappTemplateName,
+  whatsappTemplateLanguageCode,
+  whatsappApiVersion
+} = {}) {
+  const processKey = String(paymentId || orderId || metadata?.order_id || '').trim()
+  if (processKey && activePaidOrderProcesses.has(processKey)) {
+    return activePaidOrderProcesses.get(processKey)
+  }
+
+  const processingPromise = processPaidOrderInternal({
+    amountMxn,
+    customerName,
+    customerPhone,
+    metadata,
+    paidAt,
+    paymentId,
+    orderId,
+    source,
+    createReceiptPdf,
+    logLabel,
+    whatsappAccessToken,
+    whatsappPhoneNumberId,
+    whatsappRecipient,
+    whatsappTemplateName,
+    whatsappTemplateLanguageCode,
+    whatsappApiVersion
+  }).finally(() => {
+    if (processKey) {
+      activePaidOrderProcesses.delete(processKey)
+    }
+  })
+
+  if (processKey) {
+    activePaidOrderProcesses.set(processKey, processingPromise)
+  }
+
+  return processingPromise
+}
+
+async function processPaidOrderInternal({
   amountMxn,
   customerName,
   customerPhone,
@@ -81,14 +137,40 @@ export async function processPaidOrder({
     }
   }
 
+  let pdfSkippedByClaim = false
   if (!existingState?.pdf_generated_at) {
+    let pdfClaimed = true
+    try {
+      const claimResult = await claimPaidOrderProcessingStage({
+        paymentId: normalizedPaymentId,
+        orderId: normalizedOrderId,
+        stage: 'pdf'
+      })
+      pdfClaimed = Boolean(claimResult.claimed)
+      if (claimResult.row) {
+        existingState = claimResult.row
+      }
+    } catch (error) {
+      pdfClaimed = false
+      stageErrors.push(`pdf_claim: ${error?.message || error}`)
+      console.warn(`[${logLabel}] fallo tomando claim de PDF:`, error?.message || error)
+    }
+
+    if (!pdfClaimed) {
+      pdfSkippedByClaim = true
+      stageErrors.push('pdf: otra instancia esta procesando el comprobante')
+    }
+  }
+
+  if (!existingState?.pdf_generated_at && !pdfSkippedByClaim) {
     try {
       const pdfResult = await createReceiptPdf()
       await updatePaidOrderProcessingState({
         paymentId: normalizedPaymentId,
         orderId: normalizedOrderId,
         pdfPath: pdfResult.filePath,
-        pdfGeneratedAt: new Date().toISOString()
+        pdfGeneratedAt: new Date().toISOString(),
+        pdfProcessingStartedAt: null
       })
       console.log(`[${logLabel}] PDF generado`, {
         paymentId: normalizedPaymentId,
@@ -97,6 +179,15 @@ export async function processPaidOrder({
     } catch (error) {
       stageErrors.push(`pdf: ${error?.message || error}`)
       console.warn(`[${logLabel}] fallo generando PDF:`, error?.message || error)
+      try {
+        await updatePaidOrderProcessingState({
+          paymentId: normalizedPaymentId,
+          orderId: normalizedOrderId,
+          pdfProcessingStartedAt: null
+        })
+      } catch (clearError) {
+        console.warn(`[${logLabel}] fallo liberando claim de PDF:`, clearError?.message || clearError)
+      }
     }
   }
 
@@ -110,7 +201,32 @@ export async function processPaidOrder({
     // keep previous state
   }
 
+  let whatsappSkippedByClaim = false
   if (!existingState?.whatsapp_sent_at) {
+    let whatsappClaimed = true
+    try {
+      const claimResult = await claimPaidOrderProcessingStage({
+        paymentId: normalizedPaymentId,
+        orderId: normalizedOrderId,
+        stage: 'whatsapp'
+      })
+      whatsappClaimed = Boolean(claimResult.claimed)
+      if (claimResult.row) {
+        existingState = claimResult.row
+      }
+    } catch (error) {
+      whatsappClaimed = false
+      stageErrors.push(`notificacion_claim: ${error?.message || error}`)
+      console.warn(`[${logLabel}] fallo tomando claim de WhatsApp:`, error?.message || error)
+    }
+
+    if (!whatsappClaimed) {
+      whatsappSkippedByClaim = true
+      stageErrors.push('notificacion: otra instancia esta enviando WhatsApp')
+    }
+  }
+
+  if (!existingState?.whatsapp_sent_at && !whatsappSkippedByClaim) {
     try {
       const whatsappTemplateParameters = buildWhatsAppTemplateParameters({
         orderId: normalizedOrderId,
@@ -141,7 +257,8 @@ export async function processPaidOrder({
       await updatePaidOrderProcessingState({
         paymentId: normalizedPaymentId,
         orderId: normalizedOrderId,
-        whatsappSentAt: new Date().toISOString()
+        whatsappSentAt: new Date().toISOString(),
+        whatsappProcessingStartedAt: null
       })
       console.log(`[${logLabel}] WhatsApp enviado`, {
         paymentId: normalizedPaymentId,
@@ -151,8 +268,17 @@ export async function processPaidOrder({
     } catch (error) {
       stageErrors.push(`notificacion: ${error?.message || error}`)
       console.warn(`[${logLabel}] fallo enviando WhatsApp:`, error?.message || error)
+      try {
+        await updatePaidOrderProcessingState({
+          paymentId: normalizedPaymentId,
+          orderId: normalizedOrderId,
+          whatsappProcessingStartedAt: null
+        })
+      } catch (clearError) {
+        console.warn(`[${logLabel}] fallo liberando claim de WhatsApp:`, clearError?.message || clearError)
+      }
     }
-  } else {
+  } else if (existingState?.whatsapp_sent_at) {
     console.log(`[${logLabel}] WhatsApp ya enviado previamente, omitiendo duplicado`, {
       paymentId: normalizedPaymentId
     })

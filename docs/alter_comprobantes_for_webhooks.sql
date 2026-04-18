@@ -4,7 +4,9 @@ alter table if exists public.comprobantes
   add column if not exists source text,
   add column if not exists pdf_path text,
   add column if not exists pdf_generated_at timestamptz,
-  add column if not exists whatsapp_sent_at timestamptz;
+  add column if not exists whatsapp_sent_at timestamptz,
+  add column if not exists pdf_processing_started_at timestamptz,
+  add column if not exists whatsapp_processing_started_at timestamptz;
 
 create unique index if not exists comprobantes_payment_id_uidx
   on public.comprobantes (payment_id)

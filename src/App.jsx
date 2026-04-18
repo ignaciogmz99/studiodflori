@@ -20,12 +20,12 @@ function PaymentRoute() {
   const { items, openPaymentView, openCardView, isPaymentView } = useCart()
   const navigate = useNavigate()
   useEffect(() => {
-    if (items.length === 0) {
+    const hasStoredReceipt = typeof window !== 'undefined'
+      && Boolean(window.sessionStorage.getItem(PAYMENT_RECEIPT_STORAGE_KEY))
+    if (items.length === 0 && !hasStoredReceipt) {
       navigate('/', { replace: true })
       return
     }
-    const hasStoredReceipt = typeof window !== 'undefined'
-      && Boolean(window.sessionStorage.getItem(PAYMENT_RECEIPT_STORAGE_KEY))
     if (!isPaymentView) {
       openPaymentView()
       if (hasStoredReceipt) {

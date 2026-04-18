@@ -140,10 +140,16 @@ function createFetchMock({
         if (legacySchema && select.includes('payment_id,pdf_path,pdf_generated_at,whatsapp_sent_at')) {
           return createJsonResponse(400, { message: 'column pdf_path does not exist' })
         }
+        if (legacySchema && select.includes('pdf_processing_started_at,whatsapp_processing_started_at')) {
+          return createJsonResponse(400, { message: 'column pdf_processing_started_at does not exist' })
+        }
         if (select.includes('payment_id,order_id,source')) {
           return createJsonResponse(200, state.row ? [state.row] : [])
         }
         if (select.includes('payment_id,pdf_path,pdf_generated_at,whatsapp_sent_at')) {
+          return createJsonResponse(200, state.row ? [state.row] : [])
+        }
+        if (select.includes('pdf_processing_started_at,whatsapp_processing_started_at')) {
           return createJsonResponse(200, state.row ? [state.row] : [])
         }
         if (select.includes('payment_id,order_id,pdf_path,pdf_generated_at,whatsapp_sent_at')) {
@@ -272,8 +278,8 @@ async function scenarioPartialWhatsappFailureThenRetry() {
       }
     }))
 
-    assert.equal(firstResponse.statusCode, 200)
-    assert.deepEqual(firstResponse.body, { received: true, processedWithWarnings: true })
+    assert.equal(firstResponse.statusCode, 500)
+    assert.match(String(firstResponse.body?.error || ''), /Post-pago de Mercado Pago incompleto|notificacion/)
     assert.ok(state.row?.pdf_generated_at)
     assert.equal(state.row?.whatsapp_sent_at, undefined)
     assert.equal(state.whatsappFailures, 1)
@@ -327,7 +333,7 @@ async function scenarioInvalidSignature() {
   }
 }
 
-async function scenarioLegacySchemaNoHardDedupe() {
+async function scenarioLegacySchemaRequiresWebhookColumns() {
   resetComprobantesSchemaSupportCache()
   await cleanupReceipt()
   const webhookSecret = 'webhook-secret'
@@ -347,10 +353,10 @@ async function scenarioLegacySchemaNoHardDedupe() {
       }
     }))
 
-    assert.equal(response.statusCode, 200)
-    assert.deepEqual(response.body, { received: true })
-    assert.equal(state.whatsappSends, 1)
-    assert.equal(state.row?.payment_id, undefined)
+    assert.equal(response.statusCode, 500)
+    assert.match(String(response.body?.error || ''), /columnas de webhook|Fallo post-pago/)
+    assert.equal(state.whatsappSends, 0)
+    assert.equal(state.row, null)
   } finally {
     global.fetch = originalFetch
   }
@@ -520,7 +526,7 @@ async function runSimulation() {
   await scenarioHappyPathAndDuplicate()
   await scenarioPartialWhatsappFailureThenRetry()
   await scenarioInvalidSignature()
-  await scenarioLegacySchemaNoHardDedupe()
+  await scenarioLegacySchemaRequiresWebhookColumns()
   await scenarioPendingPaymentDoesNothing()
   await scenarioRejectedPaymentDoesNothing()
   await scenarioSupabaseFailureReturns500()
@@ -531,7 +537,7 @@ async function runSimulation() {
   assert.ok(generatedFiles.some((file) => file.includes('comprobante-999000111.pdf')))
 
   console.log('Simulaciones OK')
-  console.log('Cobertura ejecutada: aprobado, duplicado, reintento parcial de WhatsApp, firma invalida, esquema legacy, pending, rejected, falla de Supabase, falta de token MP, query params')
+  console.log('Cobertura ejecutada: aprobado, duplicado, reintento parcial de WhatsApp, firma invalida, esquema legacy rechazado, pending, rejected, falla de Supabase, falta de token MP, query params')
 }
 
 await runSimulation()

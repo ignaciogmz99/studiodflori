@@ -1,3 +1,4 @@
+/* global process */
 import { Router } from 'express'
 import crypto from 'node:crypto'
 import {
@@ -5,6 +6,8 @@ import {
   buildTrustedOrderFromClientItems,
   validateOrderId
 } from '../services/trustedOrderService.js'
+import { processPaidOrder } from '../services/paidOrderProcessingService.js'
+import { createStripeReceiptPdf } from '../services/receiptPdfService.js'
 
 const INTENT_TTL_MS = 30 * 60 * 1000
 
@@ -13,6 +16,59 @@ export function createStripeRouter({ stripeSecretKey }) {
   const MAX_METADATA_LENGTH = 500
   // In-memory cache to keep intent idempotency during a short window.
   const intentByOrderId = new Map()
+
+  async function fetchStripePaymentIntent(paymentIntentId) {
+    const response = await fetch(`https://api.stripe.com/v1/payment_intents/${encodeURIComponent(paymentIntentId)}`, {
+      headers: {
+        Authorization: `Bearer ${stripeSecretKey}`
+      }
+    })
+
+    const payload = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      throw new Error(payload?.error?.message || `No se pudo consultar PaymentIntent (${response.status})`)
+    }
+
+    return payload
+  }
+
+  async function runStripePostPaymentFallback({ paymentIntent, orderId }) {
+    const metadata = paymentIntent?.metadata || {}
+    return processPaidOrder({
+      amountMxn: Number(paymentIntent?.amount_received ?? paymentIntent?.amount ?? 0) / 100,
+      customerName: String(metadata.customer_name || '').trim(),
+      customerPhone: String(metadata.customer_phone || '').trim(),
+      metadata: {
+        order_id: orderId,
+        customer_name: String(metadata.customer_name || '').trim(),
+        customer_phone: String(metadata.customer_phone || '').trim(),
+        customer_email: String(metadata.customer_email || paymentIntent?.receipt_email || '').trim(),
+        recipient_name: String(metadata.recipient_name || '').trim(),
+        cart_items_summary: String(metadata.cart_items_summary || '').trim(),
+        delivery_city: String(metadata.delivery_city || '').trim(),
+        delivery_address: String(metadata.delivery_address || '').trim(),
+        delivery_neighborhood: String(metadata.delivery_neighborhood || '').trim(),
+        delivery_postal_code: String(metadata.delivery_postal_code || '').trim(),
+        delivery_date: String(metadata.delivery_date || '').trim(),
+        delivery_time: String(metadata.delivery_time || '').trim(),
+        flower_message: String(metadata.flower_message || '').trim(),
+        delivery_notes: String(metadata.delivery_notes || '').trim(),
+        fulfillment_type: String(metadata.fulfillment_type || 'delivery').trim()
+      },
+      paidAt: new Date().toISOString(),
+      paymentId: String(paymentIntent?.id || '').trim(),
+      orderId,
+      source: 'stripe_client_fallback',
+      createReceiptPdf: () => createStripeReceiptPdf(paymentIntent),
+      logLabel: 'Stripe client fallback',
+      whatsappAccessToken: process.env.WHATSAPP_BUSINESS_ACCESS_TOKEN,
+      whatsappPhoneNumberId: process.env.WHATSAPP_BUSINESS_PHONE_NUMBER_ID,
+      whatsappRecipient: process.env.WHATSAPP_BUSINESS_TO,
+      whatsappTemplateName: process.env.WHATSAPP_BUSINESS_TEMPLATE_NAME,
+      whatsappTemplateLanguageCode: process.env.WHATSAPP_BUSINESS_TEMPLATE_LANGUAGE || 'es_MX',
+      whatsappApiVersion: process.env.WHATSAPP_BUSINESS_API_VERSION || 'v22.0'
+    })
+  }
 
   function toMetadataValue(value) {
     return String(value ?? '').trim().slice(0, MAX_METADATA_LENGTH)
@@ -145,6 +201,63 @@ export function createStripeRouter({ stripeSecretKey }) {
       console.error('Error creando Payment Intent con Stripe:', error)
       return res.status(500).json({
         error: error?.message || 'No se pudo iniciar el pago con Stripe'
+      })
+    }
+  })
+
+  router.post('/process-succeeded-payment', async (req, res) => {
+    try {
+      if (!stripeSecretKey) {
+        return res.status(500).json({ error: 'Stripe no configurado en el servidor' })
+      }
+
+      const paymentIntentId = String(req.body?.paymentIntentId || '').trim()
+      const normalizedOrderId = validateOrderId(req.body?.orderId)
+
+      if (!paymentIntentId) {
+        return res.status(400).json({ error: 'Falta paymentIntentId para validar el pago de Stripe' })
+      }
+
+      const paymentIntent = await fetchStripePaymentIntent(paymentIntentId)
+      const metadataOrderId = String(paymentIntent?.metadata?.order_id || '').trim()
+
+      if (metadataOrderId !== normalizedOrderId) {
+        return res.status(409).json({ error: 'El PaymentIntent no corresponde a esta orden' })
+      }
+
+      if (String(paymentIntent?.status || '').toLowerCase() !== 'succeeded') {
+        return res.status(409).json({ error: 'El pago de Stripe todavia no esta aprobado' })
+      }
+
+      const processingResult = await runStripePostPaymentFallback({
+        paymentIntent,
+        orderId: normalizedOrderId
+      })
+
+      if (!processingResult.processed) {
+        return res.status(500).json({
+          error: processingResult.stageErrors.join(' | ') || 'No se pudo completar el post-pago de Stripe'
+        })
+      }
+
+      if (processingResult.processedWithWarnings) {
+        return res.status(500).json({
+          error: `Post-pago Stripe incompleto (${processingResult.stageErrors.join(' | ')})`
+        })
+      }
+
+      return res.status(200).json({
+        processed: true,
+        paymentId: processingResult.paymentId,
+        orderId: processingResult.orderId
+      })
+    } catch (error) {
+      if (String(error?.message || '').toLowerCase().includes('orderid invalido')) {
+        return res.status(400).json({ error: error.message })
+      }
+      console.error('Error procesando fallback de Stripe:', error)
+      return res.status(500).json({
+        error: error?.message || 'No se pudo procesar el post-pago de Stripe'
       })
     }
   })

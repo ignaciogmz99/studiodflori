@@ -246,10 +246,10 @@ export function createMercadoPagoWebhookRouter({
                 errors: processingResult.stageErrors
               })
 
-              return res.status(200).json({
-                received: true,
-                processedWithWarnings: true
-              })
+              throw createHttpError(
+                `Post-pago de Mercado Pago incompleto (${processingResult.stageErrors.join(' | ')})`,
+                500
+              )
             }
           } finally {
             activePayments.delete(normalizedPaymentId)
