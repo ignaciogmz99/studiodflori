@@ -321,6 +321,9 @@ function StripePayment({
               ))}
             </ul>
           </div>
+          <p className="tarjeta__stripe-auth-note">
+            Tu banco puede pedirte confirmar la compra para proteger tu tarjeta.
+          </p>
           <label className="tarjeta__field">
             <span className="tarjeta__label">Numero de tarjeta</span>
             <div id={STRIPE_CARD_NUMBER_CONTAINER_ID} className="tarjeta__stripe-input" />
