@@ -67,6 +67,13 @@
   transition: background 0.2s ease, border-color 0.2s ease;
 }
 
+.top-menu__field-group {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
 .top-menu__field-label {
   position: absolute;
   top: -0.62rem;
@@ -76,6 +83,18 @@
   font-size: 0.78rem;
   font-weight: 800;
   color: #7a6076;
+}
+
+.top-menu__field-help {
+  margin: 0;
+  padding: 0 0.9rem 0 1rem;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: #8a3d81;
+}
+
+.top-menu__field-help--mobile {
+  display: none;
 }
 
 .top-menu__field:hover,
@@ -244,7 +263,16 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.65rem;
+  gap: 0.3rem;
+}
+
+.top-menu__delivery-warning {
+  margin: 0;
+  max-width: none;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: #8a3d81;
+  text-align: right;
 }
 
 .top-menu__policy-button {
@@ -386,6 +414,15 @@
   .top-menu__policy-panel {
     width: min(88vw, 330px);
   }
+
+  .top-menu__field-help {
+    font-size: 0.72rem;
+    padding-right: 0.5rem;
+  }
+
+  .top-menu__delivery-warning {
+    font-size: 0.72rem;
+  }
 }
 
 @media (max-width: 560px) {
@@ -426,10 +463,24 @@
     background: rgba(255, 255, 255, 0.85);
   }
 
+  .top-menu__field-group {
+    gap: 0.42rem;
+  }
+
   .top-menu__field-label {
     left: 0.9rem;
     background: #fff7fe;
     font-size: 0.82rem;
+  }
+
+  .top-menu__field-help {
+    padding: 0 0.3rem 0 0.95rem;
+    font-size: 0.74rem;
+    line-height: 1.45;
+  }
+
+  .top-menu__field-help--mobile {
+    display: block;
   }
 
   .top-menu__time-wrap .dsp__control--btn {
@@ -450,7 +501,12 @@
   }
 
   .top-menu__actions {
+    flex-direction: column;
     align-items: flex-start;
+  }
+
+  .top-menu__delivery-warning {
+    display: none;
   }
 
   .top-menu__policy-button {

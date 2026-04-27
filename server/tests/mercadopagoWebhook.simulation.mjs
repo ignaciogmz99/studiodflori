@@ -106,18 +106,49 @@ function createFetchMock({
   failFirstWhatsapp = false,
   legacySchema = false,
   paymentStatus = 'approved',
-  failSupabaseInsert = false
+  failSupabaseInsert = false,
+  claimAlreadyInProgress = false,
+  settleClaimAfterMs = 0
 } = {}) {
   const state = {
     row: null,
     mpPaymentFetches: 0,
     whatsappSends: 0,
-    whatsappFailures: 0
+    whatsappFailures: 0,
+    externalCompletionScheduled: false
   }
 
   const approvedPayment = {
     ...createApprovedPayment(),
     status: paymentStatus
+  }
+
+  if (claimAlreadyInProgress) {
+    state.row = {
+      payment_id: approvedPayment.id,
+      order_id: approvedPayment.metadata.order_id,
+      source: 'mercadopago_webhook',
+      pdf_processing_started_at: '2026-03-12T16:05:10.000Z',
+      whatsapp_processing_started_at: '2026-03-12T16:05:10.000Z'
+    }
+  }
+
+  function scheduleExternalCompletion() {
+    if (!claimAlreadyInProgress || state.externalCompletionScheduled) {
+      return
+    }
+
+    state.externalCompletionScheduled = true
+    setTimeout(() => {
+      state.row = {
+        ...(state.row || {}),
+        pdf_path: `supabase://receipts/generated_receipts/comprobante-${approvedPayment.id}.pdf`,
+        pdf_generated_at: '2026-03-12T16:05:20.000Z',
+        whatsapp_sent_at: '2026-03-12T16:05:21.000Z',
+        pdf_processing_started_at: null,
+        whatsapp_processing_started_at: null
+      }
+    }, settleClaimAfterMs)
   }
 
   const fetchMock = async (url, options = {}) => {
@@ -171,6 +202,16 @@ function createFetchMock({
 
       if (method === 'PATCH') {
         const patch = JSON.parse(options.body)
+
+        const isClaimAttempt =
+          (typeof patch.pdf_processing_started_at === 'string' && !('pdf_generated_at' in patch))
+          || (typeof patch.whatsapp_processing_started_at === 'string' && !('whatsapp_sent_at' in patch))
+
+        if (claimAlreadyInProgress && isClaimAttempt) {
+          scheduleExternalCompletion()
+          return createJsonResponse(200, [])
+        }
+
         state.row = {
           ...(state.row || {}),
           ...patch
@@ -298,6 +339,39 @@ async function scenarioPartialWhatsappFailureThenRetry() {
     assert.equal(secondResponse.statusCode, 200)
     assert.deepEqual(secondResponse.body, { received: true })
     assert.equal(state.whatsappSends, 1)
+    assert.ok(state.row?.whatsapp_sent_at)
+  } finally {
+    global.fetch = originalFetch
+  }
+}
+
+async function scenarioConcurrentClaimSettlesWithout500() {
+  resetComprobantesSchemaSupportCache()
+  await cleanupReceipt()
+  const webhookSecret = 'webhook-secret'
+  const { fetchMock, state } = createFetchMock({
+    claimAlreadyInProgress: true,
+    settleClaimAfterMs: 50
+  })
+  const originalFetch = global.fetch
+  global.fetch = fetchMock
+
+  try {
+    const router = createRouter(webhookSecret)
+    const response = await invokeWebhook(router, buildRequest({
+      webhookSecret,
+      requestId: 'req-claims-1',
+      dataId: '999000111',
+      body: {
+        topic: 'payment',
+        data: { id: '999000111' }
+      }
+    }))
+
+    assert.equal(response.statusCode, 200)
+    assert.deepEqual(response.body, { received: true })
+    assert.equal(state.whatsappSends, 0)
+    assert.ok(state.row?.pdf_generated_at)
     assert.ok(state.row?.whatsapp_sent_at)
   } finally {
     global.fetch = originalFetch
@@ -525,6 +599,7 @@ async function runSimulation() {
 
   await scenarioHappyPathAndDuplicate()
   await scenarioPartialWhatsappFailureThenRetry()
+  await scenarioConcurrentClaimSettlesWithout500()
   await scenarioInvalidSignature()
   await scenarioLegacySchemaRequiresWebhookColumns()
   await scenarioPendingPaymentDoesNothing()
@@ -537,7 +612,7 @@ async function runSimulation() {
   assert.ok(generatedFiles.some((file) => file.includes('comprobante-999000111.pdf')))
 
   console.log('Simulaciones OK')
-  console.log('Cobertura ejecutada: aprobado, duplicado, reintento parcial de WhatsApp, firma invalida, esquema legacy rechazado, pending, rejected, falla de Supabase, falta de token MP, query params')
+  console.log('Cobertura ejecutada: aprobado, duplicado, espera por otra instancia, reintento parcial de WhatsApp, firma invalida, esquema legacy rechazado, pending, rejected, falla de Supabase, falta de token MP, query params')
 }
 
 await runSimulation()

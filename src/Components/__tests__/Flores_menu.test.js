@@ -21,6 +21,7 @@ vi.mock('../../context/CartContext', () => ({
     addToCart: vi.fn(),
     setSelectedFlower: vi.fn(),
     selectedFlowerType: 'all',
+    isMothersDayCatalogLocked: false,
     setFlowerTypeTabs: vi.fn(),
   }),
 }))

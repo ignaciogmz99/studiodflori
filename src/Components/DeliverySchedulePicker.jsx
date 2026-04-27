@@ -5,10 +5,12 @@ import 'react-datepicker/dist/react-datepicker.css'
 import './DeliverySchedulePicker.css'
 import { useCart } from '../context/CartContext'
 import { DELIVERY_CITIES } from '../constants/deliveryCities'
+import { isMothersDayCatalogLocked } from '../lib/mothersDayCatalog'
 
 const OPEN_HOUR = 10
 const CLOSE_HOUR = 19
 const SLOT_MINUTES = 30
+const MOTHERS_DAY_LOCKED_WARNING = 'Los dias 7 al 10 de mayo son exclusivos para el catalogo del Dia de las Madres.'
 
 function startOfDay(d) {
   const r = new Date(d)
@@ -33,6 +35,10 @@ function formatISODate(d) {
   return `${y}-${mo}-${day}`
 }
 
+function isBlockedMothersDayDate(dateValue, canScheduleLockedMothersDayDates) {
+  return !canScheduleLockedMothersDayDates && isMothersDayCatalogLocked(dateValue)
+}
+
 function resolveEarliestDateTime() {
   const now = new Date()
   const earliest = new Date(now)
@@ -45,8 +51,8 @@ function resolveEarliestDateTime() {
   return earliest
 }
 
-function buildTimeSlots(selectedDate, earliestDateTime) {
-  if (!selectedDate || isSunday(selectedDate)) return []
+function buildTimeSlots(selectedDate, earliestDateTime, canScheduleLockedMothersDayDates = true) {
+  if (!selectedDate || isSunday(selectedDate) || isBlockedMothersDayDate(selectedDate, canScheduleLockedMothersDayDates)) return []
   const date = startOfDay(selectedDate)
   const isEarliestDay = startOfDay(earliestDateTime).getTime() === date.getTime()
   const earliestMinutes = (earliestDateTime.getHours() * 60) + earliestDateTime.getMinutes()
@@ -60,10 +66,10 @@ function buildTimeSlots(selectedDate, earliestDateTime) {
   return slots
 }
 
-function findNextAvailableDate(baseDate, earliestDateTime) {
+function findNextAvailableDate(baseDate, earliestDateTime, canScheduleLockedMothersDayDates = true) {
   let date = startOfDay(baseDate)
   for (let i = 0; i < 30; i++) {
-    if (!isSunday(date) && buildTimeSlots(date, earliestDateTime).some((s) => !s.disabled)) return date
+    if (!isSunday(date) && buildTimeSlots(date, earliestDateTime, canScheduleLockedMothersDayDates).some((s) => !s.disabled)) return date
     date = new Date(date)
     date.setDate(date.getDate() + 1)
     date = startOfDay(date)
@@ -71,9 +77,9 @@ function findNextAvailableDate(baseDate, earliestDateTime) {
   return date
 }
 
-function hasEnabledSlots(date, earliestDateTime) {
-  if (isSunday(date)) return false
-  return buildTimeSlots(date, earliestDateTime).some((s) => !s.disabled)
+function hasEnabledSlots(date, earliestDateTime, canScheduleLockedMothersDayDates = true) {
+  if (isSunday(date) || isBlockedMothersDayDate(date, canScheduleLockedMothersDayDates)) return false
+  return buildTimeSlots(date, earliestDateTime, canScheduleLockedMothersDayDates).some((s) => !s.disabled)
 }
 
 const DateTrigger = forwardRef(function DateTrigger({ value, onClick }, ref) {
@@ -138,7 +144,8 @@ function DeliverySchedulePicker({ showCity = false }) {
     setSelectedDeliveryDate,
     setSelectedDeliveryTime,
     selectedDeliveryCity,
-    setSelectedDeliveryCity
+    setSelectedDeliveryCity,
+    canScheduleLockedMothersDayDates
   } = useCart()
 
   const earliestDeliveryDateTime = useMemo(() => resolveEarliestDateTime(), [])
@@ -149,9 +156,9 @@ function DeliverySchedulePicker({ showCity = false }) {
     const minDate = startOfDay(earliest)
     if (selectedDeliveryDate) {
       const fromCtx = new Date(`${selectedDeliveryDate}T00:00:00`)
-      if (fromCtx >= minDate) return findNextAvailableDate(fromCtx, earliest)
+      if (fromCtx >= minDate) return findNextAvailableDate(fromCtx, earliest, canScheduleLockedMothersDayDates)
     }
-    return findNextAvailableDate(minDate, earliest)
+    return findNextAvailableDate(minDate, earliest, canScheduleLockedMothersDayDates)
   })
   const [deliveryTime, setDeliveryTime] = useState('')
   const [isMobile, setIsMobile] = useState(
@@ -169,12 +176,12 @@ function DeliverySchedulePicker({ showCity = false }) {
     const candidate = deliveryDate && deliveryDate >= minDeliveryDate
       ? startOfDay(deliveryDate)
       : minDeliveryDate
-    return findNextAvailableDate(candidate, earliestDeliveryDateTime)
-  }, [deliveryDate, earliestDeliveryDateTime, minDeliveryDate])
+    return findNextAvailableDate(candidate, earliestDeliveryDateTime, canScheduleLockedMothersDayDates)
+  }, [canScheduleLockedMothersDayDates, deliveryDate, earliestDeliveryDateTime, minDeliveryDate])
 
   const availableTimeSlots = useMemo(
-    () => buildTimeSlots(effectiveDeliveryDate, earliestDeliveryDateTime),
-    [effectiveDeliveryDate, earliestDeliveryDateTime]
+    () => buildTimeSlots(effectiveDeliveryDate, earliestDeliveryDateTime, canScheduleLockedMothersDayDates),
+    [canScheduleLockedMothersDayDates, effectiveDeliveryDate, earliestDeliveryDateTime]
   )
   const firstEnabledTime = availableTimeSlots.find((s) => !s.disabled)?.value ?? ''
   const selectedTimeIsEnabled = availableTimeSlots.some(
@@ -206,7 +213,7 @@ function DeliverySchedulePicker({ showCity = false }) {
           selected={effectiveDeliveryDate}
           onChange={(date) => setDeliveryDate(date || minDeliveryDate)}
           minDate={minDeliveryDate}
-          filterDate={(date) => hasEnabledSlots(date, earliestDeliveryDateTime)}
+          filterDate={(date) => hasEnabledSlots(date, earliestDeliveryDateTime, canScheduleLockedMothersDayDates)}
           locale={es}
           dateFormat="EEEE d 'de' MMMM"
           popperPlacement="bottom-start"
@@ -215,6 +222,9 @@ function DeliverySchedulePicker({ showCity = false }) {
           customInput={<DateTrigger />}
           withPortal={isMobile}
         />
+        {!canScheduleLockedMothersDayDates && (
+          <p className="dsp__field-help">{MOTHERS_DAY_LOCKED_WARNING}</p>
+        )}
       </div>
 
       <div className="dsp__field">

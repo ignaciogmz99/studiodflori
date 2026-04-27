@@ -45,7 +45,8 @@ function Pago() {
     setSelectedDeliveryCity,
     deliveryDetails,
     setDeliveryDetails,
-    openCardView
+    openCardView,
+    hasBlockedMothersDayDeliverySelection
   } = useCart()
 
   const isDelivery = deliveryDetails.fulfillmentType === 'delivery'
@@ -112,6 +113,7 @@ function Pago() {
       )
     )
   )
+  const canContinueToPayment = isDeliveryFormValid && items.length > 0 && !hasBlockedMothersDayDeliverySelection
 
   return (
     <section className="pago" aria-label="Resumen de pago">
@@ -311,13 +313,18 @@ function Pago() {
               Solo realizamos entregas en Guadalajara, Zapopan, Tlaquepaque y Tonala.
             </p>
           )}
+          {hasBlockedMothersDayDeliverySelection && (
+            <p className="pago__warning">
+              Las entregas del 7 al 10 de mayo solo aceptan productos del catalogo del Dia de las Madres.
+            </p>
+          )}
           <div className="pago__actions">
             <PaymentBadges />
             <button
               type="button"
               className="pago__next"
               onClick={openCardView}
-              disabled={!isDeliveryFormValid || items.length === 0}
+              disabled={!canContinueToPayment}
             >
               Siguiente
             </button>

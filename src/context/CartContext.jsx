@@ -1,6 +1,13 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { DELIVERY_CITIES } from '../constants/deliveryCities'
+import { DIA_MADRES_FILTER_KEY } from '../constants/promoProducts'
+import {
+  cartSupportsLockedMothersDayDates,
+  isLockedMothersDayDateBlockedForCart,
+  isMothersDayCatalogLocked,
+  resolveInitialFlowerType
+} from '../lib/mothersDayCatalog'
 import { supabase } from '../lib/supabaseClient'
 
 const CartContext = createContext(null)
@@ -46,12 +53,30 @@ export function CartProvider({ children }) {
   const [selectedDeliveryTime, setSelectedDeliveryTime] = useState('')
   const [selectedDeliveryCity, setSelectedDeliveryCity] = useState(DELIVERY_CITIES[0])
   const [deliveryDetails, setDeliveryDetails] = useState(INITIAL_DELIVERY_DETAILS)
-  const [selectedFlowerType, setSelectedFlowerType] = useState('all')
+  const [selectedFlowerType, setSelectedFlowerType] = useState(() => resolveInitialFlowerType(new Date()))
   const [flowerTypeTabs, setFlowerTypeTabs] = useState([])
+  const canScheduleLockedMothersDayDates = useMemo(
+    () => cartSupportsLockedMothersDayDates(items),
+    [items]
+  )
+  const mothersDayCatalogLocked = useMemo(
+    () => isMothersDayCatalogLocked(selectedDeliveryDate),
+    [selectedDeliveryDate]
+  )
+  const hasBlockedMothersDayDeliverySelection = useMemo(
+    () => isLockedMothersDayDateBlockedForCart(selectedDeliveryDate, items),
+    [items, selectedDeliveryDate]
+  )
 
   useEffect(() => {
     window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
   }, [items])
+
+  useEffect(() => {
+    if (mothersDayCatalogLocked && selectedFlowerType !== DIA_MADRES_FILTER_KEY) {
+      setSelectedFlowerType(DIA_MADRES_FILTER_KEY)
+    }
+  }, [mothersDayCatalogLocked, selectedFlowerType])
 
   const addToCart = (product) => {
     setItems((currentItems) => {
@@ -202,11 +227,16 @@ export function CartProvider({ children }) {
     estimatedPreparationHours,
     selectedFlowerType,
     setSelectedFlowerType,
+    isMothersDayCatalogLocked: mothersDayCatalogLocked,
+    canScheduleLockedMothersDayDates,
+    hasBlockedMothersDayDeliverySelection,
     flowerTypeTabs,
     setFlowerTypeTabs
   }), [
+    canScheduleLockedMothersDayDates,
     estimatedPreparationHours,
     deliveryDetails,
+    hasBlockedMothersDayDeliverySelection,
     isCardView,
     isPaymentView,
     items,
@@ -220,6 +250,7 @@ export function CartProvider({ children }) {
     itemsForPayment,
     deliveryFee,
     selectedFlowerType,
+    mothersDayCatalogLocked,
     flowerTypeTabs
   ])
 

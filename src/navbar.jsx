@@ -57,10 +57,13 @@ function Navbar() {
     openPaymentView,
     selectedFlowerType,
     setSelectedFlowerType,
+    isMothersDayCatalogLocked,
     flowerTypeTabs,
     clearSelectedFlower,
     closePaymentView
   } = useCart()
+  const effectiveSelectedFlowerType = isMothersDayCatalogLocked ? DIA_MADRES_FILTER_KEY : selectedFlowerType
+  const lockedCatalogMessage = 'Del 7 al 10 de mayo solo esta disponible el catalogo del Dia de las Madres.'
 
   useEffect(() => {
     if (prevTotalItemsRef.current === 0 && totalItems === 1) {
@@ -79,6 +82,19 @@ function Navbar() {
 
   const handleOpenInfoPanel = (panelKey) => {
     setActivePanel(panelKey)
+  }
+
+  const canSelectFlowerType = (flowerType) => {
+    return !isMothersDayCatalogLocked || flowerType === DIA_MADRES_FILTER_KEY
+  }
+
+  const handleSelectFlowerType = (flowerType) => {
+    if (!canSelectFlowerType(flowerType)) {
+      return
+    }
+
+    setSelectedFlowerType(flowerType)
+    handleClose()
   }
 
   const selectedContent = activePanel ? panelContent[activePanel] : null
@@ -181,50 +197,62 @@ function Navbar() {
               <p className="navbar__mobile-drawer-section-title">Promociones</p>
               <button
                 type="button"
-                className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--promo${selectedFlowerType === PROMO_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
-                onClick={() => { setSelectedFlowerType(PROMO_FILTER_KEY); handleClose() }}
+                className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--promo${effectiveSelectedFlowerType === PROMO_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
+                onClick={() => handleSelectFlowerType(PROMO_FILTER_KEY)}
+                disabled={!canSelectFlowerType(PROMO_FILTER_KEY)}
+                title={!canSelectFlowerType(PROMO_FILTER_KEY) ? lockedCatalogMessage : undefined}
               >
                 🌸 Ver ofertas especiales — $595 MXN
               </button>
               <button
                 type="button"
-                className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--collection${selectedFlowerType === KIRA_MILAN_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
-                onClick={() => { setSelectedFlowerType(KIRA_MILAN_FILTER_KEY); handleClose() }}
+                className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--collection${effectiveSelectedFlowerType === KIRA_MILAN_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
+                onClick={() => handleSelectFlowerType(KIRA_MILAN_FILTER_KEY)}
+                disabled={!canSelectFlowerType(KIRA_MILAN_FILTER_KEY)}
+                title={!canSelectFlowerType(KIRA_MILAN_FILTER_KEY) ? lockedCatalogMessage : undefined}
               >
                 ✨ Kira Milan Collection 2025
               </button>
               <button
                 type="button"
-                className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--dm${selectedFlowerType === DIA_MADRES_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
-                onClick={() => { setSelectedFlowerType(DIA_MADRES_FILTER_KEY); handleClose() }}
+                className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--dm${effectiveSelectedFlowerType === DIA_MADRES_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
+                onClick={() => handleSelectFlowerType(DIA_MADRES_FILTER_KEY)}
               >
                 💐 Día de las Madres
               </button>
               <button
                 type="button"
-                className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--catalogo2026${selectedFlowerType === CATALOGO_2026_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
-                onClick={() => { setSelectedFlowerType(CATALOGO_2026_FILTER_KEY); handleClose() }}
+                className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--catalogo2026${effectiveSelectedFlowerType === CATALOGO_2026_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
+                onClick={() => handleSelectFlowerType(CATALOGO_2026_FILTER_KEY)}
+                disabled={!canSelectFlowerType(CATALOGO_2026_FILTER_KEY)}
+                title={!canSelectFlowerType(CATALOGO_2026_FILTER_KEY) ? lockedCatalogMessage : undefined}
               >
                 🌹 Catálogo 2026
               </button>
               <button
                 type="button"
-                className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--catalogo2026${selectedFlowerType === CATALOGO_2025_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
-                onClick={() => { setSelectedFlowerType(CATALOGO_2025_FILTER_KEY); handleClose() }}
+                className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--catalogo2026${effectiveSelectedFlowerType === CATALOGO_2025_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
+                onClick={() => handleSelectFlowerType(CATALOGO_2025_FILTER_KEY)}
+                disabled={!canSelectFlowerType(CATALOGO_2025_FILTER_KEY)}
+                title={!canSelectFlowerType(CATALOGO_2025_FILTER_KEY) ? lockedCatalogMessage : undefined}
               >
                 🌸 Catálogo 2025
               </button>
               <button
                 type="button"
-                className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--catalogo2026${selectedFlowerType === CATALOGO_2024_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
-                onClick={() => { setSelectedFlowerType(CATALOGO_2024_FILTER_KEY); handleClose() }}
+                className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--catalogo2026${effectiveSelectedFlowerType === CATALOGO_2024_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
+                onClick={() => handleSelectFlowerType(CATALOGO_2024_FILTER_KEY)}
+                disabled={!canSelectFlowerType(CATALOGO_2024_FILTER_KEY)}
+                title={!canSelectFlowerType(CATALOGO_2024_FILTER_KEY) ? lockedCatalogMessage : undefined}
               >
                 🌻 Catálogo 2024
               </button>
               <button
                 type="button"
-                className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--catalogo2026${selectedFlowerType === CATALOGO_2023_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
-                onClick={() => { setSelectedFlowerType(CATALOGO_2023_FILTER_KEY); handleClose() }}
+                className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--catalogo2026${effectiveSelectedFlowerType === CATALOGO_2023_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
+                onClick={() => handleSelectFlowerType(CATALOGO_2023_FILTER_KEY)}
+                disabled={!canSelectFlowerType(CATALOGO_2023_FILTER_KEY)}
+                title={!canSelectFlowerType(CATALOGO_2023_FILTER_KEY) ? lockedCatalogMessage : undefined}
               >
                 🌸 Catálogo 2023
               </button>
@@ -267,8 +295,10 @@ function Navbar() {
                   <button
                     key={tab.value}
                     type="button"
-                    className={`navbar__mobile-drawer-link${selectedFlowerType === tab.value ? ' navbar__mobile-drawer-link--active' : ''}`}
-                    onClick={() => { setSelectedFlowerType(tab.value); handleClose() }}
+                    className={`navbar__mobile-drawer-link${effectiveSelectedFlowerType === tab.value ? ' navbar__mobile-drawer-link--active' : ''}`}
+                    onClick={() => handleSelectFlowerType(tab.value)}
+                    disabled={!canSelectFlowerType(tab.value)}
+                    title={!canSelectFlowerType(tab.value) ? lockedCatalogMessage : undefined}
                   >
                     {tab.label}
                   </button>

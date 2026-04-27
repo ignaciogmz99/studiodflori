@@ -172,7 +172,13 @@ function FloresMenu() {
   const priceFiltersRef = useRef(null)
   const nameSearchRef = useRef(null)
   const loadMoreRef = useRef(null)
-  const { addToCart, setSelectedFlower, selectedFlowerType, setFlowerTypeTabs } = useCart()
+  const {
+    addToCart,
+    setSelectedFlower,
+    selectedFlowerType,
+    isMothersDayCatalogLocked,
+    setFlowerTypeTabs
+  } = useCart()
   const navigate = useNavigate()
 
   const openProduct = (product) => {
@@ -314,6 +320,7 @@ function FloresMenu() {
   }, [flowerTypeTabs, setFlowerTypeTabs])
 
   const activeFlowerType = useMemo(() => {
+    if (isMothersDayCatalogLocked) return DIA_MADRES_FILTER_KEY
     if (selectedFlowerType === ALL_FLOWER_TYPES) return ALL_FLOWER_TYPES
     if (selectedFlowerType === PROMO_FILTER_KEY) return PROMO_FILTER_KEY
     if (selectedFlowerType === KIRA_MILAN_FILTER_KEY) return KIRA_MILAN_FILTER_KEY
@@ -324,7 +331,7 @@ function FloresMenu() {
     if (selectedFlowerType === CATALOGO_2024_FILTER_KEY) return CATALOGO_2024_FILTER_KEY
     const typeStillExists = flowerTypeTabs.some((tab) => tab.value === selectedFlowerType)
     return typeStillExists ? selectedFlowerType : ALL_FLOWER_TYPES
-  }, [flowerTypeTabs, selectedFlowerType])
+  }, [flowerTypeTabs, isMothersDayCatalogLocked, selectedFlowerType])
 
   const filteredProducts = useMemo(() => {
     const productsByFlowerType = products.filter((product) => {

@@ -5,12 +5,14 @@ import 'react-datepicker/dist/react-datepicker.css'
 import './Top_menu.css'
 import { useCart } from '../context/CartContext'
 import { DELIVERY_CITIES } from '../constants/deliveryCities'
+import { isMothersDayCatalogLocked } from '../lib/mothersDayCatalog'
 import ShippingPolicyPanel from './ShippingPolicyPanel.jsx'
 import { TimeSelect } from './DeliverySchedulePicker'
 
 const OPEN_HOUR = 10
 const CLOSE_HOUR = 19
 const SLOT_MINUTES = 30
+const MOTHERS_DAY_LOCKED_WARNING = 'Los dias 7 al 10 de mayo son exclusivos para el catalogo del Dia de las Madres.'
 
 function formatDeliveryDate(dateValue) {
   if (!dateValue) {
@@ -62,8 +64,12 @@ function formatISODate(dateValue) {
   return `${year}-${month}-${day}`
 }
 
-function buildTimeSlots(selectedDate, earliestDateTime) {
-  if (!selectedDate || isSunday(selectedDate)) {
+function isBlockedMothersDayDate(dateValue, canScheduleLockedMothersDayDates) {
+  return !canScheduleLockedMothersDayDates && isMothersDayCatalogLocked(dateValue)
+}
+
+function buildTimeSlots(selectedDate, earliestDateTime, canScheduleLockedMothersDayDates = true) {
+  if (!selectedDate || isSunday(selectedDate) || isBlockedMothersDayDate(selectedDate, canScheduleLockedMothersDayDates)) {
     return []
   }
 
@@ -86,11 +92,11 @@ function buildTimeSlots(selectedDate, earliestDateTime) {
   return slots
 }
 
-function findNextAvailableDate(baseDate, earliestDateTime) {
+function findNextAvailableDate(baseDate, earliestDateTime, canScheduleLockedMothersDayDates = true) {
   let date = startOfDay(baseDate)
 
   for (let i = 0; i < 30; i += 1) {
-    const slots = buildTimeSlots(date, earliestDateTime)
+    const slots = buildTimeSlots(date, earliestDateTime, canScheduleLockedMothersDayDates)
     const hasEnabledSlot = slots.some((slot) => !slot.disabled)
 
     if (!isSunday(date) && hasEnabledSlot) {
@@ -105,12 +111,12 @@ function findNextAvailableDate(baseDate, earliestDateTime) {
   return date
 }
 
-function hasEnabledSlots(date, earliestDateTime) {
-  if (isSunday(date)) {
+function hasEnabledSlots(date, earliestDateTime, canScheduleLockedMothersDayDates = true) {
+  if (isSunday(date) || isBlockedMothersDayDate(date, canScheduleLockedMothersDayDates)) {
     return false
   }
 
-  return buildTimeSlots(date, earliestDateTime).some((slot) => !slot.disabled)
+  return buildTimeSlots(date, earliestDateTime, canScheduleLockedMothersDayDates).some((slot) => !slot.disabled)
 }
 
 const DateTrigger = forwardRef(function DateTrigger({ value, onClick }, ref) {
@@ -129,10 +135,12 @@ const DateTrigger = forwardRef(function DateTrigger({ value, onClick }, ref) {
 
 function TopMenu() {
   const {
+    selectedDeliveryDate,
     setSelectedDeliveryDate,
     setSelectedDeliveryTime,
     selectedDeliveryCity,
-    setSelectedDeliveryCity
+    setSelectedDeliveryCity,
+    canScheduleLockedMothersDayDates
   } = useCart()
   const earliestDeliveryDateTime = useMemo(
     () => resolveEarliestDate(),
@@ -143,8 +151,17 @@ function TopMenu() {
     [earliestDeliveryDateTime]
   )
   const initialDate = useMemo(
-    () => findNextAvailableDate(minDeliveryDate, earliestDeliveryDateTime),
-    [earliestDeliveryDateTime, minDeliveryDate]
+    () => {
+      if (selectedDeliveryDate) {
+        const fromContext = new Date(`${selectedDeliveryDate}T00:00:00`)
+        if (fromContext >= minDeliveryDate) {
+          return findNextAvailableDate(fromContext, earliestDeliveryDateTime, canScheduleLockedMothersDayDates)
+        }
+      }
+
+      return findNextAvailableDate(minDeliveryDate, earliestDeliveryDateTime, canScheduleLockedMothersDayDates)
+    },
+    [canScheduleLockedMothersDayDates, earliestDeliveryDateTime, minDeliveryDate, selectedDeliveryDate]
   )
   const [deliveryDate, setDeliveryDate] = useState(() => initialDate)
   const [deliveryTime, setDeliveryTime] = useState('')
@@ -157,11 +174,11 @@ function TopMenu() {
       ? startOfDay(deliveryDate)
       : minDeliveryDate
 
-    return findNextAvailableDate(candidateDate, earliestDeliveryDateTime)
-  }, [deliveryDate, earliestDeliveryDateTime, minDeliveryDate])
+    return findNextAvailableDate(candidateDate, earliestDeliveryDateTime, canScheduleLockedMothersDayDates)
+  }, [canScheduleLockedMothersDayDates, deliveryDate, earliestDeliveryDateTime, minDeliveryDate])
   const availableTimeSlots = useMemo(() => (
-    buildTimeSlots(effectiveDeliveryDate, earliestDeliveryDateTime)
-  ), [effectiveDeliveryDate, earliestDeliveryDateTime])
+    buildTimeSlots(effectiveDeliveryDate, earliestDeliveryDateTime, canScheduleLockedMothersDayDates)
+  ), [canScheduleLockedMothersDayDates, effectiveDeliveryDate, earliestDeliveryDateTime])
   const firstEnabledTime = availableTimeSlots.find((slot) => !slot.disabled)?.value ?? ''
   const selectedTimeIsEnabled = availableTimeSlots.some(
     (slot) => slot.value === deliveryTime && !slot.disabled
@@ -208,21 +225,26 @@ function TopMenu() {
         </div>
       </div>
 
-      <div className="top-menu__field top-menu__field--date" aria-label="Seleccionar fecha de entrega">
-        <span className="top-menu__field-label">Fecha de entrega</span>
-        <DatePicker
-          selected={effectiveDeliveryDate}
-          onChange={(date) => setDeliveryDate(date || minDeliveryDate)}
-          minDate={minDeliveryDate}
-          filterDate={(date) => hasEnabledSlots(date, earliestDeliveryDateTime)}
-          locale={es}
-          dateFormat="EEEE d 'de' MMMM"
-          popperPlacement={isMobileDatePicker ? 'bottom' : 'bottom-start'}
-          calendarClassName="top-menu__calendar"
-          customInput={<DateTrigger />}
-          placeholderText={formatDeliveryDate(effectiveDeliveryDate)}
-          withPortal={isMobileDatePicker}
-        />
+      <div className="top-menu__field-group top-menu__field-group--date">
+        <div className="top-menu__field top-menu__field--date" aria-label="Seleccionar fecha de entrega">
+          <span className="top-menu__field-label">Fecha de entrega</span>
+          <DatePicker
+            selected={effectiveDeliveryDate}
+            onChange={(date) => setDeliveryDate(date || minDeliveryDate)}
+            minDate={minDeliveryDate}
+            filterDate={(date) => hasEnabledSlots(date, earliestDeliveryDateTime, canScheduleLockedMothersDayDates)}
+            locale={es}
+            dateFormat="EEEE d 'de' MMMM"
+            popperPlacement={isMobileDatePicker ? 'bottom' : 'bottom-start'}
+            calendarClassName="top-menu__calendar"
+            customInput={<DateTrigger />}
+            placeholderText={formatDeliveryDate(effectiveDeliveryDate)}
+            withPortal={isMobileDatePicker}
+          />
+        </div>
+        {!canScheduleLockedMothersDayDates && (
+          <p className="top-menu__field-help top-menu__field-help--mobile">{MOTHERS_DAY_LOCKED_WARNING}</p>
+        )}
       </div>
 
       <div className="top-menu__field top-menu__field--time" aria-label="Seleccionar horario de entrega">
@@ -237,6 +259,9 @@ function TopMenu() {
       </div>
 
       <div className="top-menu__actions" aria-label="Acciones de entrega">
+        {!canScheduleLockedMothersDayDates && (
+          <p className="top-menu__delivery-warning">{MOTHERS_DAY_LOCKED_WARNING}</p>
+        )}
         <button
           type="button"
           className="top-menu__policy-button"
