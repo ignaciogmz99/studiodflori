@@ -249,24 +249,6 @@ function StripePayment({
       if (status === 'succeeded') {
         setPaymentMessage('Pago aprobado. Tu pedido fue registrado correctamente.')
         const paymentIntentId = result.paymentIntent?.id || ''
-        if (paymentIntentId) {
-          void withTimeout((signal) => fetch(`${apiBaseUrl}/api/stripe/process-succeeded-payment`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            signal,
-            body: JSON.stringify({
-              paymentIntentId,
-              orderId
-            })
-          })).then(async (response) => {
-            if (!response.ok) {
-              const payload = await response.json().catch(() => ({}))
-              console.warn('Fallback post-pago Stripe incompleto:', payload?.error || response.status)
-            }
-          }).catch((error) => {
-            console.warn('No se pudo iniciar fallback post-pago Stripe:', error?.message || error)
-          })
-        }
         onPaymentApproved?.({
           provider: 'stripe',
           paymentId: paymentIntentId,

@@ -15,6 +15,7 @@ function createOrderId() {
 }
 
 const STORED_RECEIPT_TTL_MS = 2 * 60 * 60 * 1000
+const STRIPE_RECEIPT_FALLBACK_ATTEMPT = 3
 
 function buildCartFingerprint(items = []) {
   if (!Array.isArray(items) || items.length === 0) {
@@ -210,6 +211,38 @@ function Tarjeta() {
     let isCancelled = false
     let retryTimer = null
     const maxAttempts = 8
+    let stripeFallbackStarted = false
+
+    async function runStripeReceiptFallback() {
+      if (
+        stripeFallbackStarted
+        || receiptData?.provider !== 'stripe'
+        || !receiptData?.paymentId
+        || !receiptData?.orderId
+      ) {
+        return
+      }
+
+      stripeFallbackStarted = true
+
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/stripe/process-succeeded-payment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paymentIntentId: receiptData.paymentId,
+            orderId: receiptData.orderId
+          })
+        })
+
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}))
+          console.warn('Fallback post-pago Stripe incompleto:', payload?.error || response.status)
+        }
+      } catch (error) {
+        console.warn('No se pudo iniciar fallback post-pago Stripe:', error?.message || error)
+      }
+    }
 
     async function checkReceiptStatus(attempt = 0) {
       try {
@@ -237,6 +270,10 @@ function Tarjeta() {
           setReceiptStatus('ready')
           setReceiptStatusMessage('Comprobante listo. Puedes abrirlo en PDF.')
           return
+        }
+
+        if (attempt >= STRIPE_RECEIPT_FALLBACK_ATTEMPT) {
+          void runStripeReceiptFallback()
         }
 
         if (attempt < maxAttempts) {

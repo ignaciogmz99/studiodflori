@@ -12,6 +12,8 @@ import {
 const activePaidOrderProcesses = new Map()
 const CLAIM_SETTLE_WAIT_MS = 8 * 1000
 const CLAIM_SETTLE_POLL_MS = 1000
+const PDF_STAGE_CLAIM_TIMEOUT_MS = 15 * 1000
+const WHATSAPP_STAGE_CLAIM_TIMEOUT_MS = 45 * 1000
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -186,7 +188,8 @@ async function processPaidOrderInternal({
       const claimResult = await claimPaidOrderProcessingStage({
         paymentId: normalizedPaymentId,
         orderId: normalizedOrderId,
-        stage: 'pdf'
+        stage: 'pdf',
+        claimTimeoutMs: PDF_STAGE_CLAIM_TIMEOUT_MS
       })
       pdfClaimed = Boolean(claimResult.claimed)
       if (claimResult.row) {
@@ -249,7 +252,8 @@ async function processPaidOrderInternal({
       const claimResult = await claimPaidOrderProcessingStage({
         paymentId: normalizedPaymentId,
         orderId: normalizedOrderId,
-        stage: 'whatsapp'
+        stage: 'whatsapp',
+        claimTimeoutMs: WHATSAPP_STAGE_CLAIM_TIMEOUT_MS
       })
       whatsappClaimed = Boolean(claimResult.claimed)
       if (claimResult.row) {
