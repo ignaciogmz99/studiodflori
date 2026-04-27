@@ -4,6 +4,7 @@ const MOTHERS_DAY_MONTH = 5
 const MOTHERS_DAY_SEASON_START = 1
 const MOTHERS_DAY_LOCK_START = 7
 const MOTHERS_DAY_SEASON_END = 10
+const MOTHERS_DAY_SUNDAY_DELIVERY_DAY = 10
 const DEFAULT_FLOWER_TYPE = 'all'
 
 function normalizeDateValue(value) {
@@ -57,6 +58,25 @@ export function isMothersDayCatalogLocked(value) {
   return parts.month === MOTHERS_DAY_MONTH
     && parts.day >= MOTHERS_DAY_LOCK_START
     && parts.day <= MOTHERS_DAY_SEASON_END
+}
+
+export function allowsMothersDaySundayDelivery(value) {
+  const parts = getMonthAndDay(value)
+  if (!parts) {
+    return false
+  }
+
+  return parts.month === MOTHERS_DAY_MONTH
+    && parts.day === MOTHERS_DAY_SUNDAY_DELIVERY_DAY
+}
+
+export function isSundayDeliveryBlocked(value) {
+  const normalizedDate = normalizeDateValue(value)
+  if (!normalizedDate) {
+    return false
+  }
+
+  return normalizedDate.getDay() === 0 && !allowsMothersDaySundayDelivery(normalizedDate)
 }
 
 export function isMothersDayProductId(productId) {

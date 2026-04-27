@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { DIA_MADRES_FILTER_KEY } from '../constants/promoProducts'
 import {
+  allowsMothersDaySundayDelivery,
   cartSupportsLockedMothersDayDates,
   isLockedMothersDayDateBlockedForCart,
   isMothersDayCatalogLocked,
   isMothersDayCatalogSeason,
   isMothersDayProductId,
+  isSundayDeliveryBlocked,
   resolveInitialFlowerType
 } from './mothersDayCatalog'
 
@@ -44,5 +46,11 @@ describe('mothersDayCatalog', () => {
     expect(isLockedMothersDayDateBlockedForCart('2026-05-08', [{ id: 'Bouquet_rosas' }])).toBe(true)
     expect(isLockedMothersDayDateBlockedForCart('2026-05-08', [{ id: 'DM_Tulipanes' }])).toBe(false)
     expect(isLockedMothersDayDateBlockedForCart('2026-05-12', [{ id: 'Bouquet_rosas' }])).toBe(false)
+  })
+
+  it('habilita solo el domingo 10 de mayo para entregas', () => {
+    expect(allowsMothersDaySundayDelivery('2026-05-10')).toBe(true)
+    expect(isSundayDeliveryBlocked('2026-05-10')).toBe(false)
+    expect(isSundayDeliveryBlocked('2026-05-17')).toBe(true)
   })
 })

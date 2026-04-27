@@ -5,7 +5,7 @@ import 'react-datepicker/dist/react-datepicker.css'
 import './DeliverySchedulePicker.css'
 import { useCart } from '../context/CartContext'
 import { DELIVERY_CITIES } from '../constants/deliveryCities'
-import { isMothersDayCatalogLocked } from '../lib/mothersDayCatalog'
+import { isMothersDayCatalogLocked, isSundayDeliveryBlocked } from '../lib/mothersDayCatalog'
 
 const OPEN_HOUR = 10
 const CLOSE_HOUR = 19
@@ -16,10 +16,6 @@ function startOfDay(d) {
   const r = new Date(d)
   r.setHours(0, 0, 0, 0)
   return r
-}
-
-function isSunday(d) {
-  return new Date(d).getDay() === 0
 }
 
 function formatSlot(totalMinutes) {
@@ -44,7 +40,7 @@ function resolveEarliestDateTime() {
   const earliest = new Date(now)
   earliest.setDate(earliest.getDate() + 1)
   earliest.setHours(OPEN_HOUR, 0, 0, 0)
-  while (isSunday(earliest)) {
+  while (isSundayDeliveryBlocked(earliest)) {
     earliest.setDate(earliest.getDate() + 1)
     earliest.setHours(OPEN_HOUR, 0, 0, 0)
   }
@@ -52,7 +48,7 @@ function resolveEarliestDateTime() {
 }
 
 function buildTimeSlots(selectedDate, earliestDateTime, canScheduleLockedMothersDayDates = true) {
-  if (!selectedDate || isSunday(selectedDate) || isBlockedMothersDayDate(selectedDate, canScheduleLockedMothersDayDates)) return []
+  if (!selectedDate || isSundayDeliveryBlocked(selectedDate) || isBlockedMothersDayDate(selectedDate, canScheduleLockedMothersDayDates)) return []
   const date = startOfDay(selectedDate)
   const isEarliestDay = startOfDay(earliestDateTime).getTime() === date.getTime()
   const earliestMinutes = (earliestDateTime.getHours() * 60) + earliestDateTime.getMinutes()
@@ -69,7 +65,7 @@ function buildTimeSlots(selectedDate, earliestDateTime, canScheduleLockedMothers
 function findNextAvailableDate(baseDate, earliestDateTime, canScheduleLockedMothersDayDates = true) {
   let date = startOfDay(baseDate)
   for (let i = 0; i < 30; i++) {
-    if (!isSunday(date) && buildTimeSlots(date, earliestDateTime, canScheduleLockedMothersDayDates).some((s) => !s.disabled)) return date
+    if (!isSundayDeliveryBlocked(date) && buildTimeSlots(date, earliestDateTime, canScheduleLockedMothersDayDates).some((s) => !s.disabled)) return date
     date = new Date(date)
     date.setDate(date.getDate() + 1)
     date = startOfDay(date)
@@ -78,7 +74,7 @@ function findNextAvailableDate(baseDate, earliestDateTime, canScheduleLockedMoth
 }
 
 function hasEnabledSlots(date, earliestDateTime, canScheduleLockedMothersDayDates = true) {
-  if (isSunday(date) || isBlockedMothersDayDate(date, canScheduleLockedMothersDayDates)) return false
+  if (isSundayDeliveryBlocked(date) || isBlockedMothersDayDate(date, canScheduleLockedMothersDayDates)) return false
   return buildTimeSlots(date, earliestDateTime, canScheduleLockedMothersDayDates).some((s) => !s.disabled)
 }
 

@@ -5,7 +5,7 @@ import 'react-datepicker/dist/react-datepicker.css'
 import './Top_menu.css'
 import { useCart } from '../context/CartContext'
 import { DELIVERY_CITIES } from '../constants/deliveryCities'
-import { isMothersDayCatalogLocked } from '../lib/mothersDayCatalog'
+import { isMothersDayCatalogLocked, isSundayDeliveryBlocked } from '../lib/mothersDayCatalog'
 import ShippingPolicyPanel from './ShippingPolicyPanel.jsx'
 import { TimeSelect } from './DeliverySchedulePicker'
 
@@ -39,16 +39,12 @@ function resolveEarliestDate() {
   earliest.setDate(earliest.getDate() + 1)
   earliest.setHours(OPEN_HOUR, 0, 0, 0)
 
-  while (isSunday(earliest)) {
+  while (isSundayDeliveryBlocked(earliest)) {
     earliest.setDate(earliest.getDate() + 1)
     earliest.setHours(OPEN_HOUR, 0, 0, 0)
   }
 
   return earliest
-}
-
-function isSunday(dateValue) {
-  return new Date(dateValue).getDay() === 0
 }
 
 function formatSlot(totalMinutes) {
@@ -69,7 +65,7 @@ function isBlockedMothersDayDate(dateValue, canScheduleLockedMothersDayDates) {
 }
 
 function buildTimeSlots(selectedDate, earliestDateTime, canScheduleLockedMothersDayDates = true) {
-  if (!selectedDate || isSunday(selectedDate) || isBlockedMothersDayDate(selectedDate, canScheduleLockedMothersDayDates)) {
+  if (!selectedDate || isSundayDeliveryBlocked(selectedDate) || isBlockedMothersDayDate(selectedDate, canScheduleLockedMothersDayDates)) {
     return []
   }
 
@@ -99,7 +95,7 @@ function findNextAvailableDate(baseDate, earliestDateTime, canScheduleLockedMoth
     const slots = buildTimeSlots(date, earliestDateTime, canScheduleLockedMothersDayDates)
     const hasEnabledSlot = slots.some((slot) => !slot.disabled)
 
-    if (!isSunday(date) && hasEnabledSlot) {
+    if (!isSundayDeliveryBlocked(date) && hasEnabledSlot) {
       return date
     }
 
@@ -112,7 +108,7 @@ function findNextAvailableDate(baseDate, earliestDateTime, canScheduleLockedMoth
 }
 
 function hasEnabledSlots(date, earliestDateTime, canScheduleLockedMothersDayDates = true) {
-  if (isSunday(date) || isBlockedMothersDayDate(date, canScheduleLockedMothersDayDates)) {
+  if (isSundayDeliveryBlocked(date) || isBlockedMothersDayDate(date, canScheduleLockedMothersDayDates)) {
     return false
   }
 
