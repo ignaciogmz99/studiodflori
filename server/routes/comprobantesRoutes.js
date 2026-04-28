@@ -5,6 +5,7 @@ import path from 'node:path'
 import { getPaidOrderReceiptReference } from '../services/orderPersistenceService.js'
 import {
   createDiagnosticReceiptPdf,
+  getReceiptStorageDiagnostics,
   getReceiptsDir,
   readReceiptFromS3Storage
 } from '../services/receiptPdfService.js'
@@ -150,7 +151,8 @@ export function createComprobantesRouter() {
         filePath: result.filePath,
         receiptsDir: getReceiptsDir(),
         storageProvider: result.storageProvider || 'unknown',
-        alreadyExisted: Boolean(result.alreadyExisted)
+        alreadyExisted: Boolean(result.alreadyExisted),
+        storageDiagnostics: getReceiptStorageDiagnostics()
       })
     } catch (error) {
       console.warn('[comprobantes] fallo creando PDF diagnostico:', error?.message || error)

@@ -64,6 +64,37 @@ function getS3ReceiptStorageConfig() {
   }
 }
 
+export function getReceiptStorageDiagnostics() {
+  const s3Config = getS3ReceiptStorageConfig()
+  const missingObjectStorageVariables = []
+
+  if (!s3Config.endpoint) missingObjectStorageVariables.push('RECEIPTS_STORAGE_ENDPOINT')
+  if (!s3Config.bucket) missingObjectStorageVariables.push('RECEIPTS_STORAGE_BUCKET')
+  if (!s3Config.accessKeyId) missingObjectStorageVariables.push('RECEIPTS_STORAGE_ACCESS_KEY_ID')
+  if (!s3Config.secretAccessKey) missingObjectStorageVariables.push('RECEIPTS_STORAGE_SECRET_ACCESS_KEY')
+
+  let endpointHost = null
+  try {
+    endpointHost = s3Config.endpoint ? new URL(s3Config.endpoint).host : null
+  } catch {
+    endpointHost = 'invalid-url'
+  }
+
+  return {
+    receiptsDir: getReceiptsDir(),
+    supabaseStorageConfigured: Boolean(String(process.env.SUPABASE_RECEIPTS_BUCKET || '').trim()),
+    objectStorage: {
+      configured: missingObjectStorageVariables.length === 0,
+      endpointHost,
+      bucket: s3Config.bucket || null,
+      region: s3Config.region || null,
+      hasAccessKeyId: Boolean(s3Config.accessKeyId),
+      hasSecretAccessKey: Boolean(s3Config.secretAccessKey),
+      missingVariables: missingObjectStorageVariables
+    }
+  }
+}
+
 function sha256Hex(value) {
   return crypto.createHash('sha256').update(value).digest('hex')
 }
