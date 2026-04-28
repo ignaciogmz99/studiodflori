@@ -1,3 +1,4 @@
+/* global process */
 import { randomUUID } from 'node:crypto'
 import {
   buildWhatsAppTemplateParameters,
@@ -28,7 +29,6 @@ const PROCESS_INSTANCE_LABEL = [
   String(process.env.HOSTNAME || '').trim(),
   `pid:${process.pid}`
 ].filter(Boolean).join('|')
-const scheduledPaidOrderRecoveries = new Map()
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -93,39 +93,52 @@ async function recordProcessingEvent({
   }
 }
 
-function getClaimRecoveryDelayMs({ waitForPdf = false, waitForWhatsapp = false } = {}) {
-  const stageTimeouts = [
-    waitForPdf ? PDF_STAGE_CLAIM_TIMEOUT_MS : 0,
-    waitForWhatsapp ? WHATSAPP_STAGE_CLAIM_TIMEOUT_MS : 0
-  ]
+function getRemainingClaimDelayMs(claimStartedAt, timeoutMs) {
+  const parsedClaimStartedAt = Date.parse(String(claimStartedAt || ''))
+  if (!Number.isFinite(parsedClaimStartedAt)) {
+    return timeoutMs + CLAIM_RECOVERY_DELAY_BUFFER_MS
+  }
 
-  return Math.max(...stageTimeouts, 0) + CLAIM_RECOVERY_DELAY_BUFFER_MS
+  return Math.max(
+    parsedClaimStartedAt + timeoutMs + CLAIM_RECOVERY_DELAY_BUFFER_MS - Date.now(),
+    0
+  )
 }
 
-function scheduleClaimRecovery({
+function getClaimRecoveryDelayMs({
+  waitForPdf = false,
+  waitForWhatsapp = false,
+  latestState
+} = {}) {
+  const stageDelays = [
+    waitForPdf
+      ? getRemainingClaimDelayMs(latestState?.pdf_processing_started_at, PDF_STAGE_CLAIM_TIMEOUT_MS)
+      : 0,
+    waitForWhatsapp
+      ? getRemainingClaimDelayMs(latestState?.whatsapp_processing_started_at, WHATSAPP_STAGE_CLAIM_TIMEOUT_MS)
+      : 0
+  ]
+
+  return Math.max(...stageDelays, 0)
+}
+
+async function runClaimRecoveryInline({
   args,
   paymentId,
   orderId,
   logLabel,
+  actor,
   waitForPdf,
   waitForWhatsapp,
+  latestState,
   recoveryAttempt = 0
 } = {}) {
   if ((!waitForPdf && !waitForWhatsapp) || recoveryAttempt >= MAX_CLAIM_RECOVERY_ATTEMPTS) {
-    return false
+    return null
   }
 
-  const recoveryKey = [
-    String(paymentId || orderId || '').trim(),
-    `attempt:${recoveryAttempt + 1}`
-  ].filter(Boolean).join('|')
-
-  if (!recoveryKey || scheduledPaidOrderRecoveries.has(recoveryKey)) {
-    return false
-  }
-
-  const delayMs = getClaimRecoveryDelayMs({ waitForPdf, waitForWhatsapp })
-  console.log(`[${logLabel}] programando recuperacion post-pago`, {
+  const delayMs = getClaimRecoveryDelayMs({ waitForPdf, waitForWhatsapp, latestState })
+  console.log(`[${logLabel}] esperando vencimiento de claim para recuperar post-pago`, {
     paymentId,
     orderId,
     waitForPdf,
@@ -134,32 +147,30 @@ function scheduleClaimRecovery({
     delayMs
   })
 
-  const timer = setTimeout(async () => {
-    scheduledPaidOrderRecoveries.delete(recoveryKey)
-    console.log(`[${logLabel}] ejecutando recuperacion post-pago`, {
-      paymentId,
-      orderId,
-      waitForPdf,
-      waitForWhatsapp,
-      recoveryAttempt: recoveryAttempt + 1
-    })
+  await recordProcessingEvent({
+    paymentId,
+    orderId,
+    logLabel,
+    event: 'recovery_waiting',
+    actor,
+    pdfProcessingOwner: latestState?.pdf_processing_owner,
+    whatsappProcessingOwner: latestState?.whatsapp_processing_owner
+  })
 
-    try {
-      await processPaidOrderInternal({
-        ...args,
-        recoveryAttempt: recoveryAttempt + 1
-      })
-    } catch (error) {
-      console.warn(`[${logLabel}] fallo recuperacion post-pago:`, {
-        paymentId,
-        orderId,
-        message: error?.message || error
-      })
-    }
-  }, delayMs)
+  await sleep(delayMs)
 
-  scheduledPaidOrderRecoveries.set(recoveryKey, timer)
-  return true
+  console.log(`[${logLabel}] ejecutando recuperacion post-pago`, {
+    paymentId,
+    orderId,
+    waitForPdf,
+    waitForWhatsapp,
+    recoveryAttempt: recoveryAttempt + 1
+  })
+
+  return processPaidOrderInternal({
+    ...args,
+    recoveryAttempt: recoveryAttempt + 1
+  })
 }
 
 export function hasOnlyClaimInProgressWarnings(stageErrors = []) {
@@ -359,6 +370,141 @@ async function processPaidOrderInternal({
     }
   }
 
+  let whatsappSkippedByClaim = false
+  async function attemptWhatsappNotification() {
+    const shouldAttemptWhatsapp = !existingState?.whatsapp_sent_at
+
+    if (!shouldAttemptWhatsapp) {
+      console.log(`[${logLabel}] WhatsApp ya enviado previamente, omitiendo duplicado`, {
+        paymentId: normalizedPaymentId
+      })
+      return
+    }
+
+    let whatsappClaimed = true
+    try {
+      const claimResult = await claimPaidOrderProcessingStage({
+        paymentId: normalizedPaymentId,
+        orderId: normalizedOrderId,
+        stage: 'whatsapp',
+        claimTimeoutMs: WHATSAPP_STAGE_CLAIM_TIMEOUT_MS,
+        processingOwner: processingActor,
+        processingEvent: 'whatsapp_sending'
+      })
+      whatsappClaimed = Boolean(claimResult.claimed)
+      if (claimResult.row) {
+        existingState = claimResult.row
+      }
+      console.log(`[${logLabel}] resultado claim WhatsApp`, {
+        paymentId: normalizedPaymentId,
+        actor: processingActor,
+        claimed: whatsappClaimed,
+        state: summarizeProcessingState(claimResult.row || existingState)
+      })
+    } catch (error) {
+      whatsappClaimed = false
+      stageErrors.push(`notificacion_claim: ${error?.message || error}`)
+      console.warn(`[${logLabel}] fallo tomando claim de WhatsApp:`, error?.message || error)
+    }
+
+    if (!whatsappClaimed) {
+      whatsappSkippedByClaim = true
+      return
+    }
+
+    if (existingState?.whatsapp_sent_at) {
+      console.log(`[${logLabel}] WhatsApp ya enviado previamente, omitiendo duplicado`, {
+        paymentId: normalizedPaymentId
+      })
+      return
+    }
+
+    try {
+      console.log(`[${logLabel}] preparando envio WhatsApp`, {
+        paymentId: normalizedPaymentId,
+        actor: processingActor,
+        hasAccessToken: Boolean(String(whatsappAccessToken || '').trim()),
+        hasPhoneNumberId: Boolean(String(whatsappPhoneNumberId || '').trim()),
+        hasRecipient: Boolean(String(whatsappRecipient || '').trim()),
+        templateName: String(whatsappTemplateName || '').trim() || 'text',
+        templateLanguage: String(whatsappTemplateLanguageCode || 'es_MX').trim(),
+        apiVersion: String(whatsappApiVersion || 'v22.0').trim()
+      })
+      const whatsappTemplateParameters = buildWhatsAppTemplateParameters({
+        orderId: normalizedOrderId,
+        paymentId: normalizedPaymentId,
+        customerName: metadata.customer_name,
+        recipientName: String(metadata.recipient_name || metadata.customer_name || '').trim(),
+        cartItemsSummary: metadata.cart_items_summary,
+        deliveryDate: metadata.delivery_date,
+        deliveryTime: metadata.delivery_time,
+        deliveryCity: metadata.delivery_city,
+        deliveryAddress: metadata.delivery_address,
+        deliveryNeighborhood: metadata.delivery_neighborhood,
+        deliveryPostalCode: metadata.delivery_postal_code,
+        customerPhone: metadata.customer_phone,
+        flowerMessage: metadata.flower_message,
+        specialInstructions: metadata.delivery_notes,
+        deliveryType: metadata.fulfillment_type
+      })
+      const whatsappResult = await sendWhatsAppBusinessMessage({
+        whatsappAccessToken,
+        whatsappPhoneNumberId,
+        whatsappRecipient,
+        whatsappApiVersion,
+        whatsappTemplateName,
+        whatsappTemplateLanguageCode,
+        whatsappTemplateParameters
+      })
+      await updatePaidOrderProcessingState({
+        paymentId: normalizedPaymentId,
+        orderId: normalizedOrderId,
+        whatsappSentAt: new Date().toISOString(),
+        whatsappProcessingStartedAt: null,
+        whatsappProcessingOwner: null,
+        processingLastEvent: 'whatsapp_sent',
+        processingLastError: null,
+        processingLastActor: processingActor,
+        processingUpdatedAt: new Date().toISOString()
+      })
+      console.log(`[${logLabel}] WhatsApp enviado`, {
+        paymentId: normalizedPaymentId,
+        recipient: whatsappResult?.recipient || 'unknown',
+        messageId: whatsappResult?.responsePayload?.messages?.[0]?.id || 'unknown',
+        actor: processingActor
+      })
+    } catch (error) {
+      stageErrors.push(`notificacion: ${error?.message || error}`)
+      console.warn(`[${logLabel}] fallo enviando WhatsApp:`, error?.message || error)
+      try {
+        await updatePaidOrderProcessingState({
+          paymentId: normalizedPaymentId,
+          orderId: normalizedOrderId,
+          whatsappProcessingStartedAt: null,
+          whatsappProcessingOwner: null,
+          processingLastEvent: 'whatsapp_failed',
+          processingLastError: formatErrorMessage(error),
+          processingLastActor: processingActor,
+          processingUpdatedAt: new Date().toISOString()
+        })
+      } catch (clearError) {
+        console.warn(`[${logLabel}] fallo liberando claim de WhatsApp:`, clearError?.message || clearError)
+      }
+    }
+  }
+
+  await attemptWhatsappNotification()
+
+  try {
+    const freshState = await getPaidOrderProcessingState({
+      paymentId: normalizedPaymentId,
+      orderId: normalizedOrderId
+    })
+    if (freshState) existingState = freshState
+  } catch {
+    // keep previous state
+  }
+
   let pdfSkippedByClaim = false
   if (!existingState?.pdf_generated_at) {
     let pdfClaimed = true
@@ -447,128 +593,6 @@ async function processPaidOrderInternal({
     // keep previous state
   }
 
-  let whatsappSkippedByClaim = false
-  const shouldAttemptWhatsapp = Boolean(existingState?.pdf_generated_at)
-  if (!shouldAttemptWhatsapp && !existingState?.whatsapp_sent_at) {
-    console.log(`[${logLabel}] WhatsApp en espera hasta que el PDF este listo`, {
-      paymentId: normalizedPaymentId,
-      actor: processingActor,
-      pdfGeneratedAt: existingState?.pdf_generated_at || null,
-      pdfSkippedByClaim
-    })
-  }
-
-  if (shouldAttemptWhatsapp && !existingState?.whatsapp_sent_at) {
-    let whatsappClaimed = true
-    try {
-      const claimResult = await claimPaidOrderProcessingStage({
-        paymentId: normalizedPaymentId,
-        orderId: normalizedOrderId,
-        stage: 'whatsapp',
-        claimTimeoutMs: WHATSAPP_STAGE_CLAIM_TIMEOUT_MS,
-        processingOwner: processingActor,
-        processingEvent: 'whatsapp_sending'
-      })
-      whatsappClaimed = Boolean(claimResult.claimed)
-      if (claimResult.row) {
-        existingState = claimResult.row
-      }
-      console.log(`[${logLabel}] resultado claim WhatsApp`, {
-        paymentId: normalizedPaymentId,
-        actor: processingActor,
-        claimed: whatsappClaimed,
-        state: summarizeProcessingState(claimResult.row || existingState)
-      })
-    } catch (error) {
-      whatsappClaimed = false
-      stageErrors.push(`notificacion_claim: ${error?.message || error}`)
-      console.warn(`[${logLabel}] fallo tomando claim de WhatsApp:`, error?.message || error)
-    }
-
-    if (!whatsappClaimed) {
-      whatsappSkippedByClaim = true
-    }
-  }
-
-  if (shouldAttemptWhatsapp && !existingState?.whatsapp_sent_at && !whatsappSkippedByClaim) {
-    try {
-      console.log(`[${logLabel}] preparando envio WhatsApp`, {
-        paymentId: normalizedPaymentId,
-        actor: processingActor,
-        hasAccessToken: Boolean(String(whatsappAccessToken || '').trim()),
-        hasPhoneNumberId: Boolean(String(whatsappPhoneNumberId || '').trim()),
-        hasRecipient: Boolean(String(whatsappRecipient || '').trim()),
-        templateName: String(whatsappTemplateName || '').trim() || 'text',
-        templateLanguage: String(whatsappTemplateLanguageCode || 'es_MX').trim(),
-        apiVersion: String(whatsappApiVersion || 'v22.0').trim()
-      })
-      const whatsappTemplateParameters = buildWhatsAppTemplateParameters({
-        orderId: normalizedOrderId,
-        paymentId: normalizedPaymentId,
-        customerName: metadata.customer_name,
-        recipientName: String(metadata.recipient_name || metadata.customer_name || '').trim(),
-        cartItemsSummary: metadata.cart_items_summary,
-        deliveryDate: metadata.delivery_date,
-        deliveryTime: metadata.delivery_time,
-        deliveryCity: metadata.delivery_city,
-        deliveryAddress: metadata.delivery_address,
-        deliveryNeighborhood: metadata.delivery_neighborhood,
-        deliveryPostalCode: metadata.delivery_postal_code,
-        customerPhone: metadata.customer_phone,
-        flowerMessage: metadata.flower_message,
-        specialInstructions: metadata.delivery_notes,
-        deliveryType: metadata.fulfillment_type
-      })
-      const whatsappResult = await sendWhatsAppBusinessMessage({
-        whatsappAccessToken,
-        whatsappPhoneNumberId,
-        whatsappRecipient,
-        whatsappApiVersion,
-        whatsappTemplateName,
-        whatsappTemplateLanguageCode,
-        whatsappTemplateParameters
-      })
-      await updatePaidOrderProcessingState({
-        paymentId: normalizedPaymentId,
-        orderId: normalizedOrderId,
-        whatsappSentAt: new Date().toISOString(),
-        whatsappProcessingStartedAt: null,
-        whatsappProcessingOwner: null,
-        processingLastEvent: 'whatsapp_sent',
-        processingLastError: null,
-        processingLastActor: processingActor,
-        processingUpdatedAt: new Date().toISOString()
-      })
-      console.log(`[${logLabel}] WhatsApp enviado`, {
-        paymentId: normalizedPaymentId,
-        recipient: whatsappResult?.recipient || 'unknown',
-        messageId: whatsappResult?.responsePayload?.messages?.[0]?.id || 'unknown',
-        actor: processingActor
-      })
-    } catch (error) {
-      stageErrors.push(`notificacion: ${error?.message || error}`)
-      console.warn(`[${logLabel}] fallo enviando WhatsApp:`, error?.message || error)
-      try {
-        await updatePaidOrderProcessingState({
-          paymentId: normalizedPaymentId,
-          orderId: normalizedOrderId,
-          whatsappProcessingStartedAt: null,
-          whatsappProcessingOwner: null,
-          processingLastEvent: 'whatsapp_failed',
-          processingLastError: formatErrorMessage(error),
-          processingLastActor: processingActor,
-          processingUpdatedAt: new Date().toISOString()
-        })
-      } catch (clearError) {
-        console.warn(`[${logLabel}] fallo liberando claim de WhatsApp:`, clearError?.message || clearError)
-      }
-    }
-  } else if (existingState?.whatsapp_sent_at) {
-    console.log(`[${logLabel}] WhatsApp ya enviado previamente, omitiendo duplicado`, {
-      paymentId: normalizedPaymentId
-    })
-  }
-
   if (pdfSkippedByClaim || whatsappSkippedByClaim) {
     console.log(`[${logLabel}] esperando a que otra instancia termine el post-pago`, {
       paymentId: normalizedPaymentId,
@@ -611,7 +635,7 @@ async function processPaidOrderInternal({
   }
 
   if (hasOnlyClaimInProgressWarnings(stageErrors)) {
-    const recoveryScheduled = scheduleClaimRecovery({
+    const recoveryResult = await runClaimRecoveryInline({
       args: {
         amountMxn,
         customerName,
@@ -633,21 +657,15 @@ async function processPaidOrderInternal({
       paymentId: normalizedPaymentId,
       orderId: normalizedOrderId,
       logLabel,
+      actor: processingActor,
       waitForPdf: pdfSkippedByClaim && !existingState?.pdf_generated_at,
       waitForWhatsapp: whatsappSkippedByClaim && !existingState?.whatsapp_sent_at,
+      latestState: existingState,
       recoveryAttempt
     })
 
-    if (recoveryScheduled) {
-      await recordProcessingEvent({
-        paymentId: normalizedPaymentId,
-        orderId: normalizedOrderId,
-        logLabel,
-        event: 'recovery_scheduled',
-        actor: processingActor,
-        pdfProcessingOwner: existingState?.pdf_processing_owner,
-        whatsappProcessingOwner: existingState?.whatsapp_processing_owner
-      })
+    if (recoveryResult) {
+      return recoveryResult
     }
   }
 

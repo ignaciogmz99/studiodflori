@@ -1,4 +1,4 @@
-/* global Buffer */
+/* global Buffer, process */
 import { access, mkdir, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'

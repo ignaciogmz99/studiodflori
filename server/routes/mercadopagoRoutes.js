@@ -8,15 +8,100 @@ import {
   validateOrderId
 } from '../services/trustedOrderService.js'
 import { createMercadoPagoReceiptPdf } from '../services/receiptPdfService.js'
-import { processPaidOrder } from '../services/paidOrderProcessingService.js'
+import {
+  hasOnlyClaimInProgressWarnings,
+  processPaidOrder
+} from '../services/paidOrderProcessingService.js'
+import { updatePaidOrderProcessingState } from '../services/orderPersistenceService.js'
 
 const ORDER_TTL_MS = 30 * 60 * 1000
 // In-memory order state to reduce duplicate charges on retries.
 const paymentByOrderId = new Map()
 
+function isAuthorizedPostPaymentRetry(req) {
+  const expectedSecret = String(process.env.POST_PAYMENT_RETRY_SECRET || '').trim()
+  if (!expectedSecret) {
+    return false
+  }
+
+  const bearerToken = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim()
+  const headerSecret = String(req.headers['x-post-payment-retry-secret'] || '').trim()
+  return bearerToken === expectedSecret || headerSecret === expectedSecret
+}
+
+async function fetchMercadoPagoPaymentById({ paymentId, accessToken }) {
+  const response = await fetch(`https://api.mercadopago.com/v1/payments/${encodeURIComponent(paymentId)}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  })
+
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    throw new Error(payload?.message || payload?.error || `No se pudo consultar pago en Mercado Pago (${response.status})`)
+  }
+
+  return payload
+}
+
 export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckoutMode }) {
   const router = Router()
   const mpWebhookUrl = String(process.env.MP_WEBHOOK_URL || '').trim()
+
+  async function processApprovedMercadoPagoPostPayment({
+    paymentResponse,
+    metadata,
+    orderId,
+    source = 'mercadopago_process_payment',
+    logLabel = 'MP process-payment fallback'
+  }) {
+    const normalizedPaymentId = String(paymentResponse?.id || '').trim()
+    const normalizedOrderId = String(orderId || metadata?.order_id || '').trim()
+    const normalizedMetadata = {
+      order_id: normalizedOrderId,
+      customer_name: String(metadata?.customer_name || paymentResponse?.payer?.first_name || '').trim(),
+      customer_phone: String(metadata?.customer_phone || '').trim(),
+      fulfillment_type: String(metadata?.fulfillment_type || 'delivery').trim() || 'delivery',
+      recipient_name: String(metadata?.recipient_name || metadata?.customer_name || paymentResponse?.payer?.first_name || '').trim(),
+      delivery_city: String(metadata?.delivery_city || '').trim(),
+      delivery_address: String(metadata?.delivery_address || '').trim(),
+      delivery_postal_code: String(metadata?.delivery_postal_code || '').trim(),
+      delivery_neighborhood: String(metadata?.delivery_neighborhood || '').trim(),
+      flower_message: String(metadata?.flower_message || '').trim(),
+      delivery_notes: String(metadata?.delivery_notes || '').trim(),
+      delivery_date: String(metadata?.delivery_date || '').trim(),
+      delivery_time: String(metadata?.delivery_time || '').trim(),
+      cart_items_count: metadata?.cart_items_count,
+      cart_items_summary: String(metadata?.cart_items_summary || '').trim() || 'Sin detalle'
+    }
+
+    return processPaidOrder({
+      amountMxn: paymentResponse?.transaction_amount,
+      customerName: normalizedMetadata.customer_name,
+      customerPhone: normalizedMetadata.customer_phone,
+      metadata: normalizedMetadata,
+      paidAt: paymentResponse?.date_approved || paymentResponse?.date_created || new Date().toISOString(),
+      paymentId: normalizedPaymentId,
+      orderId: normalizedOrderId,
+      source,
+      createReceiptPdf: () => createMercadoPagoReceiptPdf({
+        ...paymentResponse,
+        currency_id: paymentResponse?.currency_id || 'MXN',
+        payer: {
+          ...(paymentResponse?.payer || {}),
+          email: String(paymentResponse?.payer?.email || metadata?.customer_email || '').trim()
+        },
+        metadata: normalizedMetadata
+      }),
+      logLabel,
+      whatsappAccessToken: process.env.WHATSAPP_BUSINESS_ACCESS_TOKEN,
+      whatsappPhoneNumberId: process.env.WHATSAPP_BUSINESS_PHONE_NUMBER_ID,
+      whatsappRecipient: process.env.WHATSAPP_BUSINESS_TO,
+      whatsappTemplateName: process.env.WHATSAPP_BUSINESS_TEMPLATE_NAME,
+      whatsappTemplateLanguageCode: process.env.WHATSAPP_BUSINESS_TEMPLATE_LANGUAGE || 'es_MX',
+      whatsappApiVersion: process.env.WHATSAPP_BUSINESS_API_VERSION || 'v22.0'
+    })
+  }
 
   async function runApprovedPaymentFallback({
     paymentResponse,
@@ -46,30 +131,18 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
     }
 
     try {
-      const processingResult = await processPaidOrder({
-        amountMxn: paymentResponse?.transaction_amount,
-        customerName: metadata.customer_name,
-        customerPhone: metadata.customer_phone,
+      const processingResult = await processApprovedMercadoPagoPostPayment({
+        paymentResponse: {
+          ...paymentResponse,
+          payer: {
+            ...(paymentResponse?.payer || {}),
+            email: String(paymentResponse?.payer?.email || customer?.email || '').trim()
+          }
+        },
         metadata,
-        paidAt: paymentResponse?.date_approved || paymentResponse?.date_created || new Date().toISOString(),
-        paymentId: String(paymentResponse?.id || '').trim(),
         orderId,
         source: 'mercadopago_process_payment',
-        createReceiptPdf: () => createMercadoPagoReceiptPdf({
-          ...paymentResponse,
-          currency_id: paymentResponse?.currency_id || 'MXN',
-          payer: {
-            email: String(paymentResponse?.payer?.email || customer?.email || '').trim()
-          },
-          metadata
-        }),
-        logLabel: 'MP process-payment fallback',
-        whatsappAccessToken: process.env.WHATSAPP_BUSINESS_ACCESS_TOKEN,
-        whatsappPhoneNumberId: process.env.WHATSAPP_BUSINESS_PHONE_NUMBER_ID,
-        whatsappRecipient: process.env.WHATSAPP_BUSINESS_TO,
-        whatsappTemplateName: process.env.WHATSAPP_BUSINESS_TEMPLATE_NAME,
-        whatsappTemplateLanguageCode: process.env.WHATSAPP_BUSINESS_TEMPLATE_LANGUAGE || 'es_MX',
-        whatsappApiVersion: process.env.WHATSAPP_BUSINESS_API_VERSION || 'v22.0'
+        logLabel: 'MP process-payment fallback'
       })
 
       if (!processingResult.processed) {
@@ -344,6 +417,91 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
       })
       return res.status(500).json({
         error: error?.cause?.[0]?.description || error?.message || 'No se pudo procesar el pago'
+      })
+    }
+  })
+
+  router.post('/retry-post-payment', async (req, res) => {
+    try {
+      if (!isAuthorizedPostPaymentRetry(req)) {
+        return res.status(process.env.POST_PAYMENT_RETRY_SECRET ? 401 : 500).json({
+          error: process.env.POST_PAYMENT_RETRY_SECRET
+            ? 'No autorizado'
+            : 'Falta POST_PAYMENT_RETRY_SECRET para habilitar reintentos protegidos'
+        })
+      }
+
+      if (!mercadopagoToken) {
+        return res.status(500).json({ error: 'Mercado Pago no configurado en el servidor' })
+      }
+
+      const paymentId = String(req.body?.paymentId || req.body?.id || '').trim()
+      if (!paymentId) {
+        return res.status(400).json({ error: 'Falta paymentId para reintentar post-pago' })
+      }
+
+      const payment = await fetchMercadoPagoPaymentById({
+        paymentId,
+        accessToken: mercadopagoToken
+      })
+
+      if (String(payment?.status || '').toLowerCase() !== 'approved') {
+        return res.status(409).json({
+          error: 'El pago de Mercado Pago todavia no esta aprobado',
+          status: payment?.status || 'unknown'
+        })
+      }
+
+      const metadata = payment?.metadata || {}
+      const orderId = String(req.body?.orderId || metadata?.order_id || '').trim()
+      validateOrderId(orderId)
+
+      const metadataOrderId = String(metadata?.order_id || '').trim()
+      if (metadataOrderId && metadataOrderId !== orderId) {
+        return res.status(409).json({ error: 'El pago de Mercado Pago no corresponde a esta orden' })
+      }
+
+      if (req.body?.force === true || req.body?.clearClaims === true) {
+        await updatePaidOrderProcessingState({
+          paymentId,
+          orderId,
+          pdfProcessingStartedAt: null,
+          whatsappProcessingStartedAt: null,
+          pdfProcessingOwner: null,
+          whatsappProcessingOwner: null,
+          processingLastEvent: 'manual_retry_claims_cleared',
+          processingLastError: null,
+          processingLastActor: 'MP manual retry',
+          processingUpdatedAt: new Date().toISOString()
+        })
+      }
+
+      const processingResult = await processApprovedMercadoPagoPostPayment({
+        paymentResponse: payment,
+        metadata,
+        orderId,
+        source: 'mercadopago_manual_retry',
+        logLabel: 'MP manual retry'
+      })
+
+      const responsePayload = {
+        processed: Boolean(processingResult.processed && !processingResult.processedWithWarnings),
+        inProgress: hasOnlyClaimInProgressWarnings(processingResult.stageErrors),
+        paymentId: processingResult.paymentId,
+        orderId: processingResult.orderId,
+        warnings: processingResult.stageErrors,
+        state: processingResult.state || null
+      }
+
+      return res
+        .status(responsePayload.processed ? 200 : (responsePayload.inProgress ? 202 : 500))
+        .json(responsePayload)
+    } catch (error) {
+      console.error('[MP manual retry] fallo reintentando post-pago:', {
+        message: error?.message || error
+      })
+      return res.status(500).json({
+        error: error?.message || 'No se pudo reintentar el post-pago de Mercado Pago'
       })
     }
   })

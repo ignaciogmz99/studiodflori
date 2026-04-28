@@ -139,7 +139,7 @@ function createFetchMock({
     }
 
     state.externalCompletionScheduled = true
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       state.row = {
         ...(state.row || {}),
         pdf_path: `supabase://receipts/generated_receipts/comprobante-${approvedPayment.id}.pdf`,
@@ -149,6 +149,10 @@ function createFetchMock({
         whatsapp_processing_started_at: null
       }
     }, settleClaimAfterMs)
+
+    if (typeof timer.unref === 'function') {
+      timer.unref()
+    }
   }
 
   const fetchMock = async (url, options = {}) => {
@@ -390,7 +394,7 @@ async function scenarioConcurrentClaimStillInProgressReturns200() {
   const webhookSecret = 'webhook-secret'
   const { fetchMock, state } = createFetchMock({
     claimAlreadyInProgress: true,
-    settleClaimAfterMs: 20_000
+    settleClaimAfterMs: 60_000
   })
   const originalFetch = global.fetch
   global.fetch = fetchMock

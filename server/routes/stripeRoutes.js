@@ -11,8 +11,20 @@ import {
   processPaidOrder
 } from '../services/paidOrderProcessingService.js'
 import { createStripeReceiptPdf } from '../services/receiptPdfService.js'
+import { updatePaidOrderProcessingState } from '../services/orderPersistenceService.js'
 
 const INTENT_TTL_MS = 30 * 60 * 1000
+
+function isAuthorizedPostPaymentRetry(req) {
+  const expectedSecret = String(process.env.POST_PAYMENT_RETRY_SECRET || '').trim()
+  if (!expectedSecret) {
+    return false
+  }
+
+  const bearerToken = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim()
+  const headerSecret = String(req.headers['x-post-payment-retry-secret'] || '').trim()
+  return bearerToken === expectedSecret || headerSecret === expectedSecret
+}
 
 export function createStripeRouter({ stripeSecretKey }) {
   const router = Router()
@@ -35,7 +47,12 @@ export function createStripeRouter({ stripeSecretKey }) {
     return payload
   }
 
-  async function runStripePostPaymentFallback({ paymentIntent, orderId }) {
+  async function runStripePostPaymentFallback({
+    paymentIntent,
+    orderId,
+    source = 'stripe_client_fallback',
+    logLabel = 'Stripe client fallback'
+  }) {
     const metadata = paymentIntent?.metadata || {}
     return processPaidOrder({
       amountMxn: Number(paymentIntent?.amount_received ?? paymentIntent?.amount ?? 0) / 100,
@@ -61,9 +78,9 @@ export function createStripeRouter({ stripeSecretKey }) {
       paidAt: new Date().toISOString(),
       paymentId: String(paymentIntent?.id || '').trim(),
       orderId,
-      source: 'stripe_client_fallback',
+      source,
       createReceiptPdf: () => createStripeReceiptPdf(paymentIntent),
-      logLabel: 'Stripe client fallback',
+      logLabel,
       whatsappAccessToken: process.env.WHATSAPP_BUSINESS_ACCESS_TOKEN,
       whatsappPhoneNumberId: process.env.WHATSAPP_BUSINESS_PHONE_NUMBER_ID,
       whatsappRecipient: process.env.WHATSAPP_BUSINESS_TO,
@@ -276,6 +293,84 @@ export function createStripeRouter({ stripeSecretKey }) {
       console.error('Error procesando fallback de Stripe:', error)
       return res.status(500).json({
         error: error?.message || 'No se pudo procesar el post-pago de Stripe'
+      })
+    }
+  })
+
+  router.post('/retry-post-payment', async (req, res) => {
+    try {
+      if (!isAuthorizedPostPaymentRetry(req)) {
+        return res.status(process.env.POST_PAYMENT_RETRY_SECRET ? 401 : 500).json({
+          error: process.env.POST_PAYMENT_RETRY_SECRET
+            ? 'No autorizado'
+            : 'Falta POST_PAYMENT_RETRY_SECRET para habilitar reintentos protegidos'
+        })
+      }
+
+      if (!stripeSecretKey) {
+        return res.status(500).json({ error: 'Stripe no configurado en el servidor' })
+      }
+
+      const paymentIntentId = String(req.body?.paymentIntentId || req.body?.paymentId || '').trim()
+      if (!paymentIntentId) {
+        return res.status(400).json({ error: 'Falta paymentIntentId para reintentar post-pago' })
+      }
+
+      const paymentIntent = await fetchStripePaymentIntent(paymentIntentId)
+      if (String(paymentIntent?.status || '').toLowerCase() !== 'succeeded') {
+        return res.status(409).json({
+          error: 'El pago de Stripe todavia no esta aprobado',
+          status: paymentIntent?.status || 'unknown'
+        })
+      }
+
+      const metadataOrderId = String(paymentIntent?.metadata?.order_id || '').trim()
+      const normalizedOrderId = validateOrderId(req.body?.orderId || metadataOrderId)
+
+      if (metadataOrderId && metadataOrderId !== normalizedOrderId) {
+        return res.status(409).json({ error: 'El PaymentIntent no corresponde a esta orden' })
+      }
+
+      if (req.body?.force === true || req.body?.clearClaims === true) {
+        await updatePaidOrderProcessingState({
+          paymentId: paymentIntentId,
+          orderId: normalizedOrderId,
+          pdfProcessingStartedAt: null,
+          whatsappProcessingStartedAt: null,
+          pdfProcessingOwner: null,
+          whatsappProcessingOwner: null,
+          processingLastEvent: 'manual_retry_claims_cleared',
+          processingLastError: null,
+          processingLastActor: 'Stripe manual retry',
+          processingUpdatedAt: new Date().toISOString()
+        })
+      }
+
+      const processingResult = await runStripePostPaymentFallback({
+        paymentIntent,
+        orderId: normalizedOrderId,
+        source: 'stripe_manual_retry',
+        logLabel: 'Stripe manual retry'
+      })
+
+      const responsePayload = {
+        processed: Boolean(processingResult.processed && !processingResult.processedWithWarnings),
+        inProgress: hasOnlyClaimInProgressWarnings(processingResult.stageErrors),
+        paymentId: processingResult.paymentId,
+        orderId: processingResult.orderId,
+        warnings: processingResult.stageErrors,
+        state: processingResult.state || null
+      }
+
+      return res
+        .status(responsePayload.processed ? 200 : (responsePayload.inProgress ? 202 : 500))
+        .json(responsePayload)
+    } catch (error) {
+      console.error('[Stripe manual retry] fallo reintentando post-pago:', {
+        message: error?.message || error
+      })
+      return res.status(500).json({
+        error: error?.message || 'No se pudo reintentar el post-pago de Stripe'
       })
     }
   })
