@@ -14,9 +14,26 @@ const CLAIM_SETTLE_WAIT_MS = 8 * 1000
 const CLAIM_SETTLE_POLL_MS = 1000
 const PDF_STAGE_CLAIM_TIMEOUT_MS = 15 * 1000
 const WHATSAPP_STAGE_CLAIM_TIMEOUT_MS = 45 * 1000
+const CLAIM_IN_PROGRESS_WARNING_PATTERNS = [
+  /^pdf: otra instancia esta procesando el comprobante$/i,
+  /^notificacion: otra instancia esta enviando WhatsApp$/i
+]
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+export function hasOnlyClaimInProgressWarnings(stageErrors = []) {
+  const normalizedErrors = Array.isArray(stageErrors)
+    ? stageErrors
+      .map((error) => String(error || '').trim())
+      .filter(Boolean)
+    : []
+
+  return normalizedErrors.length > 0
+    && normalizedErrors.every((error) => (
+      CLAIM_IN_PROGRESS_WARNING_PATTERNS.some((pattern) => pattern.test(error))
+    ))
 }
 
 async function waitForClaimedStagesToSettle({

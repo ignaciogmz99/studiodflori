@@ -2,7 +2,10 @@
 import { Router } from 'express'
 import crypto from 'node:crypto'
 import { getPaidOrderProcessingState } from '../../services/orderPersistenceService.js'
-import { processPaidOrder } from '../../services/paidOrderProcessingService.js'
+import {
+  hasOnlyClaimInProgressWarnings,
+  processPaidOrder
+} from '../../services/paidOrderProcessingService.js'
 import { createMercadoPagoReceiptPdf } from '../../services/receiptPdfService.js'
 
 function createHttpError(message, statusCode = 400) {
@@ -241,6 +244,14 @@ export function createMercadoPagoWebhookRouter({
             }
 
             if (processingResult.processedWithWarnings) {
+              if (hasOnlyClaimInProgressWarnings(processingResult.stageErrors)) {
+                console.log('[MP webhook] post-pago sigue en proceso en otra instancia', {
+                  paymentId: normalizedPaymentId,
+                  errors: processingResult.stageErrors
+                })
+                return res.status(200).json({ received: true, inProgress: true })
+              }
+
               console.warn('[MP webhook] post-pago parcial completado', {
                 paymentId: normalizedPaymentId,
                 errors: processingResult.stageErrors

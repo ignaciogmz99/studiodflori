@@ -2,7 +2,10 @@
 import { Router } from 'express'
 import crypto from 'node:crypto'
 import { getPaidOrderProcessingState } from '../../services/orderPersistenceService.js'
-import { processPaidOrder } from '../../services/paidOrderProcessingService.js'
+import {
+  hasOnlyClaimInProgressWarnings,
+  processPaidOrder
+} from '../../services/paidOrderProcessingService.js'
 import { createStripeReceiptPdf } from '../../services/receiptPdfService.js'
 
 const activeStripeEvents = new Set()
@@ -267,6 +270,14 @@ export function createStripeWebhookRouter({
           }
 
           if (processingResult.processedWithWarnings) {
+            if (hasOnlyClaimInProgressWarnings(processingResult.stageErrors)) {
+              console.log('[Stripe webhook] post-pago sigue en proceso en otra instancia', {
+                paymentId,
+                errors: processingResult.stageErrors
+              })
+              return res.status(200).json({ received: true, inProgress: true })
+            }
+
             console.warn('[Stripe webhook] post-pago parcial completado', {
               paymentId,
               errors: processingResult.stageErrors

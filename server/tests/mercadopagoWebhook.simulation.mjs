@@ -378,6 +378,39 @@ async function scenarioConcurrentClaimSettlesWithout500() {
   }
 }
 
+async function scenarioConcurrentClaimStillInProgressReturns200() {
+  resetComprobantesSchemaSupportCache()
+  await cleanupReceipt()
+  const webhookSecret = 'webhook-secret'
+  const { fetchMock, state } = createFetchMock({
+    claimAlreadyInProgress: true,
+    settleClaimAfterMs: 20_000
+  })
+  const originalFetch = global.fetch
+  global.fetch = fetchMock
+
+  try {
+    const router = createRouter(webhookSecret)
+    const response = await invokeWebhook(router, buildRequest({
+      webhookSecret,
+      requestId: 'req-claims-2',
+      dataId: '999000111',
+      body: {
+        topic: 'payment',
+        data: { id: '999000111' }
+      }
+    }))
+
+    assert.equal(response.statusCode, 200)
+    assert.deepEqual(response.body, { received: true, inProgress: true })
+    assert.equal(state.whatsappSends, 0)
+    assert.equal(state.row?.pdf_generated_at, undefined)
+    assert.equal(state.row?.whatsapp_sent_at, undefined)
+  } finally {
+    global.fetch = originalFetch
+  }
+}
+
 async function scenarioInvalidSignature() {
   resetComprobantesSchemaSupportCache()
   const webhookSecret = 'webhook-secret'
@@ -600,6 +633,7 @@ async function runSimulation() {
   await scenarioHappyPathAndDuplicate()
   await scenarioPartialWhatsappFailureThenRetry()
   await scenarioConcurrentClaimSettlesWithout500()
+  await scenarioConcurrentClaimStillInProgressReturns200()
   await scenarioInvalidSignature()
   await scenarioLegacySchemaRequiresWebhookColumns()
   await scenarioPendingPaymentDoesNothing()
