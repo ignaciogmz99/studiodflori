@@ -613,6 +613,32 @@ export async function claimPaidOrderProcessingStage({
 
   const rows = await response.json()
   const row = Array.isArray(rows) ? rows[0] || null : null
+  if (!row && schemaSupport.processingDiagnosticColumns && processingOwner !== undefined) {
+    const refetched = await findExistingPaidOrder({
+      supabaseUrl,
+      supabaseKey,
+      paymentId: normalizedPaymentId,
+      orderId: normalizedOrderId
+    })
+    const ownClaim = refetched
+      && !refetched[stageConfig.finalColumn]
+      && refetched[stageConfig.claimColumn]
+      && String(refetched[stageConfig.ownerColumn] || '').trim() === String(processingOwner || '').trim()
+
+    if (ownClaim) {
+      return {
+        claimed: true,
+        row: refetched,
+        recoveredFromEmptyRepresentation: true
+      }
+    }
+
+    return {
+      claimed: false,
+      row: refetched || null
+    }
+  }
+
   return {
     claimed: Boolean(row),
     row
