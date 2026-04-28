@@ -1,4 +1,5 @@
 /* global Buffer, process */
+import crypto from 'node:crypto'
 import { access, mkdir, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -24,6 +25,159 @@ function sanitizeFileSegment(value, fallback = 'sin-folio') {
     .replace(/[^a-zA-Z0-9-_]/g, '')
 
   return normalized || fallback
+}
+
+function getS3ReceiptStorageConfig() {
+  const endpoint = String(
+    process.env.RECEIPTS_STORAGE_ENDPOINT ||
+    process.env.S3_ENDPOINT_URL ||
+    process.env.AWS_ENDPOINT_URL_S3 ||
+    ''
+  ).trim()
+  const bucket = String(
+    process.env.RECEIPTS_STORAGE_BUCKET ||
+    process.env.S3_BUCKET ||
+    ''
+  ).trim()
+  const accessKeyId = String(
+    process.env.RECEIPTS_STORAGE_ACCESS_KEY_ID ||
+    process.env.AWS_ACCESS_KEY_ID ||
+    ''
+  ).trim()
+  const secretAccessKey = String(
+    process.env.RECEIPTS_STORAGE_SECRET_ACCESS_KEY ||
+    process.env.AWS_SECRET_ACCESS_KEY ||
+    ''
+  ).trim()
+  const region = String(
+    process.env.RECEIPTS_STORAGE_REGION ||
+    process.env.AWS_REGION ||
+    'auto'
+  ).trim() || 'auto'
+
+  return {
+    endpoint: endpoint.replace(/\/+$/, ''),
+    bucket,
+    accessKeyId,
+    secretAccessKey,
+    region
+  }
+}
+
+function sha256Hex(value) {
+  return crypto.createHash('sha256').update(value).digest('hex')
+}
+
+function hmac(key, value, encoding) {
+  return crypto.createHmac('sha256', key).update(value).digest(encoding)
+}
+
+function encodeS3PathSegment(value) {
+  return encodeURIComponent(value).replace(/[!'()*]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`)
+}
+
+function buildS3ObjectUrl({ endpoint, bucket, objectPath }) {
+  const encodedPath = [
+    bucket,
+    ...String(objectPath || '').split('/').filter(Boolean)
+  ].map(encodeS3PathSegment).join('/')
+
+  return new URL(`/${encodedPath}`, endpoint)
+}
+
+function buildS3AuthHeaders({
+  method,
+  url,
+  accessKeyId,
+  secretAccessKey,
+  region,
+  body,
+  contentType
+}) {
+  const now = new Date()
+  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '')
+  const dateStamp = amzDate.slice(0, 8)
+  const payloadHash = sha256Hex(body || '')
+  const headers = {
+    host: url.host,
+    'x-amz-content-sha256': payloadHash,
+    'x-amz-date': amzDate
+  }
+
+  if (contentType) {
+    headers['content-type'] = contentType
+  }
+
+  const signedHeaders = Object.keys(headers).sort().join(';')
+  const canonicalHeaders = Object.keys(headers)
+    .sort()
+    .map((key) => `${key}:${headers[key]}\n`)
+    .join('')
+  const canonicalRequest = [
+    method,
+    url.pathname,
+    url.searchParams.toString(),
+    canonicalHeaders,
+    signedHeaders,
+    payloadHash
+  ].join('\n')
+  const credentialScope = `${dateStamp}/${region}/s3/aws4_request`
+  const stringToSign = [
+    'AWS4-HMAC-SHA256',
+    amzDate,
+    credentialScope,
+    sha256Hex(canonicalRequest)
+  ].join('\n')
+  const signingKey = hmac(
+    hmac(
+      hmac(
+        hmac(`AWS4${secretAccessKey}`, dateStamp),
+        region
+      ),
+      's3'
+    ),
+    'aws4_request'
+  )
+  const signature = hmac(signingKey, stringToSign, 'hex')
+
+  return {
+    ...(contentType ? { 'Content-Type': contentType } : {}),
+    Host: url.host,
+    'X-Amz-Content-Sha256': payloadHash,
+    'X-Amz-Date': amzDate,
+    Authorization: `AWS4-HMAC-SHA256 Credential=${accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`
+  }
+}
+
+async function s3ReceiptRequest({ method, objectPath, body, contentType, bucket: requestedBucket } = {}) {
+  const config = getS3ReceiptStorageConfig()
+  const bucket = String(requestedBucket || config.bucket || '').trim()
+  if (!config.endpoint || !bucket || !config.accessKeyId || !config.secretAccessKey) {
+    return { skipped: true }
+  }
+
+  const url = buildS3ObjectUrl({
+    endpoint: config.endpoint,
+    bucket,
+    objectPath
+  })
+  const headers = buildS3AuthHeaders({
+    method,
+    url,
+    accessKeyId: config.accessKeyId,
+    secretAccessKey: config.secretAccessKey,
+    region: config.region,
+    body,
+    contentType
+  })
+
+  const response = await fetch(url.toString(), {
+    method,
+    headers,
+    ...(body !== undefined && !['GET', 'HEAD'].includes(String(method || '').toUpperCase()) ? { body } : {})
+  })
+
+  return { response, bucket, objectPath }
 }
 
 async function uploadReceiptToSupabaseStorage({ fileName, pdfBuffer, folder = 'generated_receipts' } = {}) {
@@ -70,14 +224,61 @@ async function uploadReceiptToSupabaseStorage({ fileName, pdfBuffer, folder = 'g
   throw new Error(`No se pudo subir PDF a Supabase Storage (${response.status}): ${details}`)
 }
 
+async function uploadReceiptToS3Storage({ fileName, pdfBuffer, folder = 'generated_receipts' } = {}) {
+  const objectPath = `${folder}/${fileName}`.replace(/^\/+/, '')
+  const result = await s3ReceiptRequest({
+    method: 'PUT',
+    objectPath,
+    body: pdfBuffer,
+    contentType: 'application/pdf'
+  })
+
+  if (result.skipped) {
+    return { uploaded: false, skipped: true }
+  }
+
+  if (result.response.ok) {
+    return {
+      uploaded: true,
+      objectPath,
+      filePath: `s3://${result.bucket}/${objectPath}`
+    }
+  }
+
+  const details = await result.response.text()
+  throw new Error(`No se pudo subir PDF a Object Storage (${result.response.status}): ${details}`)
+}
+
+export async function readReceiptFromS3Storage({ bucket, objectPath } = {}) {
+  const result = await s3ReceiptRequest({
+    method: 'GET',
+    bucket,
+    objectPath,
+    body: ''
+  })
+
+  if (result.skipped) {
+    throw new Error('Object Storage no esta configurado en el servidor')
+  }
+
+  if (!result.response.ok) {
+    const details = await result.response.text()
+    throw new Error(`No se pudo leer PDF desde Object Storage (${result.response.status}): ${details}`)
+  }
+
+  return Buffer.from(await result.response.arrayBuffer())
+}
+
 async function persistReceiptFile({ fileName, pdfBuffer } = {}) {
   const receiptsDir = getReceiptsDir()
+  const s3Config = getS3ReceiptStorageConfig()
   console.log('[receipt pdf] preparando persistencia', {
     fileName,
     pdfBytes: Buffer.isBuffer(pdfBuffer) ? pdfBuffer.length : 0,
     cwd: process.cwd(),
     receiptsDir,
-    hasSupabaseBucket: Boolean(String(process.env.SUPABASE_RECEIPTS_BUCKET || '').trim())
+    hasSupabaseBucket: Boolean(String(process.env.SUPABASE_RECEIPTS_BUCKET || '').trim()),
+    hasObjectStorageBucket: Boolean(s3Config.endpoint && s3Config.bucket && s3Config.accessKeyId && s3Config.secretAccessKey)
   })
 
   try {
@@ -99,6 +300,25 @@ async function persistReceiptFile({ fileName, pdfBuffer } = {}) {
     }
   } catch (error) {
     console.warn('[receipt pdf] fallo subiendo a Supabase Storage; se usara filesystem local:', error?.message || error)
+  }
+
+  try {
+    const storageResult = await uploadReceiptToS3Storage({ fileName, pdfBuffer })
+    if (storageResult.uploaded) {
+      console.log('[receipt pdf] PDF guardado en Object Storage', {
+        fileName,
+        objectPath: storageResult.objectPath
+      })
+      return {
+        fileName,
+        filePath: storageResult.filePath,
+        pdfBuffer: null,
+        storageObjectPath: storageResult.objectPath,
+        storageProvider: 's3'
+      }
+    }
+  } catch (error) {
+    console.warn('[receipt pdf] fallo subiendo a Object Storage; se usara filesystem local:', error?.message || error)
   }
 
   try {

@@ -5,7 +5,8 @@ import path from 'node:path'
 import { getPaidOrderReceiptReference } from '../services/orderPersistenceService.js'
 import {
   createDiagnosticReceiptPdf,
-  getReceiptsDir
+  getReceiptsDir,
+  readReceiptFromS3Storage
 } from '../services/receiptPdfService.js'
 
 function getSupabaseStorageCredentials() {
@@ -29,6 +30,18 @@ function encodeStorageObjectUrl({ supabaseUrl, bucket, objectPath }) {
 
 function parseSupabaseReceiptPath(filePath) {
   const match = String(filePath || '').match(/^supabase:\/\/([^/]+)\/(.+)$/)
+  if (!match) {
+    return null
+  }
+
+  return {
+    bucket: match[1],
+    objectPath: match[2]
+  }
+}
+
+function parseS3ReceiptPath(filePath) {
+  const match = String(filePath || '').match(/^s3:\/\/([^/]+)\/(.+)$/)
   if (!match) {
     return null
   }
@@ -104,6 +117,11 @@ async function readReceiptPdf(filePath) {
   const supabasePath = parseSupabaseReceiptPath(filePath)
   if (supabasePath) {
     return readSupabaseReceipt(supabasePath)
+  }
+
+  const s3Path = parseS3ReceiptPath(filePath)
+  if (s3Path) {
+    return readReceiptFromS3Storage(s3Path)
   }
 
   return readLocalReceipt(filePath)

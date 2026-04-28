@@ -72,6 +72,18 @@ Respuestas esperadas:
 
 Este endpoint genera un PDF pequeno de diagnostico usando el mismo servicio que los comprobantes reales.
 
+Si usas Railway Object Storage, configura estas variables en el backend:
+
+```text
+RECEIPTS_STORAGE_ENDPOINT=https://t3.storageapi.dev
+RECEIPTS_STORAGE_REGION=auto
+RECEIPTS_STORAGE_BUCKET=receipts-ctt7askmdqu6po5u
+RECEIPTS_STORAGE_ACCESS_KEY_ID=tu-access-key-id
+RECEIPTS_STORAGE_SECRET_ACCESS_KEY=tu-secret-access-key
+```
+
+No uses `RECEIPTS_DIR=/ruta/del/mount/del/volumen` para Object Storage. `RECEIPTS_DIR` solo sirve para volumen montado como carpeta.
+
 ```powershell
 $headers = @{
   "x-post-payment-retry-secret" = "un-secreto-largo"
@@ -89,4 +101,4 @@ Invoke-RestMethod `
   -Body $body
 ```
 
-Si `RECEIPTS_DIR` apunta al mount path del volumen `receipts`, el archivo devuelto en `fileName` debe aparecer en ese volumen.
+Si Object Storage esta bien configurado, la respuesta debe mostrar `storageProvider = s3` y `filePath` debe empezar con `s3://`.
