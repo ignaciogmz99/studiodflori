@@ -158,10 +158,6 @@ function scheduleClaimRecovery({
     }
   }, delayMs)
 
-  if (typeof timer.unref === 'function') {
-    timer.unref()
-  }
-
   scheduledPaidOrderRecoveries.set(recoveryKey, timer)
   return true
 }
@@ -452,7 +448,17 @@ async function processPaidOrderInternal({
   }
 
   let whatsappSkippedByClaim = false
-  if (!existingState?.whatsapp_sent_at) {
+  const shouldAttemptWhatsapp = Boolean(existingState?.pdf_generated_at)
+  if (!shouldAttemptWhatsapp && !existingState?.whatsapp_sent_at) {
+    console.log(`[${logLabel}] WhatsApp en espera hasta que el PDF este listo`, {
+      paymentId: normalizedPaymentId,
+      actor: processingActor,
+      pdfGeneratedAt: existingState?.pdf_generated_at || null,
+      pdfSkippedByClaim
+    })
+  }
+
+  if (shouldAttemptWhatsapp && !existingState?.whatsapp_sent_at) {
     let whatsappClaimed = true
     try {
       const claimResult = await claimPaidOrderProcessingStage({
@@ -484,7 +490,7 @@ async function processPaidOrderInternal({
     }
   }
 
-  if (!existingState?.whatsapp_sent_at && !whatsappSkippedByClaim) {
+  if (shouldAttemptWhatsapp && !existingState?.whatsapp_sent_at && !whatsappSkippedByClaim) {
     try {
       console.log(`[${logLabel}] preparando envio WhatsApp`, {
         paymentId: normalizedPaymentId,
