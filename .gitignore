@@ -18,6 +18,7 @@ test-results
 .env.*
 server/.env
 server/.env.*
+server/generated_receipts/
 
 # Editor directories and files
 .vscode/*

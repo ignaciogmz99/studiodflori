@@ -113,6 +113,7 @@ function createFetchMock({
   const state = {
     row: null,
     mpPaymentFetches: 0,
+    supabaseInserts: 0,
     whatsappSends: 0,
     whatsappFailures: 0,
     externalCompletionScheduled: false
@@ -202,6 +203,7 @@ function createFetchMock({
         if (failSupabaseInsert) {
           return createJsonResponse(500, { message: 'supabase insert failure' })
         }
+        state.supabaseInserts += 1
         const [incomingRow] = JSON.parse(options.body)
         state.row = {
           ...(state.row || {}),
@@ -286,6 +288,7 @@ async function scenarioHappyPathAndDuplicate() {
 
     assert.equal(firstResponse.statusCode, 200)
     assert.deepEqual(firstResponse.body, { received: true })
+    assert.equal(state.supabaseInserts, 1)
     assert.equal(state.whatsappSends, 1)
     assert.ok(state.row?.pdf_generated_at)
     assert.ok(state.row?.whatsapp_sent_at)
@@ -302,6 +305,7 @@ async function scenarioHappyPathAndDuplicate() {
 
     assert.equal(secondResponse.statusCode, 200)
     assert.deepEqual(secondResponse.body, { received: true, duplicated: true })
+    assert.equal(state.supabaseInserts, 1)
     assert.equal(state.whatsappSends, 1)
     assert.equal(state.mpPaymentFetches, 2)
   } finally {
@@ -331,6 +335,7 @@ async function scenarioPartialWhatsappFailureThenRetry() {
 
     assert.equal(firstResponse.statusCode, 500)
     assert.match(String(firstResponse.body?.error || ''), /Post-pago de Mercado Pago incompleto|notificacion/)
+    assert.equal(state.supabaseInserts, 1)
     assert.ok(state.row?.pdf_generated_at)
     assert.equal(state.row?.whatsapp_sent_at, undefined)
     assert.equal(state.whatsappFailures, 1)
@@ -348,6 +353,7 @@ async function scenarioPartialWhatsappFailureThenRetry() {
 
     assert.equal(secondResponse.statusCode, 200)
     assert.deepEqual(secondResponse.body, { received: true })
+    assert.equal(state.supabaseInserts, 1)
     assert.equal(state.whatsappSends, 1)
     assert.ok(state.row?.whatsapp_sent_at)
   } finally {
@@ -656,7 +662,7 @@ async function runSimulation() {
   assert.ok(generatedFiles.some((file) => file.includes('comprobante-999000111.pdf')))
 
   console.log('Simulaciones OK')
-  console.log('Cobertura ejecutada: aprobado, duplicado, espera por otra instancia, reintento parcial de WhatsApp, firma invalida, esquema legacy rechazado, pending, rejected, falla de Supabase, falta de token MP, query params')
+  console.log('Cobertura ejecutada: aprobado, duplicado sin segundo insert en Supabase, espera por otra instancia, reintento parcial de WhatsApp sin segundo insert, firma invalida, esquema legacy rechazado, pending, rejected, falla de Supabase, falta de token MP, query params')
 }
 
 await runSimulation()
