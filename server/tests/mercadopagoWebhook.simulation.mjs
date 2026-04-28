@@ -174,6 +174,9 @@ function createFetchMock({
         if (legacySchema && select.includes('pdf_processing_started_at,whatsapp_processing_started_at')) {
           return createJsonResponse(400, { message: 'column pdf_processing_started_at does not exist' })
         }
+        if (legacySchema && select.includes('pdf_processing_owner,whatsapp_processing_owner,processing_last_event,processing_last_error,processing_last_actor,processing_updated_at')) {
+          return createJsonResponse(400, { message: 'column pdf_processing_owner does not exist' })
+        }
         if (select.includes('payment_id,order_id,source')) {
           return createJsonResponse(200, state.row ? [state.row] : [])
         }
@@ -181,6 +184,9 @@ function createFetchMock({
           return createJsonResponse(200, state.row ? [state.row] : [])
         }
         if (select.includes('pdf_processing_started_at,whatsapp_processing_started_at')) {
+          return createJsonResponse(200, state.row ? [state.row] : [])
+        }
+        if (select.includes('pdf_processing_owner,whatsapp_processing_owner,processing_last_event,processing_last_error,processing_last_actor,processing_updated_at')) {
           return createJsonResponse(200, state.row ? [state.row] : [])
         }
         if (select.includes('payment_id,order_id,pdf_path,pdf_generated_at,whatsapp_sent_at')) {

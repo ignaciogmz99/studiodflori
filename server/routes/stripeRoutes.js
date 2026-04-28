@@ -6,7 +6,10 @@ import {
   buildTrustedOrderFromClientItems,
   validateOrderId
 } from '../services/trustedOrderService.js'
-import { processPaidOrder } from '../services/paidOrderProcessingService.js'
+import {
+  hasOnlyClaimInProgressWarnings,
+  processPaidOrder
+} from '../services/paidOrderProcessingService.js'
 import { createStripeReceiptPdf } from '../services/receiptPdfService.js'
 
 const INTENT_TTL_MS = 30 * 60 * 1000
@@ -241,6 +244,21 @@ export function createStripeRouter({ stripeSecretKey }) {
       }
 
       if (processingResult.processedWithWarnings) {
+        if (hasOnlyClaimInProgressWarnings(processingResult.stageErrors)) {
+          console.log('[Stripe client fallback] post-pago sigue en proceso en otra instancia', {
+            paymentId: processingResult.paymentId,
+            orderId: processingResult.orderId,
+            warnings: processingResult.stageErrors
+          })
+          return res.status(202).json({
+            processed: false,
+            inProgress: true,
+            paymentId: processingResult.paymentId,
+            orderId: processingResult.orderId,
+            warnings: processingResult.stageErrors
+          })
+        }
+
         return res.status(500).json({
           error: `Post-pago Stripe incompleto (${processingResult.stageErrors.join(' | ')})`
         })

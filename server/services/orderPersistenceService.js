@@ -63,7 +63,8 @@ async function detectComprobantesSchemaSupport({ supabaseUrl, supabaseKey }) {
     schemaInspected: false,
     paymentColumns: false,
     webhookStateColumns: false,
-    processingClaimColumns: false
+    processingClaimColumns: false,
+    processingDiagnosticColumns: false
   }
 
   const paymentColumnsUrl = new URL('/rest/v1/comprobantes', supabaseUrl)
@@ -126,6 +127,29 @@ async function detectComprobantesSchemaSupport({ supabaseUrl, supabaseKey }) {
         throw new Error(`No se pudo inspeccionar columnas de claim de webhook: ${processingClaimResponse.status} ${details}`)
       }
     }
+
+    const processingDiagnosticUrl = new URL('/rest/v1/comprobantes', supabaseUrl)
+    processingDiagnosticUrl.searchParams.set(
+      'select',
+      'pdf_processing_owner,whatsapp_processing_owner,processing_last_event,processing_last_error,processing_last_actor,processing_updated_at'
+    )
+    processingDiagnosticUrl.searchParams.set('limit', '1')
+
+    const processingDiagnosticResponse = await supabaseRequest({
+      url: processingDiagnosticUrl.toString(),
+      supabaseKey
+    })
+
+    if (processingDiagnosticResponse.ok) {
+      support.processingDiagnosticColumns = true
+    } else {
+      const details = await processingDiagnosticResponse.text()
+      if (processingDiagnosticResponse.status === 400 && /pdf_processing_owner|whatsapp_processing_owner|processing_last_event|processing_last_error|processing_last_actor|processing_updated_at/i.test(details)) {
+        console.warn('[comprobantes] la tabla no tiene columnas de diagnostico de post-pago; se usaran solo logs del servidor')
+      } else {
+        throw new Error(`No se pudo inspeccionar columnas de diagnostico de webhook: ${processingDiagnosticResponse.status} ${details}`)
+      }
+    }
   } catch (error) {
     console.warn('[comprobantes] no se pudo verificar soporte de columnas:', error?.message || error)
     return support
@@ -148,11 +172,26 @@ function assertModernComprobantesSchema(schemaSupport) {
 
 function buildProcessingSelect(schemaSupport) {
   const baseColumns = 'payment_id,order_id,source,pdf_path,pdf_generated_at,whatsapp_sent_at'
+  const extraColumns = []
+
   if (schemaSupport?.processingClaimColumns) {
-    return `${baseColumns},pdf_processing_started_at,whatsapp_processing_started_at`
+    extraColumns.push('pdf_processing_started_at', 'whatsapp_processing_started_at')
   }
 
-  return baseColumns
+  if (schemaSupport?.processingDiagnosticColumns) {
+    extraColumns.push(
+      'pdf_processing_owner',
+      'whatsapp_processing_owner',
+      'processing_last_event',
+      'processing_last_error',
+      'processing_last_actor',
+      'processing_updated_at'
+    )
+  }
+
+  return extraColumns.length > 0
+    ? `${baseColumns},${extraColumns.join(',')}`
+    : baseColumns
 }
 
 async function findExistingPaidOrder({
@@ -391,7 +430,13 @@ export async function updatePaidOrderProcessingState({
   pdfGeneratedAt,
   whatsappSentAt,
   pdfProcessingStartedAt,
-  whatsappProcessingStartedAt
+  whatsappProcessingStartedAt,
+  pdfProcessingOwner,
+  whatsappProcessingOwner,
+  processingLastEvent,
+  processingLastError,
+  processingLastActor,
+  processingUpdatedAt
 } = {}) {
   const { supabaseUrl, supabaseKey } = getSupabaseCredentials()
   if (!supabaseUrl || !supabaseKey) {
@@ -421,6 +466,24 @@ export async function updatePaidOrderProcessingState({
   }
   if (schemaSupport.processingClaimColumns && whatsappProcessingStartedAt !== undefined) {
     patch.whatsapp_processing_started_at = whatsappProcessingStartedAt || null
+  }
+  if (schemaSupport.processingDiagnosticColumns && pdfProcessingOwner !== undefined) {
+    patch.pdf_processing_owner = String(pdfProcessingOwner || '').trim() || null
+  }
+  if (schemaSupport.processingDiagnosticColumns && whatsappProcessingOwner !== undefined) {
+    patch.whatsapp_processing_owner = String(whatsappProcessingOwner || '').trim() || null
+  }
+  if (schemaSupport.processingDiagnosticColumns && processingLastEvent !== undefined) {
+    patch.processing_last_event = String(processingLastEvent || '').trim() || null
+  }
+  if (schemaSupport.processingDiagnosticColumns && processingLastError !== undefined) {
+    patch.processing_last_error = String(processingLastError || '').trim() || null
+  }
+  if (schemaSupport.processingDiagnosticColumns && processingLastActor !== undefined) {
+    patch.processing_last_actor = String(processingLastActor || '').trim() || null
+  }
+  if (schemaSupport.processingDiagnosticColumns && processingUpdatedAt !== undefined) {
+    patch.processing_updated_at = processingUpdatedAt || null
   }
 
   if (Object.keys(patch).length === 0) {
@@ -461,7 +524,9 @@ export async function claimPaidOrderProcessingStage({
   paymentId,
   orderId,
   stage,
-  claimTimeoutMs = PROCESSING_CLAIM_TIMEOUT_MS
+  claimTimeoutMs = PROCESSING_CLAIM_TIMEOUT_MS,
+  processingOwner,
+  processingEvent
 } = {}) {
   const { supabaseUrl, supabaseKey } = getSupabaseCredentials()
   if (!supabaseUrl || !supabaseKey) {
@@ -489,11 +554,13 @@ export async function claimPaidOrderProcessingStage({
   const stageConfig = {
     pdf: {
       claimColumn: 'pdf_processing_started_at',
-      finalColumn: 'pdf_generated_at'
+      finalColumn: 'pdf_generated_at',
+      ownerColumn: 'pdf_processing_owner'
     },
     whatsapp: {
       claimColumn: 'whatsapp_processing_started_at',
-      finalColumn: 'whatsapp_sent_at'
+      finalColumn: 'whatsapp_sent_at',
+      ownerColumn: 'whatsapp_processing_owner'
     }
   }[normalizedStage]
 
@@ -515,13 +582,27 @@ export async function claimPaidOrderProcessingStage({
     url.searchParams.set('order_id', `eq.${normalizedOrderId}`)
   }
 
+  const patch = {
+    [stageConfig.claimColumn]: now.toISOString()
+  }
+
+  if (schemaSupport.processingDiagnosticColumns) {
+    if (processingOwner !== undefined) {
+      patch[stageConfig.ownerColumn] = String(processingOwner || '').trim() || null
+      patch.processing_last_actor = String(processingOwner || '').trim() || null
+    }
+    if (processingEvent !== undefined) {
+      patch.processing_last_event = String(processingEvent || '').trim() || null
+    }
+    patch.processing_last_error = null
+    patch.processing_updated_at = now.toISOString()
+  }
+
   const response = await supabaseRequest({
     url: url.toString(),
     supabaseKey,
     method: 'PATCH',
-    body: {
-      [stageConfig.claimColumn]: now.toISOString()
-    },
+    body: patch,
     prefer: 'return=representation'
   })
 
