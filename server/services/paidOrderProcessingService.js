@@ -373,7 +373,7 @@ async function processPaidOrderInternal({
         stage: 'pdf',
         claimTimeoutMs: PDF_STAGE_CLAIM_TIMEOUT_MS,
         processingOwner: processingActor,
-        processingEvent: 'pdf_claimed'
+        processingEvent: 'pdf_generating'
       })
       pdfClaimed = Boolean(claimResult.claimed)
       if (claimResult.row) {
@@ -398,13 +398,9 @@ async function processPaidOrderInternal({
 
   if (!existingState?.pdf_generated_at && !pdfSkippedByClaim) {
     try {
-      await recordProcessingEvent({
+      console.log(`[${logLabel}] iniciando generacion PDF`, {
         paymentId: normalizedPaymentId,
-        orderId: normalizedOrderId,
-        logLabel,
-        event: 'pdf_generating',
-        actor: processingActor,
-        pdfProcessingOwner: processingActor
+        actor: processingActor
       })
       const pdfResult = await createReceiptPdf()
       await updatePaidOrderProcessingState({
@@ -465,7 +461,7 @@ async function processPaidOrderInternal({
         stage: 'whatsapp',
         claimTimeoutMs: WHATSAPP_STAGE_CLAIM_TIMEOUT_MS,
         processingOwner: processingActor,
-        processingEvent: 'whatsapp_claimed'
+        processingEvent: 'whatsapp_sending'
       })
       whatsappClaimed = Boolean(claimResult.claimed)
       if (claimResult.row) {
@@ -499,14 +495,6 @@ async function processPaidOrderInternal({
         templateName: String(whatsappTemplateName || '').trim() || 'text',
         templateLanguage: String(whatsappTemplateLanguageCode || 'es_MX').trim(),
         apiVersion: String(whatsappApiVersion || 'v22.0').trim()
-      })
-      await recordProcessingEvent({
-        paymentId: normalizedPaymentId,
-        orderId: normalizedOrderId,
-        logLabel,
-        event: 'whatsapp_sending',
-        actor: processingActor,
-        whatsappProcessingOwner: processingActor
       })
       const whatsappTemplateParameters = buildWhatsAppTemplateParameters({
         orderId: normalizedOrderId,
