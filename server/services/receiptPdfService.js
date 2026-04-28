@@ -150,6 +150,26 @@ async function persistReceiptFile({ fileName, pdfBuffer } = {}) {
   }
 }
 
+export async function createDiagnosticReceiptPdf({ label = 'railway-receipts-test' } = {}) {
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' })
+  const createdAt = new Date().toISOString()
+  const safeTimestamp = createdAt.replace(/[^0-9A-Z]/gi, '')
+  const fileName = `diagnostico-receipts-${safeTimestamp}.pdf`
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(18)
+  doc.text('Diagnostico de comprobantes', 40, 60)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(12)
+  doc.text(`Label: ${String(label || '').trim() || 'railway-receipts-test'}`, 40, 95)
+  doc.text(`Creado: ${createdAt}`, 40, 115)
+  doc.text(`Directorio configurado: ${getReceiptsDir()}`, 40, 135, { maxWidth: 500 })
+  doc.text('Si ves este archivo en el volumen receipts, el mount path esta funcionando.', 40, 175, { maxWidth: 500 })
+
+  const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
+  return persistReceiptFile({ fileName, pdfBuffer })
+}
+
 function drawSectionTitle(doc, colors, marginX, contentWidth, cursorY, title) {
   doc.setFillColor(...colors.accent)
   doc.roundedRect(marginX, cursorY, contentWidth, 24, 6, 6, 'F')

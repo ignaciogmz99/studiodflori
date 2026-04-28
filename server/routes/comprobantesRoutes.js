@@ -3,7 +3,10 @@ import { Router } from 'express'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { getPaidOrderReceiptReference } from '../services/orderPersistenceService.js'
-import { getReceiptsDir } from '../services/receiptPdfService.js'
+import {
+  createDiagnosticReceiptPdf,
+  getReceiptsDir
+} from '../services/receiptPdfService.js'
 
 function getSupabaseStorageCredentials() {
   return {
@@ -44,6 +47,17 @@ function buildReceiptFileName({ paymentId, filePath }) {
 
   const safePaymentId = String(paymentId || 'sin-folio').replace(/[^a-zA-Z0-9-_]/g, '') || 'sin-folio'
   return `comprobante-${safePaymentId}.pdf`
+}
+
+function isAuthorizedReceiptDiagnostic(req) {
+  const expectedSecret = String(process.env.POST_PAYMENT_RETRY_SECRET || '').trim()
+  if (!expectedSecret) {
+    return false
+  }
+
+  const bearerToken = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim()
+  const headerSecret = String(req.headers['x-post-payment-retry-secret'] || '').trim()
+  return bearerToken === expectedSecret || headerSecret === expectedSecret
 }
 
 async function readSupabaseReceipt({ bucket, objectPath }) {
@@ -97,6 +111,37 @@ async function readReceiptPdf(filePath) {
 
 export function createComprobantesRouter() {
   const router = Router()
+
+  router.post('/diagnostics/test-receipt', async (req, res) => {
+    try {
+      if (!isAuthorizedReceiptDiagnostic(req)) {
+        return res.status(process.env.POST_PAYMENT_RETRY_SECRET ? 401 : 500).json({
+          error: process.env.POST_PAYMENT_RETRY_SECRET
+            ? 'No autorizado'
+            : 'Falta POST_PAYMENT_RETRY_SECRET para habilitar diagnosticos protegidos'
+        })
+      }
+
+      const result = await createDiagnosticReceiptPdf({
+        label: req.body?.label || 'railway-receipts-test'
+      })
+
+      return res.status(201).json({
+        ok: true,
+        fileName: result.fileName,
+        filePath: result.filePath,
+        receiptsDir: getReceiptsDir(),
+        storageProvider: result.storageProvider || 'unknown',
+        alreadyExisted: Boolean(result.alreadyExisted)
+      })
+    } catch (error) {
+      console.warn('[comprobantes] fallo creando PDF diagnostico:', error?.message || error)
+      return res.status(500).json({
+        ok: false,
+        error: error?.message || 'No se pudo generar PDF diagnostico'
+      })
+    }
+  })
 
   router.get('/:paymentId/status', async (req, res) => {
     try {

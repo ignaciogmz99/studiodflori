@@ -67,3 +67,26 @@ Respuestas esperadas:
 - `200`: PDF/WhatsApp quedaron procesados o ya estaban procesados.
 - `202`: otra instancia sigue procesando; espera unos segundos y revisa los logs.
 - `500`: ya es un error real; revisar `processing_last_error` y los logs `[receipt pdf]` o `[whatsapp]`.
+
+## Probar guardado de PDF sin pago
+
+Este endpoint genera un PDF pequeno de diagnostico usando el mismo servicio que los comprobantes reales.
+
+```powershell
+$headers = @{
+  "x-post-payment-retry-secret" = "un-secreto-largo"
+  "Content-Type" = "application/json"
+}
+
+$body = @{
+  label = "railway-receipts-test"
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+  -Method Post `
+  -Uri "https://studiodflori-production.up.railway.app/api/comprobantes/diagnostics/test-receipt" `
+  -Headers $headers `
+  -Body $body
+```
+
+Si `RECEIPTS_DIR` apunta al mount path del volumen `receipts`, el archivo devuelto en `fileName` debe aparecer en ese volumen.
