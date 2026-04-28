@@ -476,6 +476,21 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
         })
       }
 
+      if (req.body?.regeneratePdf === true || req.body?.forcePdf === true) {
+        await updatePaidOrderProcessingState({
+          paymentId,
+          orderId,
+          pdfPath: null,
+          pdfGeneratedAt: null,
+          pdfProcessingStartedAt: null,
+          pdfProcessingOwner: null,
+          processingLastEvent: 'manual_retry_pdf_reset',
+          processingLastError: null,
+          processingLastActor: 'MP manual retry',
+          processingUpdatedAt: new Date().toISOString()
+        })
+      }
+
       const processingResult = await processApprovedMercadoPagoPostPayment({
         paymentResponse: payment,
         metadata,

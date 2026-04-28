@@ -346,6 +346,21 @@ export function createStripeRouter({ stripeSecretKey }) {
         })
       }
 
+      if (req.body?.regeneratePdf === true || req.body?.forcePdf === true) {
+        await updatePaidOrderProcessingState({
+          paymentId: paymentIntentId,
+          orderId: normalizedOrderId,
+          pdfPath: null,
+          pdfGeneratedAt: null,
+          pdfProcessingStartedAt: null,
+          pdfProcessingOwner: null,
+          processingLastEvent: 'manual_retry_pdf_reset',
+          processingLastError: null,
+          processingLastActor: 'Stripe manual retry',
+          processingUpdatedAt: new Date().toISOString()
+        })
+      }
+
       const processingResult = await runStripePostPaymentFallback({
         paymentIntent,
         orderId: normalizedOrderId,

@@ -62,6 +62,18 @@ $body = @{
 } | ConvertTo-Json
 ```
 
+## Regenerar PDF para moverlo a Object Storage
+
+Si el pago ya tenia PDF local en `/app/server/generated_receipts`, usa `regeneratePdf = $true` para borrar solo los campos del PDF y generarlo otra vez.
+
+```powershell
+$body = @{
+  paymentId = "156723935366"
+  orderId = "ord_1777340661284_083u5njuiw"
+  regeneratePdf = $true
+} | ConvertTo-Json
+```
+
 Respuestas esperadas:
 
 - `200`: PDF/WhatsApp quedaron procesados o ya estaban procesados.
