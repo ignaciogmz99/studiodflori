@@ -1,11 +1,22 @@
 /* global Buffer */
-import { access, mkdir, writeFile } from 'node:fs/promises'
+import { access, mkdir, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { jsPDF } from 'jspdf'
 
 const serviceDir = path.dirname(fileURLToPath(import.meta.url))
-const receiptsDir = path.join(serviceDir, '..', 'generated_receipts')
+const defaultReceiptsDir = path.join(serviceDir, '..', 'generated_receipts')
+
+export function getReceiptsDir() {
+  const configuredDir = String(process.env.RECEIPTS_DIR || '').trim()
+  if (!configuredDir) {
+    return defaultReceiptsDir
+  }
+
+  return path.isAbsolute(configuredDir)
+    ? configuredDir
+    : path.resolve(process.cwd(), configuredDir)
+}
 
 function sanitizeFileSegment(value, fallback = 'sin-folio') {
   const normalized = String(value || '')
@@ -60,9 +71,23 @@ async function uploadReceiptToSupabaseStorage({ fileName, pdfBuffer, folder = 'g
 }
 
 async function persistReceiptFile({ fileName, pdfBuffer } = {}) {
+  const receiptsDir = getReceiptsDir()
+  console.log('[receipt pdf] preparando persistencia', {
+    fileName,
+    pdfBytes: Buffer.isBuffer(pdfBuffer) ? pdfBuffer.length : 0,
+    cwd: process.cwd(),
+    receiptsDir,
+    hasSupabaseBucket: Boolean(String(process.env.SUPABASE_RECEIPTS_BUCKET || '').trim())
+  })
+
   try {
     const storageResult = await uploadReceiptToSupabaseStorage({ fileName, pdfBuffer })
     if (storageResult.uploaded) {
+      console.log('[receipt pdf] PDF guardado en Supabase Storage', {
+        fileName,
+        objectPath: storageResult.objectPath,
+        alreadyExisted: Boolean(storageResult.alreadyExisted)
+      })
       return {
         fileName,
         filePath: storageResult.filePath,
@@ -76,11 +101,22 @@ async function persistReceiptFile({ fileName, pdfBuffer } = {}) {
     console.warn('[receipt pdf] fallo subiendo a Supabase Storage; se usara filesystem local:', error?.message || error)
   }
 
-  await mkdir(receiptsDir, { recursive: true })
+  try {
+    await mkdir(receiptsDir, { recursive: true })
+  } catch (error) {
+    throw new Error(`No se pudo preparar carpeta local de comprobantes (${receiptsDir}): ${error?.message || error}`)
+  }
+
   const filePath = path.join(receiptsDir, fileName)
 
   try {
     await access(filePath)
+    const fileStats = await stat(filePath).catch(() => null)
+    console.log('[receipt pdf] PDF local ya existia', {
+      fileName,
+      filePath,
+      sizeBytes: fileStats?.size ?? null
+    })
     return {
       fileName,
       filePath,
@@ -92,7 +128,18 @@ async function persistReceiptFile({ fileName, pdfBuffer } = {}) {
     // File does not exist yet; continue with generation.
   }
 
-  await writeFile(filePath, pdfBuffer)
+  try {
+    await writeFile(filePath, pdfBuffer)
+  } catch (error) {
+    throw new Error(`No se pudo escribir PDF local (${filePath}): ${error?.message || error}`)
+  }
+
+  const fileStats = await stat(filePath).catch(() => null)
+  console.log('[receipt pdf] PDF local escrito', {
+    fileName,
+    filePath,
+    sizeBytes: fileStats?.size ?? null
+  })
 
   return {
     fileName,

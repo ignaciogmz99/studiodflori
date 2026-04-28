@@ -2,11 +2,8 @@
 import { Router } from 'express'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { getPaidOrderReceiptReference } from '../services/orderPersistenceService.js'
-
-const routeDir = path.dirname(fileURLToPath(import.meta.url))
-const generatedReceiptsDir = path.resolve(routeDir, '..', 'generated_receipts')
+import { getReceiptsDir } from '../services/receiptPdfService.js'
 
 function getSupabaseStorageCredentials() {
   return {
@@ -73,6 +70,7 @@ async function readSupabaseReceipt({ bucket, objectPath }) {
 
 async function readLocalReceipt(filePath) {
   const resolvedPath = path.resolve(String(filePath || ''))
+  const generatedReceiptsDir = path.resolve(getReceiptsDir())
   const isInsideReceiptsDir =
     resolvedPath === generatedReceiptsDir ||
     resolvedPath.startsWith(`${generatedReceiptsDir}${path.sep}`)
@@ -81,6 +79,10 @@ async function readLocalReceipt(filePath) {
     throw new Error('Ruta de comprobante local no permitida')
   }
 
+  console.log('[comprobantes] leyendo PDF local', {
+    filePath: resolvedPath,
+    receiptsDir: generatedReceiptsDir
+  })
   return readFile(resolvedPath)
 }
 

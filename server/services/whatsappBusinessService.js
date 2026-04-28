@@ -64,6 +64,40 @@ function compactSingleLine(value, fallback = 'N/A', maxLength = 160) {
   return normalized.slice(0, maxLength)
 }
 
+function maskIdentifier(value, visibleDigits = 4) {
+  const normalized = String(value || '').trim()
+  if (!normalized) {
+    return ''
+  }
+
+  const visible = normalized.slice(-visibleDigits)
+  return `${'*'.repeat(Math.max(normalized.length - visible.length, 0))}${visible}`
+}
+
+function summarizeTemplateParameters(parameters = []) {
+  if (!Array.isArray(parameters)) {
+    return []
+  }
+
+  return parameters.map((parameter, index) => {
+    if (parameter !== null && typeof parameter === 'object') {
+      return {
+        index,
+        name: parameter.name || null,
+        hasValue: Boolean(String(parameter.value || '').trim()),
+        valueLength: String(parameter.value || '').length
+      }
+    }
+
+    return {
+      index,
+      name: null,
+      hasValue: Boolean(String(parameter || '').trim()),
+      valueLength: String(parameter || '').length
+    }
+  })
+}
+
 export function buildWhatsAppReceiptMessage({
   provider,
   paymentId,
@@ -195,6 +229,11 @@ export async function sendWhatsAppBusinessMessage({
   const recipient = normalizeRecipientPhone(whatsappRecipient)
 
   if (!accessToken || !phoneNumberId || !recipient) {
+    console.warn('[whatsapp] configuracion incompleta', {
+      hasAccessToken: Boolean(accessToken),
+      hasPhoneNumberId: Boolean(phoneNumberId),
+      hasRecipient: Boolean(recipient)
+    })
     throw new Error('Faltan variables de WhatsApp Business (token, phone_number_id o destinatario)')
   }
 
@@ -242,12 +281,35 @@ export async function sendWhatsAppBusinessMessage({
     body: JSON.stringify(payload)
   })
 
+  console.log('[whatsapp] solicitud enviada a Meta', {
+    apiVersion: String(whatsappApiVersion || 'v22.0'),
+    phoneNumberId: maskIdentifier(phoneNumberId),
+    recipient: maskIdentifier(recipient),
+    recipientDigits: recipient.length,
+    mode: whatsappTemplateName ? 'template' : 'text',
+    templateName: whatsappTemplateName ? String(whatsappTemplateName) : null,
+    templateLanguage: whatsappTemplateName ? String(whatsappTemplateLanguageCode || 'es_MX') : null,
+    bodyParameterCount: Array.isArray(whatsappTemplateParameters) ? whatsappTemplateParameters.length : 0,
+    bodyParameters: summarizeTemplateParameters(whatsappTemplateParameters),
+    status: response.status,
+    ok: response.ok
+  })
+
   if (!response.ok) {
     const details = await response.text()
+    console.warn('[whatsapp] Meta rechazo el envio', {
+      status: response.status,
+      details
+    })
     throw new Error(`WhatsApp Business rechazo el envio (${response.status}): ${details}`)
   }
 
   const responsePayload = await response.json()
+  console.log('[whatsapp] Meta acepto el envio', {
+    recipient: maskIdentifier(recipient),
+    messageId: responsePayload?.messages?.[0]?.id || 'unknown'
+  })
+
   return {
     recipient,
     payload,
