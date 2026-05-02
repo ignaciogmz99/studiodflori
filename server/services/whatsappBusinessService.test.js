@@ -62,6 +62,13 @@ describe('buildWhatsAppTemplateParameters', () => {
     expect(location.value).toBe('Se recoge en tienda')
   })
 
+  it('muestra el curso y lugar para fulfillment_type course', () => {
+    const params = buildWhatsAppTemplateParameters({ ...base, deliveryType: 'course', deliveryCity: 'Margot Expo' })
+    const location = params.find((p) => p.name === 'delivery_location')
+    expect(location.value).toContain('Curso')
+    expect(location.value).toContain('Margot Expo')
+  })
+
   it('usa customer_name como recipient_name si no hay destinatario diferente', () => {
     const params = buildWhatsAppTemplateParameters({ ...base, recipientName: '' })
     const recipient = params.find((p) => p.name === 'recipient_name')
@@ -140,6 +147,21 @@ describe('buildWhatsAppReceiptMessage', () => {
     expect(msg).toContain('- Tulipanes x1')
   })
 
+  it('marca el mensaje como curso cuando fulfillment_type es course', () => {
+    const msg = buildWhatsAppReceiptMessage({
+      ...base,
+      deliveryType: 'course',
+      deliveryCity: 'Margot Expo',
+      deliveryAddress: '',
+      deliveryNeighborhood: '',
+      deliveryPostalCode: '',
+      cartItemsSummary: 'Curso intensivo floral x1'
+    })
+    expect(msg).toContain('CURSO CONFIRMADO')
+    expect(msg).toContain('Lugar: Margot Expo')
+    expect(msg).toContain('- Curso intensivo floral x1')
+  })
+
   it('incluye el mensaje de flor cuando existe', () => {
     const msg = buildWhatsAppReceiptMessage({ ...base, flowerMessage: 'Feliz cumpleanos' })
     expect(msg).toContain('Feliz cumpleanos')
@@ -151,7 +173,8 @@ describe('buildWhatsAppReceiptMessage', () => {
   })
 
   it('usa monto en minor units (centavos) cuando no hay amount directo', () => {
-    const { amount, ...rest } = base
+    const rest = { ...base }
+    delete rest.amount
     const msg = buildWhatsAppReceiptMessage({ ...rest, amountInMinor: 145000 }) // 1450.00
     expect(msg).toContain('1450.00 MXN')
   })

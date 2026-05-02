@@ -1,6 +1,8 @@
 /* global process */
 const MAX_ITEMS = 50
 const MAX_QTY_PER_ITEM = 20
+const COURSE_PRODUCT_ID = 'Curso'
+const COURSE_TABLES = ['Curso', 'curso']
 
 function getSupabaseCredentials() {
   const supabaseUrl = String(process.env.SUPABASE_URL || '').trim()
@@ -49,13 +51,45 @@ function quotePostgrestValue(value) {
   return `"${String(value).replaceAll('"', '')}"`
 }
 
+async function supabaseRequest({ url, supabaseKey }) {
+  return fetch(url.toString(), {
+    headers: {
+      apikey: supabaseKey,
+      Authorization: `Bearer ${supabaseKey}`
+    }
+  })
+}
+
 async function fetchProductsByIds(productIds) {
   const { supabaseUrl, supabaseKey } = getSupabaseCredentials()
   if (!supabaseUrl || !supabaseKey) {
     throw new Error('Faltan SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en server/.env')
   }
 
+  const products = await fetchCatalogRowsByIds({
+    supabaseUrl,
+    supabaseKey,
+    tableName: 'productos',
+    productIds
+  })
+  const productMap = new Map(products.map((product) => [String(product.id), product]))
+  const missingIds = productIds.filter((productId) => !productMap.has(productId))
+
+  if (missingIds.includes(COURSE_PRODUCT_ID)) {
+    const courseProduct = await fetchCourseProduct({ supabaseUrl, supabaseKey })
+    if (courseProduct) {
+      productMap.set(COURSE_PRODUCT_ID, courseProduct)
+    }
+  }
+
+  return productIds
+    .map((productId) => productMap.get(productId))
+    .filter(Boolean)
+}
+
+async function fetchCatalogRowsByIds({ supabaseUrl, supabaseKey, tableName, productIds }) {
   const url = new URL('/rest/v1/productos', supabaseUrl)
+  url.pathname = `/rest/v1/${encodeURIComponent(tableName)}`
   url.searchParams.set('select', 'id,precio,activo')
   url.searchParams.set('id', `in.(${productIds.map(quotePostgrestValue).join(',')})`)
 
@@ -73,6 +107,66 @@ async function fetchProductsByIds(productIds) {
 
   const payload = await response.json()
   return Array.isArray(payload) ? payload : []
+}
+
+function normalizeCourseProduct(record) {
+  if (!record || typeof record !== 'object') {
+    return null
+  }
+
+  return {
+    id: COURSE_PRODUCT_ID,
+    nombre: record.nombre || record.name || record.titulo || 'Curso intensivo floral para principiantes',
+    precio: record.precio ?? record.price ?? record.costo ?? record.monto ?? record.precio_reserva ?? record.precioReserva,
+    activo: record.activo ?? record.active ?? true
+  }
+}
+
+async function fetchCourseProductFromTable({ supabaseUrl, supabaseKey, tableName }) {
+  const byIdUrl = new URL(`/rest/v1/${encodeURIComponent(tableName)}`, supabaseUrl)
+  byIdUrl.searchParams.set('select', '*')
+  byIdUrl.searchParams.set('id', `eq.${COURSE_PRODUCT_ID}`)
+  byIdUrl.searchParams.set('limit', '1')
+
+  const byIdResponse = await supabaseRequest({
+    url: byIdUrl,
+    supabaseKey
+  })
+
+  if (byIdResponse.ok) {
+    const payload = await byIdResponse.json()
+    const courseProduct = normalizeCourseProduct(Array.isArray(payload) ? payload[0] : payload)
+    if (courseProduct) {
+      return courseProduct
+    }
+  }
+
+  const firstRowUrl = new URL(`/rest/v1/${encodeURIComponent(tableName)}`, supabaseUrl)
+  firstRowUrl.searchParams.set('select', '*')
+  firstRowUrl.searchParams.set('limit', '1')
+
+  const firstRowResponse = await supabaseRequest({
+    url: firstRowUrl,
+    supabaseKey
+  })
+
+  if (!firstRowResponse.ok) {
+    return null
+  }
+
+  const payload = await firstRowResponse.json()
+  return normalizeCourseProduct(Array.isArray(payload) ? payload[0] : payload)
+}
+
+async function fetchCourseProduct({ supabaseUrl, supabaseKey }) {
+  for (const tableName of COURSE_TABLES) {
+    const courseProduct = await fetchCourseProductFromTable({ supabaseUrl, supabaseKey, tableName })
+    if (courseProduct) {
+      return courseProduct
+    }
+  }
+
+  return null
 }
 
 export function validateOrderId(orderId) {

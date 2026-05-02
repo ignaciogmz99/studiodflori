@@ -4,6 +4,10 @@ const STRIPE_SDK_URL = 'https://js.stripe.com/v3/'
 const STRIPE_CARD_NUMBER_CONTAINER_ID = 'stripe-card-number-element'
 const STRIPE_CARD_EXPIRY_CONTAINER_ID = 'stripe-card-expiry-element'
 const STRIPE_CARD_CVC_CONTAINER_ID = 'stripe-card-cvc-element'
+const COURSE_PRODUCT_ID = 'Curso'
+const COURSE_PLACE = 'Margot Expo'
+const COURSE_DATE = 'Fecha por confirmar'
+const COURSE_TIME = '10:00 am a 5:00 pm'
 
 const BRAND_LABELS = {
   visa:       'VISA',
@@ -82,6 +86,10 @@ function ensureStripeSdk() {
   })
 
   return stripeScriptPromise
+}
+
+function isCourseItem(item) {
+  return item?.itemType === 'course' || item?.id === COURSE_PRODUCT_ID
 }
 
 function StripePayment({
@@ -194,7 +202,8 @@ function StripePayment({
       setErrorMessage('')
       setPaymentMessage('')
 
-      const isStorePickup = deliveryDetails.fulfillmentType === 'pickup'
+      const isCourseCheckout = items.length > 0 && items.every(isCourseItem)
+      const isStorePickup = isCourseCheckout || deliveryDetails.fulfillmentType === 'pickup'
       const createIntentResponse = await withTimeout((signal) => fetch(`${apiBaseUrl}/api/stripe/create-payment-intent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -210,10 +219,10 @@ function StripePayment({
             email: ''
           },
           delivery: {
-            fulfillmentType: deliveryDetails.fulfillmentType || 'delivery',
-            city: isStorePickup ? null : selectedDeliveryCity,
-            date: selectedDeliveryDate,
-            time: selectedDeliveryTime,
+            fulfillmentType: isCourseCheckout ? 'course' : (deliveryDetails.fulfillmentType || 'delivery'),
+            city: isCourseCheckout ? COURSE_PLACE : (isStorePickup ? null : selectedDeliveryCity),
+            date: isCourseCheckout ? COURSE_DATE : selectedDeliveryDate,
+            time: isCourseCheckout ? COURSE_TIME : selectedDeliveryTime,
             recipientType: deliveryDetails.recipientType || 'self',
             recipientName: deliveryDetails.recipientType === 'other' ? deliveryDetails.recipientName : null,
             streetAddress: isStorePickup ? null : deliveryDetails.streetAddress,

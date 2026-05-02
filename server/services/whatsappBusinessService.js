@@ -40,6 +40,11 @@ function buildLocationLine({ deliveryAddress, deliveryNeighborhood, deliveryCity
     .join(', ')
 }
 
+function isCourseFulfillment(deliveryType) {
+  const normalized = String(deliveryType || '').trim().toLowerCase()
+  return normalized === 'course' || normalized === 'curso'
+}
+
 function formatCartItemsSummary(cartItemsSummary) {
   const rawValue = String(cartItemsSummary || '').trim()
   if (!rawValue) {
@@ -131,9 +136,10 @@ export function buildWhatsAppReceiptMessage({
     deliveryPostalCode
   })
   const productLines = formatCartItemsSummary(cartItemsSummary)
+  const isCourse = isCourseFulfillment(deliveryType)
 
   const lines = [
-    'PEDIDO CONFIRMADO',
+    isCourse ? 'CURSO CONFIRMADO' : 'PEDIDO CONFIRMADO',
     '',
     'Pago',
     `Proveedor: ${provider || 'N/A'}`,
@@ -146,12 +152,12 @@ export function buildWhatsAppReceiptMessage({
     `Telefono: ${customerPhone || 'N/A'}`,
     `Email: ${customerEmail || 'N/A'}`,
     '',
-    'Entrega',
-    `Tipo: ${deliveryType || 'N/A'}`,
+    isCourse ? 'Curso' : 'Entrega',
+    `Tipo: ${isCourse ? 'Curso' : (deliveryType || 'N/A')}`,
     `Fecha: ${deliveryDate || 'N/A'}`,
     `Horario: ${deliveryTime || 'N/A'}`,
     `Recibe: ${recipientName || customerName || 'N/A'}`,
-    `Ubicacion: ${locationLine || deliveryCity || 'N/A'}`,
+    `${isCourse ? 'Lugar' : 'Ubicacion'}: ${locationLine || deliveryCity || (isCourse ? 'Margot Expo' : 'N/A')}`,
     ''
   ]
 
@@ -198,6 +204,9 @@ export function buildWhatsAppTemplateParameters({
     deliveryCity,
     deliveryPostalCode
   })
+  const isCourse = isCourseFulfillment(deliveryType)
+  const isPickup = String(deliveryType || '').trim().toLowerCase() === 'pickup'
+  const courseLocation = locationLine || deliveryCity
 
   return [
     { name: 'order_id',             value: compactSingleLine(orderId) },
@@ -207,7 +216,7 @@ export function buildWhatsAppTemplateParameters({
     { name: 'cart_items',           value: compactSingleLine(cartItemsSummary, 'Sin detalle', 300) },
     { name: 'delivery_date',        value: compactSingleLine(deliveryDate) },
     { name: 'delivery_time',        value: compactSingleLine(deliveryTime) },
-    { name: 'delivery_location',    value: String(deliveryType || '').trim().toLowerCase() === 'pickup' ? 'Se recoge en tienda' : compactSingleLine(locationLine || deliveryCity) },
+    { name: 'delivery_location',    value: isCourse ? compactSingleLine(courseLocation ? `Curso en ${courseLocation}` : 'Curso en Margot Expo') : (isPickup ? 'Se recoge en tienda' : compactSingleLine(locationLine || deliveryCity)) },
     { name: 'customer_phone',       value: compactSingleLine(customerPhone) },
     { name: 'flower_message',       value: compactSingleLine(flowerMessage, 'Sin mensaje', 300) },
     { name: 'special_instructions', value: compactSingleLine(specialInstructions, 'Sin instrucciones', 300) }

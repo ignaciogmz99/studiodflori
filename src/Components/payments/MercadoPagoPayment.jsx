@@ -3,6 +3,10 @@ import { useEffect, useRef, useState } from 'react'
 const MP_SDK_URL = 'https://sdk.mercadopago.com/js/v2'
 const BRICK_CONTAINER_ID = 'mp-card-payment-brick-container'
 const PAYMENT_REQUEST_TIMEOUT_MS = 30000
+const COURSE_PRODUCT_ID = 'Curso'
+const COURSE_PLACE = 'Margot Expo'
+const COURSE_DATE = 'Fecha por confirmar'
+const COURSE_TIME = '10:00 am a 5:00 pm'
 
 let mercadoPagoScriptPromise = null
 
@@ -77,6 +81,10 @@ function ensureMercadoPagoSdk() {
   })
 
   return mercadoPagoScriptPromise
+}
+
+function isCourseItem(item) {
+  return item?.itemType === 'course' || item?.id === COURSE_PRODUCT_ID
 }
 
 async function safeUnmountBrick(controller) {
@@ -207,7 +215,8 @@ function MercadoPagoPayment({
                 setErrorMessage('')
                 setPaymentMessage('')
                 const currentPayload = payloadRef.current
-                const isStorePickup = currentPayload.deliveryDetails.fulfillmentType === 'pickup'
+                const isCourseCheckout = currentPayload.items.length > 0 && currentPayload.items.every(isCourseItem)
+                const isStorePickup = isCourseCheckout || currentPayload.deliveryDetails.fulfillmentType === 'pickup'
                 const response = await withTimeout((signal) => fetch(`${apiBaseUrl}/api/mercadopago/process-payment`, {
                   method: 'POST',
                   headers: {
@@ -224,10 +233,10 @@ function MercadoPagoPayment({
                       email: ''
                     },
                     delivery: {
-                      fulfillmentType: currentPayload.deliveryDetails.fulfillmentType || 'delivery',
-                      city: isStorePickup ? null : currentPayload.selectedDeliveryCity,
-                      date: currentPayload.selectedDeliveryDate,
-                      time: currentPayload.selectedDeliveryTime,
+                      fulfillmentType: isCourseCheckout ? 'course' : (currentPayload.deliveryDetails.fulfillmentType || 'delivery'),
+                      city: isCourseCheckout ? COURSE_PLACE : (isStorePickup ? null : currentPayload.selectedDeliveryCity),
+                      date: isCourseCheckout ? COURSE_DATE : currentPayload.selectedDeliveryDate,
+                      time: isCourseCheckout ? COURSE_TIME : currentPayload.selectedDeliveryTime,
                       recipientType: currentPayload.deliveryDetails.recipientType || 'self',
                       recipientName: currentPayload.deliveryDetails.recipientType === 'other'
                         ? currentPayload.deliveryDetails.recipientName

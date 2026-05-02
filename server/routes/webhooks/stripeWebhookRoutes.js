@@ -88,9 +88,12 @@ export function formatAmount(amountInCents, currencyCode) {
 
 function buildOrderEmailContent(paymentIntent) {
   const metadata = paymentIntent?.metadata || {}
-  const fulfillmentType = String(metadata.fulfillment_type || 'delivery').toLowerCase() === 'pickup'
+  const normalizedFulfillmentType = String(metadata.fulfillment_type || 'delivery').toLowerCase()
+  const fulfillmentType = normalizedFulfillmentType === 'pickup'
     ? 'Recoger en tienda'
-    : 'Entrega a domicilio'
+    : normalizedFulfillmentType === 'course'
+      ? 'Curso'
+      : 'Entrega a domicilio'
 
   const lines = [
     'Nuevo pago confirmado en Stripe',
@@ -102,13 +105,15 @@ function buildOrderEmailContent(paymentIntent) {
     `Telefono: ${metadata.customer_phone || 'N/A'}`,
     `Email: ${metadata.customer_email || paymentIntent?.receipt_email || 'N/A'}`,
     '',
-    'Entrega:',
+    fulfillmentType === 'Curso' ? 'Curso:' : 'Entrega:',
     `Tipo: ${fulfillmentType}`,
     `Fecha: ${metadata.delivery_date || 'N/A'}`,
     `Horario: ${metadata.delivery_time || 'N/A'}`
   ]
 
-  if (!String(fulfillmentType).includes('Recoger')) {
+  if (fulfillmentType === 'Curso') {
+    lines.push(`Lugar: ${metadata.delivery_city || 'Margot Expo'}`)
+  } else if (!String(fulfillmentType).includes('Recoger')) {
     lines.push(`Ciudad: ${metadata.delivery_city || 'N/A'}`)
     lines.push(`Direccion: ${metadata.delivery_address || 'N/A'}`)
     lines.push(`Colonia: ${metadata.delivery_neighborhood || 'N/A'}`)

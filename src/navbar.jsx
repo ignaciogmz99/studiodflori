@@ -5,12 +5,11 @@ import logo from './assets/logo_bien.jpg'
 import { useCart } from './context/CartContext'
 import { PROMO_FILTER_KEY, KIRA_MILAN_FILTER_KEY, CATALOGO_2026_FILTER_KEY, CATALOGO_2025_FILTER_KEY, CATALOGO_2023_FILTER_KEY, CATALOGO_2024_FILTER_KEY, DIA_MADRES_FILTER_KEY } from './constants/promoProducts'
 
+const COURSE_PRODUCT_ID = 'Curso'
+const COURSE_TIME = '10:00 am a 5:00 pm'
+const COURSE_PLACE = 'Margot Expo'
+
 const panelContent = {
-  regalos: {
-    title: 'Regalos',
-    heading: 'Sugerencias de regalo',
-    text: 'Arreglos personalizados, cajas florales y detalles para fechas especiales. Muy pronto agregaremos el catalogo completo.'
-  },
   contacto: {
     title: 'Contacto',
     heading: 'Habla con nosotros',
@@ -60,7 +59,8 @@ function Navbar() {
     isMothersDayCatalogLocked,
     flowerTypeTabs,
     clearSelectedFlower,
-    closePaymentView
+    closePaymentView,
+    hasOnlyCourseItems
   } = useCart()
   const effectiveSelectedFlowerType = isMothersDayCatalogLocked ? DIA_MADRES_FILTER_KEY : selectedFlowerType
   const lockedCatalogMessage = 'Del 7 al 10 de mayo solo esta disponible el catalogo del Dia de las Madres.'
@@ -84,6 +84,20 @@ function Navbar() {
     setActivePanel(panelKey)
   }
 
+  const handleGoToFlowers = () => {
+    clearSelectedFlower()
+    closePaymentView()
+    handleClose()
+    navigate('/')
+  }
+
+  const handleGoToCursos = () => {
+    clearSelectedFlower()
+    closePaymentView()
+    handleClose()
+    navigate('/cursos')
+  }
+
   const canSelectFlowerType = (flowerType) => {
     return !isMothersDayCatalogLocked || flowerType === DIA_MADRES_FILTER_KEY
   }
@@ -95,6 +109,9 @@ function Navbar() {
 
     setSelectedFlowerType(flowerType)
     handleClose()
+    clearSelectedFlower()
+    closePaymentView()
+    navigate('/')
   }
 
   const selectedContent = activePanel ? panelContent[activePanel] : null
@@ -133,10 +150,18 @@ function Navbar() {
             <button
               type="button"
               className="navbar__link navbar__link-button"
-              onClick={() => handleOpen('regalos')}
-              aria-expanded={activePanel === 'regalos'}
+              onClick={handleGoToFlowers}
             >
-              Regalos
+              Flores
+            </button>
+          </li>
+          <li className="navbar__menu-item navbar__menu-item--desktop">
+            <button
+              type="button"
+              className="navbar__link navbar__link-button"
+              onClick={handleGoToCursos}
+            >
+              Cursos
             </button>
           </li>
           <li className="navbar__menu-item navbar__menu-item--desktop">
@@ -262,9 +287,16 @@ function Navbar() {
               <button
                 type="button"
                 className="navbar__mobile-drawer-link"
-                onClick={() => handleOpenInfoPanel('regalos')}
+                onClick={handleGoToFlowers}
               >
-                Regalos
+                Flores
+              </button>
+              <button
+                type="button"
+                className="navbar__mobile-drawer-link"
+                onClick={handleGoToCursos}
+              >
+                Cursos
               </button>
               <button
                 type="button"
@@ -334,9 +366,15 @@ function Navbar() {
                       <div className="navbar__cart-item-main">
                         <p className="navbar__cart-item-name">{item.name}</p>
                         <p className="navbar__cart-item-price">${item.price} MXN</p>
-                        <p className="navbar__cart-item-price">
-                          Listo en aprox: {formatPreparationTime(item.preparationHours)}
-                        </p>
+                        {item.itemType === 'course' || item.id === COURSE_PRODUCT_ID ? (
+                          <p className="navbar__cart-item-price">
+                            Curso: {COURSE_TIME} en {COURSE_PLACE}
+                          </p>
+                        ) : (
+                          <p className="navbar__cart-item-price">
+                            Listo en aprox: {formatPreparationTime(item.preparationHours)}
+                          </p>
+                        )}
                         <div className="navbar__cart-item-controls">
                           <button type="button" onClick={() => decreaseQuantity(item.id)}>-</button>
                           <span>{item.quantity}</span>
@@ -348,9 +386,11 @@ function Navbar() {
                   ))}
                 </ul>
                 <p className="navbar__cart-total">Total: ${totalPrice.toFixed(2)} MXN</p>
-                <p className="navbar__cart-total">
-                  Pedido listo aprox en: {formatPreparationTime(estimatedPreparationHours)}
-                </p>
+                {!hasOnlyCourseItems && (
+                  <p className="navbar__cart-total">
+                    Pedido listo aprox en: {formatPreparationTime(estimatedPreparationHours)}
+                  </p>
+                )}
                 <div className="navbar__cart-actions">
                   <button
                     type="button"

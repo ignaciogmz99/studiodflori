@@ -15,14 +15,15 @@ const PHONE_COUNTRY_CODES = [
   { value: '+51', label: '+51 PER' }
 ]
 const FULFILLMENT_OPTIONS = [
-  { value: 'delivery', label: '🚚 A domicilio' },
-  { value: 'pickup', label: '🏪 Recoger en tienda' }
+  { value: 'delivery', label: 'A domicilio' },
+  { value: 'pickup', label: 'Recoger en tienda' }
 ]
 const RECIPIENT_OPTIONS = [
   { value: 'self', label: 'Lo recibo yo' },
   { value: 'other', label: 'Lo recibe otra persona' }
 ]
-
+const COURSE_PLACE = 'Margot Expo'
+const COURSE_TIME = '10:00 am a 5:00 pm'
 
 function onlyDigits(value) {
   return String(value || '').replace(/\D/g, '')
@@ -46,11 +47,12 @@ function Pago() {
     deliveryDetails,
     setDeliveryDetails,
     openCardView,
-    hasBlockedMothersDayDeliverySelection
+    hasBlockedMothersDayDeliverySelection,
+    hasOnlyCourseItems
   } = useCart()
 
-  const isDelivery = deliveryDetails.fulfillmentType === 'delivery'
-
+  const isCourseCheckout = hasOnlyCourseItems
+  const isDelivery = !isCourseCheckout && deliveryDetails.fulfillmentType === 'delivery'
   const cityIsSupported = useMemo(
     () => DELIVERY_CITIES.includes(selectedDeliveryCity),
     [selectedDeliveryCity]
@@ -58,14 +60,31 @@ function Pago() {
   const phoneCountryCode = deliveryDetails.phoneCountryCode || '+52'
   const fulfillmentType = deliveryDetails.fulfillmentType || 'delivery'
   const recipientType = deliveryDetails.recipientType || 'self'
-  const isStorePickup = fulfillmentType === 'pickup'
-  const isRecipientOther = recipientType === 'other'
+  const isStorePickup = isCourseCheckout || fulfillmentType === 'pickup'
+  const isRecipientOther = !isCourseCheckout && recipientType === 'other'
   const phoneDigits = useMemo(
     () => onlyDigits(deliveryDetails.phone),
     [deliveryDetails.phone]
   )
   const isPhoneCountryCodeValid = PHONE_COUNTRY_CODES.some((code) => code.value === phoneCountryCode)
   const isPhoneValid = isPhoneCountryCodeValid && phoneDigits.length === 10
+
+  useEffect(() => {
+    if (!isCourseCheckout || deliveryDetails.fulfillmentType === 'course') {
+      return
+    }
+
+    setDeliveryDetails((current) => ({
+      ...current,
+      fulfillmentType: 'course',
+      recipientType: 'self',
+      recipientName: '',
+      streetAddress: '',
+      neighborhood: '',
+      postalCode: '',
+      flowerMessage: ''
+    }))
+  }, [deliveryDetails.fulfillmentType, isCourseCheckout, setDeliveryDetails])
 
   const handleDeliveryContactChange = (event) => {
     const { name, value } = event.target
@@ -102,9 +121,10 @@ function Pago() {
   const isDeliveryFormValid = Boolean(
     deliveryDetails.fullName.trim()
     && isPhoneValid
-    && (!isRecipientOther || deliveryDetails.recipientName.trim())
+    && (isCourseCheckout || !isRecipientOther || deliveryDetails.recipientName.trim())
     && (
-      isStorePickup
+      isCourseCheckout
+      || isStorePickup
       || (
         deliveryDetails.streetAddress.trim()
         && deliveryDetails.neighborhood.trim()
@@ -118,45 +138,60 @@ function Pago() {
   return (
     <section className="pago" aria-label="Resumen de pago">
       <header className="pago__header">
-        <h2 className="pago__title">Pago</h2>
-        <button type="button" className="pago__back" onClick={() => { closePaymentView(); navigate('/') }}>
-          Volver al catalogo
+        <h2 className="pago__title">{isCourseCheckout ? 'Pago del curso' : 'Pago'}</h2>
+        <button type="button" className="pago__back" onClick={() => { closePaymentView(); navigate(isCourseCheckout ? '/cursos' : '/') }}>
+          {isCourseCheckout ? 'Volver a cursos' : 'Volver al catalogo'}
         </button>
       </header>
 
       <div className="pago__schedule">
-        <p className="pago__schedule-row">
-          Fecha de entrega:{' '}
-          <strong>
-            {selectedDeliveryDate
-              ? new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })
-                  .format(new Date(`${selectedDeliveryDate}T00:00:00`))
-              : '—'}
-          </strong>
-        </p>
-        <p className="pago__schedule-row">
-          Horario deseado: <strong>{selectedDeliveryTime || '—'}</strong>
-        </p>
+        {isCourseCheckout ? (
+          <>
+            <p className="pago__schedule-row">
+              Curso: <strong>{COURSE_PLACE}</strong>
+            </p>
+            <p className="pago__schedule-row">
+              Horario: <strong>{COURSE_TIME}</strong>
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="pago__schedule-row">
+              Fecha de entrega:{' '}
+              <strong>
+                {selectedDeliveryDate
+                  ? new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })
+                      .format(new Date(`${selectedDeliveryDate}T00:00:00`))
+                  : '-'}
+              </strong>
+            </p>
+            <p className="pago__schedule-row">
+              Horario deseado: <strong>{selectedDeliveryTime || '-'}</strong>
+            </p>
+          </>
+        )}
       </div>
       <div className="pago__checkout-grid">
-        <section className="pago__delivery" aria-label="Informacion de entrega">
-          <h3 className="pago__delivery-title">Informacion para entregar tu pedido</h3>
+        <section className="pago__delivery" aria-label={isCourseCheckout ? 'Informacion para reservar el curso' : 'Informacion de entrega'}>
+          <h3 className="pago__delivery-title">{isCourseCheckout ? 'Informacion para reservar tu lugar' : 'Informacion para entregar tu pedido'}</h3>
           <div className="pago__delivery-grid">
-            <div className="pago__field pago__field--wide">
-              <span className="pago__field-label">Tipo de entrega</span>
-              <div className="pago__fulfillment-toggle">
-                {FULFILLMENT_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={`pago__fulfillment-btn${fulfillmentType === option.value ? ' pago__fulfillment-btn--active' : ''}`}
-                    onClick={() => handleDeliveryContactChange({ target: { name: 'fulfillmentType', value: option.value } })}
-                  >
-                    {option.label}
-                  </button>
-                ))}
+            {!isCourseCheckout && (
+              <div className="pago__field pago__field--wide">
+                <span className="pago__field-label">Tipo de entrega</span>
+                <div className="pago__fulfillment-toggle">
+                  {FULFILLMENT_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`pago__fulfillment-btn${fulfillmentType === option.value ? ' pago__fulfillment-btn--active' : ''}`}
+                      onClick={() => handleDeliveryContactChange({ target: { name: 'fulfillmentType', value: option.value } })}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
             <label className="pago__field pago__field--wide">
               <span className="pago__field-label">Nombre completo</span>
               <input
@@ -169,21 +204,23 @@ function Pago() {
                 autoComplete="name"
               />
             </label>
-            <label className="pago__field pago__field--wide">
-              <span className="pago__field-label">¿Quien recibe el pedido?</span>
-              <p className="pago__field-note">Puedes recibirlo tu o enviarlo a quien desees.</p>
-              <select
-                className="pago__field-input"
-                name="recipientType"
-                value={recipientType}
-                onChange={handleDeliveryContactChange}
-                aria-label="Seleccionar quien recibe el pedido"
-              >
-                {RECIPIENT_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-            </label>
+            {!isCourseCheckout && (
+              <label className="pago__field pago__field--wide">
+                <span className="pago__field-label">Quien recibe el pedido</span>
+                <p className="pago__field-note">Puedes recibirlo tu o enviarlo a quien desees.</p>
+                <select
+                  className="pago__field-input"
+                  name="recipientType"
+                  value={recipientType}
+                  onChange={handleDeliveryContactChange}
+                  aria-label="Seleccionar quien recibe el pedido"
+                >
+                  {RECIPIENT_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+            )}
             {isRecipientOther && (
               <label className="pago__field pago__field--wide">
                 <span className="pago__field-label">Nombre de quien recibe</span>
@@ -227,7 +264,7 @@ function Pago() {
             {!isStorePickup && (
               <>
                 <label className="pago__field pago__field--wide">
-                  <span className="pago__field-label">Calle y número de entrega</span>
+                  <span className="pago__field-label">Calle y numero de entrega</span>
                   <input
                     className="pago__field-input"
                     type="text"
@@ -277,26 +314,28 @@ function Pago() {
                 </label>
               </>
             )}
+            {!isCourseCheckout && (
+              <label className="pago__field pago__field--wide">
+                <span className="pago__field-label">Mensaje para la flor (opcional)</span>
+                <textarea
+                  className="pago__field-input pago__field-textarea"
+                  name="flowerMessage"
+                  value={deliveryDetails.flowerMessage || ''}
+                  onChange={handleDeliveryContactChange}
+                  placeholder="Ej. Feliz aniversario, te amo."
+                  maxLength={250}
+                  rows={2}
+                />
+              </label>
+            )}
             <label className="pago__field pago__field--wide">
-              <span className="pago__field-label">Mensaje para la flor (opcional)</span>
-              <textarea
-                className="pago__field-input pago__field-textarea"
-                name="flowerMessage"
-                value={deliveryDetails.flowerMessage || ''}
-                onChange={handleDeliveryContactChange}
-                placeholder="Ej. Feliz aniversario, te amo."
-                maxLength={250}
-                rows={2}
-              />
-            </label>
-            <label className="pago__field pago__field--wide">
-              <span className="pago__field-label">Instrucciones especiales</span>
+              <span className="pago__field-label">{isCourseCheckout ? 'Comentarios para tu inscripcion' : 'Instrucciones especiales'}</span>
               <textarea
                 className="pago__field-input pago__field-textarea"
                 name="specialInstructions"
                 value={deliveryDetails.specialInstructions}
                 onChange={handleDeliveryContactChange}
-                placeholder="Ej. Departamento 4B, tocar interfon 12, entregar en recepcion."
+                placeholder={isCourseCheckout ? 'Ej. Dudas, nombre de acompanante o datos importantes.' : 'Ej. Departamento 4B, tocar interfon 12, entregar en recepcion.'}
                 rows={3}
                 maxLength={500}
               />
@@ -355,7 +394,7 @@ function Pago() {
               {isDelivery && (
                 <li className="pago__item pago__item--delivery">
                   <div className="pago__item-main">
-                    <p className="pago__name">🚚 Envío a domicilio</p>
+                    <p className="pago__name">Envio a domicilio</p>
                   </div>
                   <p className="pago__subtotal">${deliveryFee.toFixed(2)} MXN</p>
                 </li>
@@ -370,5 +409,3 @@ function Pago() {
 }
 
 export default Pago
-
-

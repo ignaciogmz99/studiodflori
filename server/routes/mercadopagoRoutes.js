@@ -15,8 +15,15 @@ import {
 import { updatePaidOrderProcessingState } from '../services/orderPersistenceService.js'
 
 const ORDER_TTL_MS = 30 * 60 * 1000
+const COURSE_PRODUCT_ID = 'Curso'
 // In-memory order state to reduce duplicate charges on retries.
 const paymentByOrderId = new Map()
+
+function isCourseOrder(trustedOrder = {}) {
+  return Array.isArray(trustedOrder.items)
+    && trustedOrder.items.length > 0
+    && trustedOrder.items.every((item) => String(item.id || '') === COURSE_PRODUCT_ID)
+}
 
 function isAuthorizedPostPaymentRetry(req) {
   const expectedSecret = String(process.env.POST_PAYMENT_RETRY_SECRET || '').trim()
@@ -350,7 +357,7 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
           payment_method_id: String(payment_method_id),
           transaction_amount: Number(trustedOrder.amount.toFixed(2)),
           installments: Number(installments) > 0 ? Number(installments) : 1,
-          description: 'Pedido Studio D Flori',
+          description: isCourseOrder(trustedOrder) ? 'Curso Studio D Flori' : 'Pedido Studio D Flori',
           payer: {
             email: String(payer?.email || customer?.email || '').trim() || undefined,
             identification: payer?.identification || undefined

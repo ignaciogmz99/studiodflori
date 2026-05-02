@@ -448,6 +448,17 @@ function writeLine(doc, marginX, contentWidth, cursorY, text, options = {}) {
   return cursorY + (lines.length * (fontSize + 3))
 }
 
+function resolveFulfillmentLabel(fulfillmentType) {
+  const normalized = String(fulfillmentType || 'delivery').trim().toLowerCase()
+  if (normalized === 'pickup') {
+    return 'Recoger en tienda'
+  }
+  if (normalized === 'course' || normalized === 'curso') {
+    return 'Curso'
+  }
+  return 'Entrega a domicilio'
+}
+
 function buildMetadataFromPaymentIntent(paymentIntent = {}) {
   const metadata = paymentIntent?.metadata || {}
   return {
@@ -460,12 +471,10 @@ function buildMetadataFromPaymentIntent(paymentIntent = {}) {
     customerName: metadata.customer_name || 'N/A',
     customerPhone: metadata.customer_phone || 'N/A',
     customerEmail: metadata.customer_email || 'N/A',
-    deliveryType: String(metadata.fulfillment_type || 'delivery').toLowerCase() === 'pickup'
-      ? 'Recoger en tienda'
-      : 'Entrega a domicilio',
-    deliveryDate: metadata.delivery_date || 'N/A',
-    deliveryTime: metadata.delivery_time || 'N/A',
-    deliveryCity: metadata.delivery_city || 'N/A',
+    deliveryType: resolveFulfillmentLabel(metadata.fulfillment_type),
+    deliveryDate: metadata.delivery_date || (resolveFulfillmentLabel(metadata.fulfillment_type) === 'Curso' ? 'Fecha por confirmar' : 'N/A'),
+    deliveryTime: metadata.delivery_time || (resolveFulfillmentLabel(metadata.fulfillment_type) === 'Curso' ? '10:00 am a 5:00 pm' : 'N/A'),
+    deliveryCity: metadata.delivery_city || (resolveFulfillmentLabel(metadata.fulfillment_type) === 'Curso' ? 'Margot Expo' : 'N/A'),
     deliveryAddress: metadata.delivery_address || 'N/A',
     deliveryNeighborhood: metadata.delivery_neighborhood || 'N/A',
     deliveryPostalCode: metadata.delivery_postal_code || 'N/A',
@@ -487,12 +496,10 @@ function buildMetadataFromPayment(payment = {}) {
     customerName: metadata.customer_name || payment?.payer?.first_name || 'N/A',
     customerPhone: metadata.customer_phone || 'N/A',
     customerEmail: payment?.payer?.email || 'N/A',
-    deliveryType: String(metadata.fulfillment_type || 'delivery').toLowerCase() === 'pickup'
-      ? 'Recoger en tienda'
-      : 'Entrega a domicilio',
-    deliveryDate: metadata.delivery_date || 'N/A',
-    deliveryTime: metadata.delivery_time || 'N/A',
-    deliveryCity: metadata.delivery_city || 'N/A',
+    deliveryType: resolveFulfillmentLabel(metadata.fulfillment_type),
+    deliveryDate: metadata.delivery_date || (resolveFulfillmentLabel(metadata.fulfillment_type) === 'Curso' ? 'Fecha por confirmar' : 'N/A'),
+    deliveryTime: metadata.delivery_time || (resolveFulfillmentLabel(metadata.fulfillment_type) === 'Curso' ? '10:00 am a 5:00 pm' : 'N/A'),
+    deliveryCity: metadata.delivery_city || (resolveFulfillmentLabel(metadata.fulfillment_type) === 'Curso' ? 'Margot Expo' : 'N/A'),
     deliveryAddress: metadata.delivery_address || 'N/A',
     deliveryNeighborhood: metadata.delivery_neighborhood || 'N/A',
     deliveryPostalCode: metadata.delivery_postal_code || 'N/A',
@@ -543,14 +550,14 @@ export async function createMercadoPagoReceiptPdf(payment = {}) {
   cursorY = writeLine(doc, marginX, contentWidth, cursorY, `Email: ${receipt.customerEmail}`)
   cursorY += 14
 
-  cursorY = drawSectionTitle(doc, colors, marginX, contentWidth, cursorY, 'Entrega')
-  drawCard(doc, colors, marginX, contentWidth, cursorY, receipt.deliveryType === 'Recoger en tienda' ? 106 : 148)
+  cursorY = drawSectionTitle(doc, colors, marginX, contentWidth, cursorY, receipt.deliveryType === 'Curso' ? 'Curso' : 'Entrega')
+  drawCard(doc, colors, marginX, contentWidth, cursorY, receipt.deliveryType === 'Entrega a domicilio' ? 148 : 106)
   cursorY = writeLine(doc, marginX, contentWidth, cursorY, `Tipo: ${receipt.deliveryType}`)
-  cursorY = writeLine(doc, marginX, contentWidth, cursorY, `Fecha de entrega: ${receipt.deliveryDate}`)
-  cursorY = writeLine(doc, marginX, contentWidth, cursorY, `Horario deseado: ${receipt.deliveryTime}`)
-  cursorY = writeLine(doc, marginX, contentWidth, cursorY, `Ciudad: ${receipt.deliveryCity}`)
+  cursorY = writeLine(doc, marginX, contentWidth, cursorY, `${receipt.deliveryType === 'Curso' ? 'Fecha del curso' : 'Fecha de entrega'}: ${receipt.deliveryDate}`)
+  cursorY = writeLine(doc, marginX, contentWidth, cursorY, `${receipt.deliveryType === 'Curso' ? 'Horario' : 'Horario deseado'}: ${receipt.deliveryTime}`)
+  cursorY = writeLine(doc, marginX, contentWidth, cursorY, `${receipt.deliveryType === 'Curso' ? 'Lugar' : 'Ciudad'}: ${receipt.deliveryCity}`)
 
-  if (receipt.deliveryType !== 'Recoger en tienda') {
+  if (receipt.deliveryType === 'Entrega a domicilio') {
     cursorY = writeLine(doc, marginX, contentWidth, cursorY, `Direccion: ${receipt.deliveryAddress}`)
     cursorY = writeLine(doc, marginX, contentWidth, cursorY, `Colonia: ${receipt.deliveryNeighborhood}`)
     cursorY = writeLine(doc, marginX, contentWidth, cursorY, `Codigo postal: ${receipt.deliveryPostalCode}`)
@@ -620,14 +627,14 @@ export async function createStripeReceiptPdf(paymentIntent = {}) {
   cursorY = writeLine(doc, marginX, contentWidth, cursorY, `Email: ${receipt.customerEmail}`)
   cursorY += 14
 
-  cursorY = drawSectionTitle(doc, colors, marginX, contentWidth, cursorY, 'Entrega')
-  drawCard(doc, colors, marginX, contentWidth, cursorY, receipt.deliveryType === 'Recoger en tienda' ? 106 : 148)
+  cursorY = drawSectionTitle(doc, colors, marginX, contentWidth, cursorY, receipt.deliveryType === 'Curso' ? 'Curso' : 'Entrega')
+  drawCard(doc, colors, marginX, contentWidth, cursorY, receipt.deliveryType === 'Entrega a domicilio' ? 148 : 106)
   cursorY = writeLine(doc, marginX, contentWidth, cursorY, `Tipo: ${receipt.deliveryType}`)
-  cursorY = writeLine(doc, marginX, contentWidth, cursorY, `Fecha de entrega: ${receipt.deliveryDate}`)
-  cursorY = writeLine(doc, marginX, contentWidth, cursorY, `Horario deseado: ${receipt.deliveryTime}`)
-  cursorY = writeLine(doc, marginX, contentWidth, cursorY, `Ciudad: ${receipt.deliveryCity}`)
+  cursorY = writeLine(doc, marginX, contentWidth, cursorY, `${receipt.deliveryType === 'Curso' ? 'Fecha del curso' : 'Fecha de entrega'}: ${receipt.deliveryDate}`)
+  cursorY = writeLine(doc, marginX, contentWidth, cursorY, `${receipt.deliveryType === 'Curso' ? 'Horario' : 'Horario deseado'}: ${receipt.deliveryTime}`)
+  cursorY = writeLine(doc, marginX, contentWidth, cursorY, `${receipt.deliveryType === 'Curso' ? 'Lugar' : 'Ciudad'}: ${receipt.deliveryCity}`)
 
-  if (receipt.deliveryType !== 'Recoger en tienda') {
+  if (receipt.deliveryType === 'Entrega a domicilio') {
     cursorY = writeLine(doc, marginX, contentWidth, cursorY, `Direccion: ${receipt.deliveryAddress}`)
     cursorY = writeLine(doc, marginX, contentWidth, cursorY, `Colonia: ${receipt.deliveryNeighborhood}`)
     cursorY = writeLine(doc, marginX, contentWidth, cursorY, `Codigo postal: ${receipt.deliveryPostalCode}`)

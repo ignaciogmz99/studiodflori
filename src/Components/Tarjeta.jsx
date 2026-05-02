@@ -16,6 +16,9 @@ function createOrderId() {
 
 const STORED_RECEIPT_TTL_MS = 2 * 60 * 60 * 1000
 const STRIPE_RECEIPT_FALLBACK_ATTEMPT = 3
+const COURSE_PLACE = 'Margot Expo'
+const COURSE_DATE = 'Fecha por confirmar'
+const COURSE_TIME = '10:00 am a 5:00 pm'
 
 function buildCartFingerprint(items = []) {
   if (!Array.isArray(items) || items.length === 0) {
@@ -118,7 +121,8 @@ function Tarjeta() {
     deliveryDetails,
     selectedDeliveryCity,
     selectedDeliveryDate,
-    selectedDeliveryTime
+    selectedDeliveryTime,
+    hasOnlyCourseItems
   } = useCart()
 
   const apiBaseUrl = resolveApiBaseUrl()
@@ -165,9 +169,10 @@ function Tarjeta() {
     return {
       ...deliveryDetails,
       phoneCountryCode,
-      phone: phoneDigits ? `${phoneCountryCode}${phoneDigits}` : ''
+      phone: phoneDigits ? `${phoneCountryCode}${phoneDigits}` : '',
+      fulfillmentType: hasOnlyCourseItems ? 'course' : deliveryDetails.fulfillmentType
     }
-  }, [deliveryDetails])
+  }, [deliveryDetails, hasOnlyCourseItems])
 
   const SelectedPaymentComponent = selectedProvider.Component
 
@@ -314,9 +319,9 @@ function Tarjeta() {
       currency: 'MXN',
       items,
       deliveryDetails: normalizedDeliveryDetails,
-      selectedDeliveryCity,
-      selectedDeliveryDate,
-      selectedDeliveryTime
+      selectedDeliveryCity: hasOnlyCourseItems ? COURSE_PLACE : selectedDeliveryCity,
+      selectedDeliveryDate: hasOnlyCourseItems ? COURSE_DATE : selectedDeliveryDate,
+      selectedDeliveryTime: hasOnlyCourseItems ? COURSE_TIME : selectedDeliveryTime
     }
 
     setReceiptData({
@@ -326,10 +331,11 @@ function Tarjeta() {
   }
 
   const handleExitAfterPayment = () => {
+    const exitPath = hasOnlyCourseItems ? '/cursos' : '/'
     setReceiptData(null)
     clearCart()
     closePaymentView()
-    navigate('/', { replace: true })
+    navigate(exitPath, { replace: true })
   }
 
   const paymentSharedProps = {
@@ -341,9 +347,9 @@ function Tarjeta() {
     items: itemsForPayment,
     hasApprovedPayment,
     deliveryDetails: normalizedDeliveryDetails,
-    selectedDeliveryCity,
-    selectedDeliveryDate,
-    selectedDeliveryTime,
+    selectedDeliveryCity: hasOnlyCourseItems ? COURSE_PLACE : selectedDeliveryCity,
+    selectedDeliveryDate: hasOnlyCourseItems ? COURSE_DATE : selectedDeliveryDate,
+    selectedDeliveryTime: hasOnlyCourseItems ? COURSE_TIME : selectedDeliveryTime,
     onPaymentApproved: handlePaymentApproved
   }
 

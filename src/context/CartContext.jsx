@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabaseClient'
 
 const CartContext = createContext(null)
 const CART_STORAGE_KEY = 'studiodflori_cart_v1'
+const COURSE_PRODUCT_ID = 'Curso'
 const INITIAL_DELIVERY_DETAILS = {
   fulfillmentType: 'delivery',
   fullName: '',
@@ -67,6 +68,14 @@ export function CartProvider({ children }) {
     () => isLockedMothersDayDateBlockedForCart(selectedDeliveryDate, items),
     [items, selectedDeliveryDate]
   )
+  const hasCourseItem = useMemo(
+    () => items.some((item) => item.itemType === 'course' || item.id === COURSE_PRODUCT_ID),
+    [items]
+  )
+  const hasOnlyCourseItems = useMemo(
+    () => items.length > 0 && items.every((item) => item.itemType === 'course' || item.id === COURSE_PRODUCT_ID),
+    [items]
+  )
 
   useEffect(() => {
     window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
@@ -98,6 +107,8 @@ export function CartProvider({ children }) {
           image: product.image,
           price: typeof product.price === 'number' ? product.price : 0,
           preparationHours: typeof product.preparationHours === 'number' ? product.preparationHours : 24,
+          itemType: product.itemType || 'product',
+          fulfillmentType: product.fulfillmentType || 'delivery',
           quantity: 1
         }
       ]
@@ -162,6 +173,10 @@ export function CartProvider({ children }) {
   const [deliveryFee, setDeliveryFee] = useState(100)
 
   useEffect(() => {
+    if (!supabase) {
+      return
+    }
+
     supabase
       .from('productos')
       .select('precio')
@@ -172,7 +187,7 @@ export function CartProvider({ children }) {
       })
   }, [])
 
-  const isDelivery = deliveryDetails.fulfillmentType === 'delivery'
+  const isDelivery = !hasOnlyCourseItems && deliveryDetails.fulfillmentType !== 'pickup'
 
   const itemsForPayment = useMemo(() => {
     if (!isDelivery) return items
@@ -231,7 +246,9 @@ export function CartProvider({ children }) {
     canScheduleLockedMothersDayDates,
     hasBlockedMothersDayDeliverySelection,
     flowerTypeTabs,
-    setFlowerTypeTabs
+    setFlowerTypeTabs,
+    hasCourseItem,
+    hasOnlyCourseItems
   }), [
     canScheduleLockedMothersDayDates,
     estimatedPreparationHours,
@@ -251,7 +268,9 @@ export function CartProvider({ children }) {
     deliveryFee,
     selectedFlowerType,
     mothersDayCatalogLocked,
-    flowerTypeTabs
+    flowerTypeTabs,
+    hasCourseItem,
+    hasOnlyCourseItems
   ])
 
   return (

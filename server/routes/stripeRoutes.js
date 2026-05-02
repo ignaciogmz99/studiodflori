@@ -14,6 +14,13 @@ import { createStripeReceiptPdf } from '../services/receiptPdfService.js'
 import { updatePaidOrderProcessingState } from '../services/orderPersistenceService.js'
 
 const INTENT_TTL_MS = 30 * 60 * 1000
+const COURSE_PRODUCT_ID = 'Curso'
+
+function isCourseOrder(trustedOrder = {}) {
+  return Array.isArray(trustedOrder.items)
+    && trustedOrder.items.length > 0
+    && trustedOrder.items.every((item) => String(item.id || '') === COURSE_PRODUCT_ID)
+}
 
 function isAuthorizedPostPaymentRetry(req) {
   const expectedSecret = String(process.env.POST_PAYMENT_RETRY_SECRET || '').trim()
@@ -147,7 +154,7 @@ export function createStripeRouter({ stripeSecretKey }) {
       params.append('amount', String(smallestUnitAmount))
       params.append('currency', 'mxn')
       params.append('automatic_payment_methods[enabled]', 'true')
-      params.append('description', 'Pedido Studio D Flori')
+      params.append('description', isCourseOrder(trustedOrder) ? 'Curso Studio D Flori' : 'Pedido Studio D Flori')
       params.append('metadata[order_id]', toMetadataValue(normalizedOrderId))
       params.append('metadata[customer_name]', toMetadataValue(customer?.fullName))
       params.append('metadata[customer_phone]', toMetadataValue(customer?.phone))

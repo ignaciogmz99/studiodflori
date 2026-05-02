@@ -40,11 +40,21 @@ function PaymentRoute() {
   return <MainContent />
 }
 
+function CourseRoute() {
+  const { clearSelectedFlower, closePaymentView } = useCart()
+  useEffect(() => {
+    clearSelectedFlower()
+    closePaymentView()
+  }, [clearSelectedFlower, closePaymentView])
+  return <MainContent />
+}
+
 function App() {
   return (
     <div className="app">
       <Navbar />
       <Routes>
+        <Route path="/cursos" element={<CourseRoute />} />
         <Route path="/flores/:id" element={<><ProductLoader /><MainContent /></>} />
         <Route path="/pago" element={<PaymentRoute />} />
         <Route path="/*" element={<CatalogRoute />} />

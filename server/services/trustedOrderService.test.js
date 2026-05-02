@@ -179,4 +179,28 @@ describe('buildTrustedOrderFromClientItems', () => {
     expect(result.items[0].quantity).toBe(20) // MAX_QTY_PER_ITEM
     expect(result.amount).toBe(2000) // 100 * 20
   })
+
+  it('valida el curso desde la tabla Curso cuando no esta en productos', async () => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => []
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ precio: 3000, activo: true, nombre: 'Curso intensivo floral' }]
+      }))
+
+    const result = await buildTrustedOrderFromClientItems([
+      { id: 'Curso', quantity: 1, price: 1 }
+    ])
+
+    expect(result.amount).toBe(3000)
+    expect(result.items[0]).toMatchObject({
+      id: 'Curso',
+      name: 'Curso intensivo floral',
+      quantity: 1,
+      unitPrice: 3000
+    })
+  })
 })
