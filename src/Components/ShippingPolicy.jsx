@@ -1,3 +1,5 @@
+import { ENABLE_MOTHERS_DAY_CATALOG } from '../constants/promoProducts'
+
 function ShippingPolicy() {
   return (
     <section className="shipping-policy" id="shipping-policy" aria-label="Politicas de envio">
@@ -14,11 +16,15 @@ function ShippingPolicy() {
           programacion disponible en la tienda.
         </p>
 
-        <h4 className="shipping-policy__heading">Dia de las Madres y San Valentin</h4>
-        <p className="shipping-policy__copy">
-          El horario de entrega es de 10:00 am a 7:00 pm. Por el volumen de pedidos, en estos dias
-          no hay entregas con horario especial.
-        </p>
+        {ENABLE_MOTHERS_DAY_CATALOG && (
+          <>
+            <h4 className="shipping-policy__heading">Dia de las Madres y San Valentin</h4>
+            <p className="shipping-policy__copy">
+              El horario de entrega es de 10:00 am a 7:00 pm. Por el volumen de pedidos, en estos dias
+              no hay entregas con horario especial.
+            </p>
+          </>
+        )}
 
         <h4 className="shipping-policy__heading">Reprogramaciones</h4>
         <p className="shipping-policy__copy">

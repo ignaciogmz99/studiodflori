@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import './Flores_menu.css'
 import { supabase } from '../lib/supabaseClient'
 import { useCart } from '../context/CartContext'
-import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE, PROMO_FILTER_KEY, KIRA_MILAN_COLLECTION_IDS, KIRA_MILAN_FILTER_KEY, KIRA_MILAN_ORIGINAL_PRICES, CATALOGO_2026_IDS, CATALOGO_2026_FILTER_KEY, CATALOGO_2025_IDS, CATALOGO_2025_FILTER_KEY, CATALOGO_2023_IDS, CATALOGO_2023_FILTER_KEY, CATALOGO_2024_IDS, CATALOGO_2024_FILTER_KEY, DIA_MADRES_IDS, DIA_MADRES_FILTER_KEY, DIA_MADRES_ORDER } from '../constants/promoProducts'
+import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE, PROMO_FILTER_KEY, KIRA_MILAN_COLLECTION_IDS, KIRA_MILAN_FILTER_KEY, KIRA_MILAN_ORIGINAL_PRICES, CATALOGO_2026_IDS, CATALOGO_2026_FILTER_KEY, CATALOGO_2025_IDS, CATALOGO_2025_FILTER_KEY, CATALOGO_2023_IDS, CATALOGO_2023_FILTER_KEY, CATALOGO_2024_IDS, CATALOGO_2024_FILTER_KEY, DIA_MADRES_IDS, DIA_MADRES_FILTER_KEY, DIA_MADRES_ORDER, ENABLE_MOTHERS_DAY_CATALOG } from '../constants/promoProducts'
 
 const assetModulesL1 = import.meta.glob('../assets/*/*.webp', { eager: true, import: 'default' })
 const assetModulesL2 = import.meta.glob('../assets/*/*/*.webp', { eager: true, import: 'default' })
@@ -287,8 +287,8 @@ function FloresMenu() {
         hasInventoryRecord: Boolean(inventory),
         descripcion: inventory?.descripcion ?? inventory?.descripción ?? null
       }
-    })
-  }, [inventoryById, imageIndexByProduct])
+      }).filter((product) => ENABLE_MOTHERS_DAY_CATALOG || !DIA_MADRES_IDS.has(product.id))
+    }, [inventoryById, imageIndexByProduct])
 
   const nameSuggestions = useMemo(() => {
     const q = nameSearch.trim().toLowerCase()
@@ -320,11 +320,11 @@ function FloresMenu() {
   }, [flowerTypeTabs, setFlowerTypeTabs])
 
   const activeFlowerType = useMemo(() => {
-    if (isMothersDayCatalogLocked) return DIA_MADRES_FILTER_KEY
+    if (ENABLE_MOTHERS_DAY_CATALOG && isMothersDayCatalogLocked) return DIA_MADRES_FILTER_KEY
     if (selectedFlowerType === ALL_FLOWER_TYPES) return ALL_FLOWER_TYPES
     if (selectedFlowerType === PROMO_FILTER_KEY) return PROMO_FILTER_KEY
     if (selectedFlowerType === KIRA_MILAN_FILTER_KEY) return KIRA_MILAN_FILTER_KEY
-    if (selectedFlowerType === DIA_MADRES_FILTER_KEY) return DIA_MADRES_FILTER_KEY
+    if (ENABLE_MOTHERS_DAY_CATALOG && selectedFlowerType === DIA_MADRES_FILTER_KEY) return DIA_MADRES_FILTER_KEY
     if (selectedFlowerType === CATALOGO_2026_FILTER_KEY) return CATALOGO_2026_FILTER_KEY
     if (selectedFlowerType === CATALOGO_2025_FILTER_KEY) return CATALOGO_2025_FILTER_KEY
     if (selectedFlowerType === CATALOGO_2023_FILTER_KEY) return CATALOGO_2023_FILTER_KEY
@@ -337,7 +337,7 @@ function FloresMenu() {
     const productsByFlowerType = products.filter((product) => {
       if (activeFlowerType === PROMO_FILTER_KEY) return PROMO_PRODUCT_IDS.has(product.id)
       if (activeFlowerType === KIRA_MILAN_FILTER_KEY) return KIRA_MILAN_COLLECTION_IDS.has(product.id)
-      if (activeFlowerType === DIA_MADRES_FILTER_KEY) {
+      if (ENABLE_MOTHERS_DAY_CATALOG && activeFlowerType === DIA_MADRES_FILTER_KEY) {
         return DIA_MADRES_IDS.has(product.id)
       }
       if (activeFlowerType === CATALOGO_2026_FILTER_KEY) return CATALOGO_2026_IDS.has(product.id)
@@ -377,6 +377,10 @@ function FloresMenu() {
     })
 
     return result.sort((a, b) => {
+      if (!ENABLE_MOTHERS_DAY_CATALOG || activeFlowerType !== DIA_MADRES_FILTER_KEY) {
+        return 0
+      }
+
       const aOrder = DIA_MADRES_ORDER[a.id] ?? null
       const bOrder = DIA_MADRES_ORDER[b.id] ?? null
       if (aOrder !== null && bOrder !== null) return aOrder - bOrder
@@ -558,7 +562,7 @@ function FloresMenu() {
         </p>
       )}
 
-      {activeFlowerType === DIA_MADRES_FILTER_KEY && dmEncabezado && (
+      {ENABLE_MOTHERS_DAY_CATALOG && activeFlowerType === DIA_MADRES_FILTER_KEY && dmEncabezado && (
         <img
           src={dmEncabezado}
           alt="Catálogo Día de las Madres — Studio dei Fiori"

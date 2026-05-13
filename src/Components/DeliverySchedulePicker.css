@@ -18,7 +18,7 @@
 
 .dsp__field {
   position: relative;
-  border: 1.5px solid #d8d0dd;
+  border: 1.5px solid var(--brand-border);
   border-radius: 12px;
   background: #fff;
   padding: 0.55rem 0.75rem 0.45rem;
@@ -26,7 +26,7 @@
 }
 
 .dsp__field:focus-within {
-  border-color: #f894f4;
+  border-color: var(--brand-wine);
 }
 
 .dsp__field-label {
@@ -38,7 +38,7 @@
   font-family: var(--font-ui);
   font-size: 0.72rem;
   font-weight: 700;
-  color: #9b82a0;
+  color: var(--brand-muted);
   white-space: nowrap;
   pointer-events: none;
 }
@@ -48,7 +48,7 @@
   font-family: var(--font-ui);
   font-size: 0.72rem;
   line-height: 1.35;
-  color: #8a3d81;
+  color: var(--brand-muted);
 }
 
 /* Shared control base */
@@ -102,7 +102,7 @@
 .dsp__control--arrow::after {
   content: '▾';
   font-size: 0.75rem;
-  color: #9b82a0;
+  color: var(--brand-muted);
   flex-shrink: 0;
 }
 
@@ -116,7 +116,7 @@
   padding: 0.3rem 0;
   list-style: none;
   background: #fff;
-  border: 1.5px solid #d8d0dd;
+  border: 1.5px solid var(--brand-border);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   max-height: 180px;
@@ -140,11 +140,11 @@
 }
 
 .dsp__time-option:hover {
-  background: #fce8fb;
+  background: var(--brand-surface-soft);
 }
 
 .dsp__time-option--active {
-  background: #f894f4;
+  background: var(--brand-wine);
   color: #1f111f;
   font-weight: 700;
 }
@@ -152,7 +152,7 @@
 /* Calendar overrides */
 
 .dsp__calendar {
-  border: 1.5px solid #d8d0dd;
+  border: 1.5px solid var(--brand-border);
   border-radius: 14px;
   font-family: var(--font-ui);
   box-shadow: 0 18px 34px rgba(41, 30, 18, 0.2);
@@ -183,7 +183,7 @@
 
 .dsp__calendar .react-datepicker__day--selected,
 .dsp__calendar .react-datepicker__day--selected:hover {
-  background-color: #f894f4;
+  background-color: var(--brand-wine);
   border-radius: 999px;
   color: #1f111f;
 }

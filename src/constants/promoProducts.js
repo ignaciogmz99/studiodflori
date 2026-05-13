@@ -93,6 +93,9 @@ export const CATALOGO_2025_IDS = new Set([
 
 export const CATALOGO_2025_FILTER_KEY = 'catalogo_2025'
 
+// Toggle this back to true when the Mother's Day catalog should be visible again.
+export const ENABLE_MOTHERS_DAY_CATALOG = false
+
 export const DIA_MADRES_IDS = new Set([
   'DM_Tulipanes',
   'DM_Ramo_Lisianthus',

@@ -1,4 +1,4 @@
-import { DIA_MADRES_FILTER_KEY, DIA_MADRES_IDS } from '../constants/promoProducts'
+import { DIA_MADRES_FILTER_KEY, DIA_MADRES_IDS, ENABLE_MOTHERS_DAY_CATALOG } from '../constants/promoProducts'
 
 const MOTHERS_DAY_MONTH = 5
 const MOTHERS_DAY_SEASON_START = 1
@@ -39,6 +39,10 @@ function getMonthAndDay(value) {
 }
 
 export function isMothersDayCatalogSeason(value) {
+  if (!ENABLE_MOTHERS_DAY_CATALOG) {
+    return false
+  }
+
   const parts = getMonthAndDay(value)
   if (!parts) {
     return false
@@ -50,6 +54,10 @@ export function isMothersDayCatalogSeason(value) {
 }
 
 export function isMothersDayCatalogLocked(value) {
+  if (!ENABLE_MOTHERS_DAY_CATALOG) {
+    return false
+  }
+
   const parts = getMonthAndDay(value)
   if (!parts) {
     return false
@@ -61,6 +69,10 @@ export function isMothersDayCatalogLocked(value) {
 }
 
 export function allowsMothersDaySundayDelivery(value) {
+  if (!ENABLE_MOTHERS_DAY_CATALOG) {
+    return false
+  }
+
   const parts = getMonthAndDay(value)
   if (!parts) {
     return false
@@ -80,10 +92,18 @@ export function isSundayDeliveryBlocked(value) {
 }
 
 export function isMothersDayProductId(productId) {
+  if (!ENABLE_MOTHERS_DAY_CATALOG) {
+    return false
+  }
+
   return DIA_MADRES_IDS.has(String(productId || '').trim())
 }
 
 export function cartSupportsLockedMothersDayDates(items = []) {
+  if (!ENABLE_MOTHERS_DAY_CATALOG) {
+    return true
+  }
+
   if (!Array.isArray(items) || items.length === 0) {
     return true
   }
@@ -96,5 +116,9 @@ export function isLockedMothersDayDateBlockedForCart(value, items = []) {
 }
 
 export function resolveInitialFlowerType(value, fallback = DEFAULT_FLOWER_TYPE) {
+  if (!ENABLE_MOTHERS_DAY_CATALOG) {
+    return fallback
+  }
+
   return isMothersDayCatalogSeason(value) ? DIA_MADRES_FILTER_KEY : fallback
 }

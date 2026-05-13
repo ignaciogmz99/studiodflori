@@ -3,10 +3,19 @@
 :root {
   --font-ui: 'Nunito Sans', 'Segoe UI', sans-serif;
   --font-display: 'Cormorant Garamond', Georgia, serif;
-  --page-bg: #f894f4;
-  --surface-bg: #ffd8fb;
-  --surface-soft: #ffeafb;
-  --surface-border: #efb7ea;
+  --brand-wine: #85083f;
+  --brand-wine-dark: #650631;
+  --brand-muted: #7b455c;
+  --brand-surface: #f8edf2;
+  --brand-surface-soft: #fff7fa;
+  --brand-surface-strong: #efd2dc;
+  --brand-border: #e4b8c9;
+  --brand-border-strong: #b85b82;
+  --brand-focus-ring: rgba(133, 8, 63, 0.16);
+  --page-bg: var(--brand-wine);
+  --surface-bg: var(--brand-surface-strong);
+  --surface-soft: var(--brand-surface-soft);
+  --surface-border: var(--brand-border);
   --text-main: #2f2130;
 }
 

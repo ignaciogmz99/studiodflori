@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async'
 import './visualización.css'
 import { useCart } from '../context/CartContext'
 import DeliverySchedulePicker from './DeliverySchedulePicker'
-import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE, KIRA_MILAN_COLLECTION_IDS, KIRA_MILAN_ORIGINAL_PRICES, DIA_MADRES_IDS } from '../constants/promoProducts'
+import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE, KIRA_MILAN_COLLECTION_IDS, KIRA_MILAN_ORIGINAL_PRICES, DIA_MADRES_IDS, ENABLE_MOTHERS_DAY_CATALOG } from '../constants/promoProducts'
 
 const SITE_URL = 'https://www.studiodeifiori.com'
 
@@ -153,7 +153,7 @@ function FloralDeco({ petalColor = '#e87de8', centerColor = '#f0c8ee', innerColo
 function Visualización() {
   const { selectedFlower, clearSelectedFlower, addToCart } = useCart()
   const navigate = useNavigate()
-  const isDM = selectedFlower ? DIA_MADRES_IDS.has(selectedFlower.id) : false
+  const isDM = selectedFlower ? ENABLE_MOTHERS_DAY_CATALOG && DIA_MADRES_IDS.has(selectedFlower.id) : false
   const [currentImageIndex, setCurrentImageIndex] = useState(selectedFlower?.principalIndex ?? 0)
 
   useEffect(() => {
@@ -323,7 +323,7 @@ function Visualización() {
       <div className="visualizacion__sticky-bar">
         <button
           type="button"
-          className={`visualizacion__add-button${DIA_MADRES_IDS.has(id) ? ' visualizacion__add-button--dm' : ''}`}
+          className={`visualizacion__add-button${isDM ? ' visualizacion__add-button--dm' : ''}`}
           onClick={() => addToCart(selectedFlower)}
           disabled={!canAddToCart}
         >

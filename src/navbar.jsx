@@ -1,9 +1,9 @@
 import './navbar.css'
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import logo from './assets/logo_bien.jpg'
 import { useCart } from './context/CartContext'
-import { PROMO_FILTER_KEY, KIRA_MILAN_FILTER_KEY, CATALOGO_2026_FILTER_KEY, CATALOGO_2025_FILTER_KEY, CATALOGO_2023_FILTER_KEY, CATALOGO_2024_FILTER_KEY, DIA_MADRES_FILTER_KEY } from './constants/promoProducts'
+import { PROMO_FILTER_KEY, KIRA_MILAN_FILTER_KEY, CATALOGO_2026_FILTER_KEY, CATALOGO_2025_FILTER_KEY, CATALOGO_2023_FILTER_KEY, CATALOGO_2024_FILTER_KEY, DIA_MADRES_FILTER_KEY, ENABLE_MOTHERS_DAY_CATALOG } from './constants/promoProducts'
 
 const COURSE_PRODUCT_ID = 'Curso'
 const COURSE_TIME = '10:00 am a 5:00 pm'
@@ -44,6 +44,7 @@ function Navbar() {
   const [categoriesOpen, setCategoriesOpen] = useState(false)
   const prevTotalItemsRef = useRef(0)
   const navigate = useNavigate()
+  const location = useLocation()
   const {
     items,
     totalItems,
@@ -62,8 +63,11 @@ function Navbar() {
     closePaymentView,
     hasOnlyCourseItems
   } = useCart()
-  const effectiveSelectedFlowerType = isMothersDayCatalogLocked ? DIA_MADRES_FILTER_KEY : selectedFlowerType
-  const lockedCatalogMessage = 'Del 7 al 10 de mayo solo esta disponible el catalogo del Dia de las Madres.'
+  const effectiveSelectedFlowerType = isMothersDayCatalogLocked && ENABLE_MOTHERS_DAY_CATALOG ? DIA_MADRES_FILTER_KEY : selectedFlowerType
+  const lockedCatalogMessage = ENABLE_MOTHERS_DAY_CATALOG
+    ? 'Del 7 al 10 de mayo solo esta disponible el catalogo del Dia de las Madres.'
+    : undefined
+  const isCursosView = location.pathname.replace(/\/+$/, '') === '/cursos'
 
   useEffect(() => {
     if (prevTotalItemsRef.current === 0 && totalItems === 1) {
@@ -99,6 +103,10 @@ function Navbar() {
   }
 
   const canSelectFlowerType = (flowerType) => {
+    if (!ENABLE_MOTHERS_DAY_CATALOG) {
+      return true
+    }
+
     return !isMothersDayCatalogLocked || flowerType === DIA_MADRES_FILTER_KEY
   }
 
@@ -142,57 +150,57 @@ function Navbar() {
           <span className="navbar__brand-icon-wrap">
             <img className="navbar__logo-image" src={logo} alt="Logo de Studio dei Fiori" />
           </span>
-          <span className="navbar__brand-text">Studio dei Fiori</span>
+          <span className="navbar__brand-copy">
+            <span className="navbar__brand-text">Studio dei Fiori</span>
+            <span className="navbar__brand-subtitle">Flores y cursos con entrega especial</span>
+          </span>
         </button>
 
         <ul className="navbar__menu">
           <li className="navbar__menu-item navbar__menu-item--desktop">
             <button
               type="button"
-              className="navbar__link navbar__link-button"
-              onClick={handleGoToFlowers}
-            >
-              Flores
-            </button>
-          </li>
-          <li className="navbar__menu-item navbar__menu-item--desktop">
-            <button
-              type="button"
-              className="navbar__link navbar__link-button"
+              className={`navbar__icon-button navbar__icon-button--course${isCursosView ? ' navbar__icon-button--course-active' : ''}`}
               onClick={handleGoToCursos}
+              aria-label="Ir a cursos"
             >
-              Cursos
+              <span className="navbar__course-label">Curso</span>
             </button>
           </li>
           <li className="navbar__menu-item navbar__menu-item--desktop">
             <button
               type="button"
-              className="navbar__link navbar__link-button"
+              className="navbar__icon-button navbar__icon-button--search"
+              onClick={handleGoToFlowers}
+              aria-label="Ir a flores"
+            >
+              <span aria-hidden="true" className="navbar__icon navbar__icon--search" />
+            </button>
+          </li>
+          <li className="navbar__menu-item navbar__menu-item--desktop">
+            <button
+              type="button"
+              className="navbar__icon-button navbar__icon-button--user"
               onClick={() => handleOpen('contacto')}
               aria-expanded={activePanel === 'contacto'}
+              aria-label="Contacto"
             >
-              Contacto
-            </button>
-          </li>
-          <li className="navbar__menu-item navbar__menu-item--desktop">
-            <button
-              type="button"
-              className="navbar__link navbar__link-button"
-              onClick={() => handleOpen('direccion')}
-              aria-expanded={activePanel === 'direccion'}
-            >
-              Direccion
+              <span aria-hidden="true" className="navbar__icon navbar__icon--user" />
             </button>
           </li>
           <li className="navbar__menu-item navbar__menu-item--cart">
             <button
               type="button"
-              className={`navbar__link navbar__link-button navbar__cart-button ${totalItems > 0 ? 'navbar__cart-button--alert' : ''}`}
+              className={`navbar__icon-button navbar__icon-button--cart navbar__cart-button ${totalItems > 0 ? 'navbar__cart-button--alert' : ''}`}
               onClick={() => handleOpen('cart')}
               aria-expanded={activePanel === 'cart'}
               aria-label={`Carrito con ${totalItems} producto${totalItems === 1 ? '' : 's'}`}
             >
-              Carrito
+              <span aria-hidden="true" className="navbar__icon navbar__icon--cart">
+                <span className="navbar__cart-basket" />
+                <span className="navbar__cart-wheel navbar__cart-wheel--left" />
+                <span className="navbar__cart-wheel navbar__cart-wheel--right" />
+              </span>
               {totalItems > 0 && (
                 <span className="navbar__cart-badge" aria-hidden="true">
                   {totalItems > 99 ? '99+' : totalItems}
@@ -213,8 +221,11 @@ function Navbar() {
             onClick={(event) => event.stopPropagation()}
           >
             <div className="navbar__mobile-drawer-header">
-              <span className="navbar__mobile-drawer-title">Menu</span>
-              <button type="button" className="navbar__panel-close" onClick={handleClose} aria-label="Cerrar">
+              <div className="navbar__mobile-drawer-heading">
+                <span className="navbar__mobile-drawer-title">Studio dei Fiori</span>
+                <span className="navbar__mobile-drawer-subtitle">Flores, cursos y detalles vivos</span>
+              </div>
+              <button type="button" className="navbar__panel-close" onClick={handleClose} aria-label="Cerrar menu">
                 x
               </button>
             </div>
@@ -238,13 +249,15 @@ function Navbar() {
               >
                 ✨ Kira Milan Collection 2025
               </button>
-              <button
-                type="button"
-                className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--dm${effectiveSelectedFlowerType === DIA_MADRES_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
-                onClick={() => handleSelectFlowerType(DIA_MADRES_FILTER_KEY)}
-              >
-                💐 Día de las Madres
-              </button>
+              {ENABLE_MOTHERS_DAY_CATALOG && (
+                <button
+                  type="button"
+                  className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--dm${effectiveSelectedFlowerType === DIA_MADRES_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
+                  onClick={() => handleSelectFlowerType(DIA_MADRES_FILTER_KEY)}
+                >
+                  💐 Día de las Madres
+                </button>
+              )}
               <button
                 type="button"
                 className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--catalogo2026${effectiveSelectedFlowerType === CATALOGO_2026_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
@@ -355,7 +368,7 @@ function Navbar() {
             </button>
             <h2 className="navbar__panel-title">Carrito</h2>
             {items.length === 0 && (
-              <p className="navbar__panel-text">Aun no agregas flores al carrito.</p>
+              <p className="navbar__panel-text">Aun no agregas productos al carrito.</p>
             )}
             {items.length > 0 && (
               <>
@@ -460,3 +473,4 @@ function Navbar() {
 }
 
 export default Navbar
+

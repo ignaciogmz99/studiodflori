@@ -1,7 +1,7 @@
 .cursos {
   --curso-ink: #241f1d;
   --curso-muted: #695f59;
-  --curso-flower: #d44ecc;
+  --curso-flower: var(--brand-wine);
   --curso-leaf: #446f4b;
   --curso-sun: #f2c45b;
   --curso-paper: #fff9f2;
@@ -201,7 +201,7 @@
 
 .cursos__thumb--active {
   border-color: var(--curso-flower);
-  box-shadow: 0 12px 28px rgba(212, 78, 204, 0.18);
+  box-shadow: 0 12px 28px rgba(133, 8, 63, 0.16);
   transform: translateY(-2px);
 }
 
@@ -243,7 +243,7 @@
 }
 
 .cursos__disclosure[open] {
-  border-color: rgba(212, 78, 204, 0.26);
+  border-color: rgba(133, 8, 63, 0.22);
   box-shadow: 0 18px 42px rgba(36, 31, 29, 0.1);
 }
 

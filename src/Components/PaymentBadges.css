@@ -9,7 +9,7 @@
   font-family: var(--font-ui);
   font-size: 0.78rem;
   font-weight: 700;
-  color: #9b82a0;
+  color: var(--brand-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
