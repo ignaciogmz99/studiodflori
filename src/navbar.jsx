@@ -158,8 +158,8 @@ function Navbar() {
           </span>
         </button>
 
-        <ul className="navbar__menu">
-          <li className="navbar__menu-item navbar__menu-item--desktop">
+        <div className="navbar__actions">
+          <div className="navbar__quick-links" role="group" aria-label="Accesos principales">
             <button
               type="button"
               className={`navbar__icon-button navbar__icon-button--text${isCursosView ? ' navbar__icon-button--text-active' : ''}`}
@@ -169,8 +169,6 @@ function Navbar() {
             >
               <span className="navbar__nav-label">CURSOS</span>
             </button>
-          </li>
-          <li className="navbar__menu-item navbar__menu-item--desktop">
             <button
               type="button"
               className={`navbar__icon-button navbar__icon-button--text${isFloresView ? ' navbar__icon-button--text-active' : ''}`}
@@ -180,39 +178,42 @@ function Navbar() {
             >
               <span className="navbar__nav-label">FLORES</span>
             </button>
-          </li>
-          <li className="navbar__menu-item navbar__menu-item--desktop">
-            <button
-              type="button"
-              className="navbar__icon-button navbar__icon-button--user"
-              onClick={() => handleOpen('contacto')}
-              aria-expanded={activePanel === 'contacto'}
-              aria-label="Contacto"
-            >
-              <span aria-hidden="true" className="navbar__icon navbar__icon--user" />
-            </button>
-          </li>
-          <li className="navbar__menu-item navbar__menu-item--cart">
-            <button
-              type="button"
-              className={`navbar__icon-button navbar__icon-button--cart navbar__cart-button ${totalItems > 0 ? 'navbar__cart-button--alert' : ''}`}
-              onClick={() => handleOpen('cart')}
-              aria-expanded={activePanel === 'cart'}
-              aria-label={`Carrito con ${totalItems} producto${totalItems === 1 ? '' : 's'}`}
-            >
-              <span aria-hidden="true" className="navbar__icon navbar__icon--cart">
-                <span className="navbar__cart-basket" />
-                <span className="navbar__cart-wheel navbar__cart-wheel--left" />
-                <span className="navbar__cart-wheel navbar__cart-wheel--right" />
-              </span>
-              {totalItems > 0 && (
-                <span className="navbar__cart-badge" aria-hidden="true">
-                  {totalItems > 99 ? '99+' : totalItems}
+          </div>
+
+          <ul className="navbar__menu">
+            <li className="navbar__menu-item navbar__menu-item--user">
+              <button
+                type="button"
+                className="navbar__icon-button navbar__icon-button--user"
+                onClick={() => handleOpen('contacto')}
+                aria-expanded={activePanel === 'contacto'}
+                aria-label="Contacto"
+              >
+                <span aria-hidden="true" className="navbar__icon navbar__icon--user" />
+              </button>
+            </li>
+            <li className="navbar__menu-item navbar__menu-item--cart">
+              <button
+                type="button"
+                className={`navbar__icon-button navbar__icon-button--cart navbar__cart-button ${totalItems > 0 ? 'navbar__cart-button--alert' : ''}`}
+                onClick={() => handleOpen('cart')}
+                aria-expanded={activePanel === 'cart'}
+                aria-label={`Carrito con ${totalItems} producto${totalItems === 1 ? '' : 's'}`}
+              >
+                <span aria-hidden="true" className="navbar__icon navbar__icon--cart">
+                  <span className="navbar__cart-basket" />
+                  <span className="navbar__cart-wheel navbar__cart-wheel--left" />
+                  <span className="navbar__cart-wheel navbar__cart-wheel--right" />
                 </span>
-              )}
-            </button>
-          </li>
-        </ul>
+                {totalItems > 0 && (
+                  <span className="navbar__cart-badge" aria-hidden="true">
+                    {totalItems > 99 ? '99+' : totalItems}
+                  </span>
+                )}
+              </button>
+            </li>
+          </ul>
+        </div>
       </nav>
 
       {activePanel === 'mobile-menu' && (
