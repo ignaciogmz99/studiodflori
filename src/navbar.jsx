@@ -63,11 +63,13 @@ function Navbar() {
     closePaymentView,
     hasOnlyCourseItems
   } = useCart()
+  const normalizedPath = location.pathname === '/' ? '/' : location.pathname.replace(/\/+$/, '')
   const effectiveSelectedFlowerType = isMothersDayCatalogLocked && ENABLE_MOTHERS_DAY_CATALOG ? DIA_MADRES_FILTER_KEY : selectedFlowerType
   const lockedCatalogMessage = ENABLE_MOTHERS_DAY_CATALOG
     ? 'Del 7 al 10 de mayo solo esta disponible el catalogo del Dia de las Madres.'
     : undefined
-  const isCursosView = location.pathname.replace(/\/+$/, '') === '/cursos'
+  const isCursosView = normalizedPath === '/cursos'
+  const isFloresView = normalizedPath === '/' || normalizedPath.startsWith('/flores')
 
   useEffect(() => {
     if (prevTotalItemsRef.current === 0 && totalItems === 1) {
@@ -160,21 +162,23 @@ function Navbar() {
           <li className="navbar__menu-item navbar__menu-item--desktop">
             <button
               type="button"
-              className={`navbar__icon-button navbar__icon-button--course${isCursosView ? ' navbar__icon-button--course-active' : ''}`}
+              className={`navbar__icon-button navbar__icon-button--text${isCursosView ? ' navbar__icon-button--text-active' : ''}`}
               onClick={handleGoToCursos}
               aria-label="Ir a cursos"
+              aria-current={isCursosView ? 'page' : undefined}
             >
-              <span className="navbar__course-label">Curso</span>
+              <span className="navbar__nav-label">CURSOS</span>
             </button>
           </li>
           <li className="navbar__menu-item navbar__menu-item--desktop">
             <button
               type="button"
-              className="navbar__icon-button navbar__icon-button--search"
+              className={`navbar__icon-button navbar__icon-button--text${isFloresView ? ' navbar__icon-button--text-active' : ''}`}
               onClick={handleGoToFlowers}
               aria-label="Ir a flores"
+              aria-current={isFloresView ? 'page' : undefined}
             >
-              <span aria-hidden="true" className="navbar__icon navbar__icon--search" />
+              <span className="navbar__nav-label">FLORES</span>
             </button>
           </li>
           <li className="navbar__menu-item navbar__menu-item--desktop">

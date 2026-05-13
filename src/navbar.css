@@ -1049,28 +1049,29 @@
   transition: color 160ms ease, transform 160ms ease;
 }
 
-.navbar__icon-button--course {
+.navbar__icon-button--text {
   width: auto;
-  min-width: 62px;
+  min-width: 70px;
   height: 32px;
-  padding: 0 0.15rem;
+  padding: 0 0.12rem;
 }
 
-.navbar__course-label {
+.navbar__nav-label {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: 32px;
-  padding: 0 0.15rem;
+  padding: 0 0.12rem;
   color: currentColor;
   font-family: var(--font-ui);
-  font-size: 0.98rem;
-  font-weight: 700;
+  font-size: 0.9rem;
+  font-weight: 500;
   line-height: 1;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-.navbar__icon-button--course-active .navbar__course-label {
+.navbar__icon-button--text-active .navbar__nav-label {
   color: #fff7f3;
 }
 
@@ -1250,8 +1251,8 @@
     font-size: 1.5rem;
   }
 
-  .navbar__course-label {
-    font-size: 0.92rem;
+  .navbar__nav-label {
+    font-size: 0.86rem;
   }
 }
 
@@ -1290,9 +1291,9 @@
     height: 32px;
   }
 
-  .navbar__icon-button--course {
+  .navbar__icon-button--text {
     width: auto;
-    min-width: 56px;
+    min-width: 58px;
   }
 
   .navbar__icon {
@@ -1300,7 +1301,8 @@
     height: 25px;
   }
 
-  .navbar__course-label {
-    font-size: 0.88rem;
+  .navbar__nav-label {
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
   }
 }
