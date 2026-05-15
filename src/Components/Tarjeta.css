@@ -58,7 +58,7 @@
 .tarjeta__provider-option--active {
   background: var(--brand-wine);
   border-color: var(--brand-wine);
-  color: #1f111f;
+  color: #fff;
 }
 
 .tarjeta__stripe-badge {
@@ -306,7 +306,7 @@
   border: 0;
   border-radius: 999px;
   background: var(--brand-wine);
-  color: #1f111f;
+  color: #fff;
   font-family: var(--font-ui);
   font-size: 0.9rem;
   font-weight: 700;
