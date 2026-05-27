@@ -4,6 +4,7 @@ import './Flores_menu.css'
 import { supabase } from '../lib/supabaseClient'
 import { useCart } from '../context/CartContext'
 import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE, PROMO_FILTER_KEY, KIRA_MILAN_COLLECTION_IDS, KIRA_MILAN_FILTER_KEY, KIRA_MILAN_ORIGINAL_PRICES, CATALOGO_2026_IDS, CATALOGO_2026_FILTER_KEY, CATALOGO_2025_IDS, CATALOGO_2025_FILTER_KEY, CATALOGO_2023_IDS, CATALOGO_2023_FILTER_KEY, CATALOGO_2024_IDS, CATALOGO_2024_FILTER_KEY, DIA_MADRES_IDS, DIA_MADRES_FILTER_KEY, DIA_MADRES_ORDER, ENABLE_MOTHERS_DAY_CATALOG } from '../constants/promoProducts'
+import { formatMxPrice, HOT_SALE_BADGE_LABEL, resolveProductPriceDisplay } from '../lib/productPricing'
 
 const assetModulesL1 = import.meta.glob('../assets/*/*.webp', { eager: true, import: 'default' })
 const assetModulesL2 = import.meta.glob('../assets/*/*/*.webp', { eager: true, import: 'default' })
@@ -269,6 +270,9 @@ function FloresMenu() {
     return localProducts.map((product) => {
       const inventory = inventoryById[product.id]
       const parsedPrice = inventory?.precio == null ? null : Number(inventory.precio)
+      const parsedOriginalPrice = inventory?.precio_original == null
+        ? Number(inventory?.precioOriginal)
+        : Number(inventory.precio_original)
       const currentIndex = imageIndexByProduct[product.id] ?? product.principalIndex
       const normalizedIndex = product.images.length ? ((currentIndex % product.images.length) + product.images.length) % product.images.length : 0
 
@@ -282,6 +286,7 @@ function FloresMenu() {
           ?? inventory?.tipoFlor
         ),
         price: Number.isNaN(parsedPrice) ? null : parsedPrice,
+        originalPrice: Number.isNaN(parsedOriginalPrice) ? null : parsedOriginalPrice,
         stock: inventory?.stock ?? null,
         preparationHours: resolvePreparationHours(inventory),
         hasInventoryRecord: Boolean(inventory),
@@ -571,8 +576,14 @@ function FloresMenu() {
       )}
 
       <div className="flores-menu__shelf" aria-label="Estante de productos">
-        {filteredProducts.slice(0, visibleCount).map((product) => (
-          <article className="flores-menu__card" key={product.id}>
+        {filteredProducts.slice(0, visibleCount).map((product) => {
+          const fallbackOriginalPrice = PROMO_PRODUCT_IDS.has(product.id)
+            ? PROMO_ORIGINAL_PRICE
+            : KIRA_MILAN_ORIGINAL_PRICES[product.id] ?? null
+          const priceDisplay = resolveProductPriceDisplay(product.id, product.price, fallbackOriginalPrice, product.originalPrice)
+
+          return (
+            <article className="flores-menu__card" key={product.id}>
             <div
               className={`flores-menu__image-wrap flores-menu__image-wrap--clickable${DIA_MADRES_IDS.has(product.id) ? ' flores-menu__image-wrap--landscape' : ''}`}
               role="button"
@@ -593,6 +604,9 @@ function FloresMenu() {
               )}
               {KIRA_MILAN_COLLECTION_IDS.has(product.id) && (
                 <span className="flores-menu__collection-badge" aria-label="Kira Milan Collection">✨ Collection</span>
+              )}
+              {priceDisplay.hasHotSale && (
+                <span className="flores-menu__hot-sale-badge" aria-label={HOT_SALE_BADGE_LABEL}>{HOT_SALE_BADGE_LABEL}</span>
               )}
               {product.totalImages > 1 && (
                 <>
@@ -622,16 +636,15 @@ function FloresMenu() {
             <p className="flores-menu__price flores-menu__price--clickable" onClick={() => openProduct(product)}>
               {inventoryStatus === 'loading'
                 ? 'Cargando precio...'
-                : typeof product.price === 'number'
+                : priceDisplay.currentPrice !== null
                   ? (
                     <>
-                      <span>${product.price} MXN</span>
-                      {PROMO_PRODUCT_IDS.has(product.id) && (
-                        <s className="flores-menu__price-original">${PROMO_ORIGINAL_PRICE} MXN</s>
+                      {priceDisplay.originalPrice !== null && (
+                        <s className="flores-menu__price-original">${formatMxPrice(priceDisplay.originalPrice)} MXN</s>
                       )}
-                      {KIRA_MILAN_COLLECTION_IDS.has(product.id) && KIRA_MILAN_ORIGINAL_PRICES[product.id] && (
-                        <s className="flores-menu__price-original">${KIRA_MILAN_ORIGINAL_PRICES[product.id]} MXN</s>
-                      )}
+                      <span className={`flores-menu__price-current${priceDisplay.hasHotSale ? ' flores-menu__price-current--sale' : ''}`}>
+                        ${formatMxPrice(priceDisplay.currentPrice)} MXN
+                      </span>
                     </>
                   )
                   : 'Precio no disponible'}
@@ -661,8 +674,9 @@ function FloresMenu() {
             >
               {inventoryStatus === 'loading' ? 'Cargando...' : 'Agregar al carrito'}
             </button>
-          </article>
-        ))}
+            </article>
+          )
+        })}
       </div>
       <div ref={loadMoreRef} />
     </section>

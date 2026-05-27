@@ -6,6 +6,9 @@ import { localProducts, normalizeFlowerType, resolvePreparationHours } from './F
 
 function buildProductForDetail(product, inventory = null, isInventoryLoading = false) {
   const parsedPrice = inventory?.precio == null ? null : Number(inventory.precio)
+  const parsedOriginalPrice = inventory?.precio_original == null
+    ? Number(inventory?.precioOriginal)
+    : Number(inventory.precio_original)
   const normalizedIndex = product.images.length
     ? ((product.principalIndex % product.images.length) + product.images.length) % product.images.length
     : 0
@@ -20,6 +23,7 @@ function buildProductForDetail(product, inventory = null, isInventoryLoading = f
       ?? inventory?.tipoFlor
     ),
     price: Number.isNaN(parsedPrice) ? null : parsedPrice,
+    originalPrice: Number.isNaN(parsedOriginalPrice) ? null : parsedOriginalPrice,
     stock: inventory?.stock ?? null,
     preparationHours: resolvePreparationHours(inventory),
     hasInventoryRecord: Boolean(inventory),

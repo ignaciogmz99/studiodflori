@@ -211,6 +211,25 @@
   z-index: 3;
 }
 
+.visualizacion__hot-sale-badge {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  z-index: 3;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ff7a00 0%, #ffbe55 55%, #ffe2a9 100%);
+  color: #6a1d00;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: 0 12px 28px rgba(255, 122, 0, 0.3);
+  transform: rotate(7deg);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+}
+
 .visualizacion__thumbs {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(58px, 76px));
@@ -296,8 +315,18 @@
   font-weight: 700;
   color: #222;
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.55rem;
+}
+
+.visualizacion__price-current {
+  color: #222;
+}
+
+.visualizacion__price-current--sale {
+  color: #8f123d;
+  font-size: 1.45rem;
 }
 
 .visualizacion__price-original {

@@ -4,6 +4,7 @@ import './Pago.css'
 import { useCart } from '../context/CartContext'
 import { DELIVERY_CITIES } from '../constants/deliveryCities'
 import PaymentBadges from './PaymentBadges'
+import { trackAddShippingInfo, trackBeginCheckout } from '../lib/analytics'
 
 const PHONE_COUNTRY_CODES = [
   { value: '+52', label: '+52 MEX' },
@@ -134,6 +135,30 @@ function Pago() {
     )
   )
   const canContinueToPayment = isDeliveryFormValid && items.length > 0 && !hasBlockedMothersDayDeliverySelection
+
+  useEffect(() => {
+    if (items.length === 0) {
+      return
+    }
+
+    trackBeginCheckout({
+      items,
+      value: totalWithDelivery
+    })
+  }, [items, totalWithDelivery])
+
+  const handleContinueToPayment = () => {
+    if (!canContinueToPayment) {
+      return
+    }
+
+    trackAddShippingInfo({
+      items,
+      value: totalWithDelivery,
+      fulfillmentType: isCourseCheckout ? 'course' : (isStorePickup ? 'pickup' : 'delivery')
+    })
+    openCardView()
+  }
 
   return (
     <section className="pago" aria-label="Resumen de pago">
@@ -362,7 +387,7 @@ function Pago() {
             <button
               type="button"
               className="pago__next"
-              onClick={openCardView}
+              onClick={handleContinueToPayment}
               disabled={!canContinueToPayment}
             >
               Siguiente

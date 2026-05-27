@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext'
 import { PAYMENT_RECEIPT_STORAGE_KEY } from '../constants/paymentReceiptStorage.js'
 import { defaultPaymentProvider, getPaymentProvider, paymentProviders } from './payments'
 import PaymentProviderBoundary from './payments/PaymentProviderBoundary'
+import { trackPurchase } from '../lib/analytics'
 
 function onlyDigits(value) {
   return String(value || '').replace(/\D/g, '')
@@ -324,9 +325,20 @@ function Tarjeta() {
       selectedDeliveryTime: hasOnlyCourseItems ? COURSE_TIME : selectedDeliveryTime
     }
 
-    setReceiptData({
+    const nextReceiptData = {
       ...basePayload,
       ...approvedPayload
+    }
+
+    setReceiptData(nextReceiptData)
+    trackPurchase({
+      orderId: nextReceiptData.orderId,
+      paymentId: nextReceiptData.paymentId,
+      provider: nextReceiptData.provider,
+      amount: nextReceiptData.amount,
+      currency: nextReceiptData.currency,
+      items: nextReceiptData.items,
+      fulfillmentType: nextReceiptData.deliveryDetails?.fulfillmentType || 'delivery'
     })
   }
 

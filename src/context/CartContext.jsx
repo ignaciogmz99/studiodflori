@@ -8,6 +8,7 @@ import {
   isMothersDayCatalogLocked,
   resolveInitialFlowerType
 } from '../lib/mothersDayCatalog'
+import { trackAddToCart } from '../lib/analytics'
 import { supabase } from '../lib/supabaseClient'
 
 const CartContext = createContext(null)
@@ -113,6 +114,8 @@ export function CartProvider({ children }) {
         }
       ]
     })
+
+    trackAddToCart(product)
   }
 
   const removeFromCart = (productId) => {

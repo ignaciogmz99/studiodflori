@@ -4,7 +4,8 @@ import { Helmet } from 'react-helmet-async'
 import './visualización.css'
 import { useCart } from '../context/CartContext'
 import DeliverySchedulePicker from './DeliverySchedulePicker'
-import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE, KIRA_MILAN_COLLECTION_IDS, KIRA_MILAN_ORIGINAL_PRICES, DIA_MADRES_IDS, ENABLE_MOTHERS_DAY_CATALOG } from '../constants/promoProducts'
+import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE, KIRA_MILAN_ORIGINAL_PRICES, DIA_MADRES_IDS, ENABLE_MOTHERS_DAY_CATALOG } from '../constants/promoProducts'
+import { formatMxPrice, HOT_SALE_BADGE_LABEL, resolveProductPriceDisplay } from '../lib/productPricing'
 
 const SITE_URL = 'https://www.studiodeifiori.com'
 
@@ -162,7 +163,7 @@ function Visualización() {
 
   if (!selectedFlower) return null
 
-  const { name, images, price, stock, preparationHours, hasInventoryRecord, isInventoryLoading, descripcion, id } = selectedFlower
+  const { name, images, price, originalPrice, stock, preparationHours, hasInventoryRecord, isInventoryLoading, descripcion, id } = selectedFlower
   const poetic = POETIC_DESCRIPTIONS[id] || null
   const displayDescripcion = descripcion && poetic
     ? `${descripcion} ${poetic}`
@@ -173,6 +174,10 @@ function Visualización() {
     : 0
   const currentImage = images?.[normalizedIndex] ?? selectedFlower.image
   const canAddToCart = typeof price === 'number' && typeof stock === 'number' && stock > 0
+  const fallbackOriginalPrice = PROMO_PRODUCT_IDS.has(id)
+    ? PROMO_ORIGINAL_PRICE
+    : KIRA_MILAN_ORIGINAL_PRICES[id] ?? null
+  const priceDisplay = resolveProductPriceDisplay(id, price, fallbackOriginalPrice, originalPrice)
   const metaDescription = displayDescripcion
     ? displayDescripcion.slice(0, 155)
     : `${name} — arreglo floral con entrega a domicilio en Guadalajara.`
@@ -227,6 +232,9 @@ function Visualización() {
               alt={name}
               decoding="async"
             />
+            {priceDisplay.hasHotSale && (
+              <span className="visualizacion__hot-sale-badge" aria-label={HOT_SALE_BADGE_LABEL}>{HOT_SALE_BADGE_LABEL}</span>
+            )}
             {totalImages > 1 && (
               <>
                 <button
@@ -277,15 +285,14 @@ function Visualización() {
           )}
 
           <p className="visualizacion__price">
-            {isInventoryLoading ? 'Cargando precio...' : typeof price === 'number' ? (
+            {isInventoryLoading ? 'Cargando precio...' : priceDisplay.currentPrice !== null ? (
               <>
-                <span>${price} MXN</span>
-                {PROMO_PRODUCT_IDS.has(id) && (
-                  <s className="visualizacion__price-original">${PROMO_ORIGINAL_PRICE} MXN</s>
+                {priceDisplay.originalPrice !== null && (
+                  <s className="visualizacion__price-original">${formatMxPrice(priceDisplay.originalPrice)} MXN</s>
                 )}
-                {KIRA_MILAN_COLLECTION_IDS.has(id) && KIRA_MILAN_ORIGINAL_PRICES[id] && (
-                  <s className="visualizacion__price-original">${KIRA_MILAN_ORIGINAL_PRICES[id]} MXN</s>
-                )}
+                <span className={`visualizacion__price-current${priceDisplay.hasHotSale ? ' visualizacion__price-current--sale' : ''}`}>
+                  ${formatMxPrice(priceDisplay.currentPrice)} MXN
+                </span>
               </>
             ) : 'Precio no disponible'}
           </p>
