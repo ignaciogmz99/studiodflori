@@ -48,12 +48,16 @@ const POETIC_DESCRIPTIONS = {
     'Una caja que guarda el tiempo. Como un retrato que no envejece, estas flores permanecen en la memoria de quien las recibe.',
   Carollo:
     'De nombre italiano y alma florentina, el Carollo es una composición que parece arrancada de un jardín renacentista en plena flor.',
+  Congrats:
+    'Pensado para celebrar metas grandes, Congrats mezcla color, frescura y ese brillo que solo aparece cuando alguien llega a donde soñó. Es un arreglo para decir: lo lograste, y apenas empieza lo mejor.',
   Ceramica_Beige:
     'La calidez de la tierra moldea el recipiente; la delicadeza de las flores, el alma. Juntos crean algo que se queda en los ojos y en el corazón.',
   Floral_iris:
     'El iris es el mensajero de los dioses en el jardín. Su color es el del horizonte justo antes de que la noche ceda ante el amanecer.',
   Giardino_Rosa:
     'Un jardín rosado que susurra en italiano. Cada flor es una nota en una canción que habla de belleza sin pretensión.',
+  Happiness:
+    'Happiness abre la escena con tonos suaves y una energía luminosa. Es la clase de arreglo que convierte un momento especial en un recuerdo feliz desde el primer vistazo.',
   Jarron_con_Girasoles:
     'Los girasoles nunca mienten — siempre miran hacia la luz. Llévalos contigo y llevarás un poco de sol a donde quiera que vayas.',
   Kira:

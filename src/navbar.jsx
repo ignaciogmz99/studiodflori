@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import logo from './assets/logo_bien.jpg'
 import { useCart } from './context/CartContext'
-import { PROMO_FILTER_KEY, KIRA_MILAN_FILTER_KEY, CATALOGO_2026_FILTER_KEY, CATALOGO_2025_FILTER_KEY, CATALOGO_2023_FILTER_KEY, CATALOGO_2024_FILTER_KEY, DIA_MADRES_FILTER_KEY, ENABLE_MOTHERS_DAY_CATALOG } from './constants/promoProducts'
+import { PROMO_FILTER_KEY, KIRA_MILAN_FILTER_KEY, GRAD_COLLECTION_FILTER_KEY, CATALOGO_2026_FILTER_KEY, CATALOGO_2025_FILTER_KEY, CATALOGO_2023_FILTER_KEY, CATALOGO_2024_FILTER_KEY, DIA_MADRES_FILTER_KEY, ENABLE_MOTHERS_DAY_CATALOG } from './constants/promoProducts'
 
 const COURSE_PRODUCT_ID = 'Curso'
 const COURSE_TIME = '10:00 am a 5:00 pm'
@@ -253,6 +253,15 @@ function Navbar() {
                 title={!canSelectFlowerType(KIRA_MILAN_FILTER_KEY) ? lockedCatalogMessage : undefined}
               >
                 ✨ Kira Milan Collection 2025
+              </button>
+              <button
+                type="button"
+                className={`navbar__mobile-drawer-link navbar__mobile-drawer-link--grad${effectiveSelectedFlowerType === GRAD_COLLECTION_FILTER_KEY ? ' navbar__mobile-drawer-link--active' : ''}`}
+                onClick={() => handleSelectFlowerType(GRAD_COLLECTION_FILTER_KEY)}
+                disabled={!canSelectFlowerType(GRAD_COLLECTION_FILTER_KEY)}
+                title={!canSelectFlowerType(GRAD_COLLECTION_FILTER_KEY) ? lockedCatalogMessage : undefined}
+              >
+                Grad Collection
               </button>
               {ENABLE_MOTHERS_DAY_CATALOG && (
                 <button

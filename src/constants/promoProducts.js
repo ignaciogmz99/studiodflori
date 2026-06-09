@@ -19,6 +19,16 @@ export const KIRA_MILAN_COLLECTION_IDS = new Set([
   'Cerezo',
 ])
 
+export const GRAD_COLLECTION_IDS = new Set([
+  'Tokyo_primavera',
+  'Giardino_Rosa',
+  'Alabaster_Garden',
+  'Admiral',
+  'Carollo',
+  'Congrats',
+  'Happiness',
+])
+
 export const KIRA_MILAN_ORIGINAL_PRICES = {
   Kira: 1350,
   London: 1150,
@@ -26,6 +36,16 @@ export const KIRA_MILAN_ORIGINAL_PRICES = {
   Milan_2: 850,
   Rotterdam: 1300,
   Cerezo: 1000,
+}
+
+export const GRAD_COLLECTION_ORDER = {
+  Tokyo_primavera: 1,
+  Giardino_Rosa: 2,
+  Alabaster_Garden: 3,
+  Admiral: 4,
+  Carollo: 5,
+  Congrats: 6,
+  Happiness: 7,
 }
 
 export const CATALOGO_2026_IDS = new Set([
@@ -131,3 +151,4 @@ export const DIA_MADRES_ORDER = {
 export const PROMO_ORIGINAL_PRICE = 650
 export const PROMO_FILTER_KEY = 'promo'
 export const KIRA_MILAN_FILTER_KEY = 'kira_milan'
+export const GRAD_COLLECTION_FILTER_KEY = 'grad_collection'

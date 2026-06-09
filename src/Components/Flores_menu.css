@@ -507,6 +507,13 @@
   border: 1px solid #c9a227;
 }
 
+.flores-menu__collection-badge--grad {
+  background: linear-gradient(135deg, #18231d 0%, #294839 52%, #18231d 100%);
+  color: #f4dfb8;
+  border-color: #d7b56d;
+  box-shadow: 0 2px 8px rgba(24, 35, 29, 0.4);
+}
+
 .flores-menu__hot-sale-badge {
   position: absolute;
   top: 0.7rem;

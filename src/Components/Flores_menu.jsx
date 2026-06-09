@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import './Flores_menu.css'
 import { supabase } from '../lib/supabaseClient'
 import { useCart } from '../context/CartContext'
-import { PROMO_PRODUCT_IDS, PROMO_FILTER_KEY, KIRA_MILAN_COLLECTION_IDS, KIRA_MILAN_FILTER_KEY, CATALOGO_2026_IDS, CATALOGO_2026_FILTER_KEY, CATALOGO_2025_IDS, CATALOGO_2025_FILTER_KEY, CATALOGO_2023_IDS, CATALOGO_2023_FILTER_KEY, CATALOGO_2024_IDS, CATALOGO_2024_FILTER_KEY, DIA_MADRES_IDS, DIA_MADRES_FILTER_KEY, DIA_MADRES_ORDER, ENABLE_MOTHERS_DAY_CATALOG } from '../constants/promoProducts'
+import { PROMO_PRODUCT_IDS, PROMO_FILTER_KEY, KIRA_MILAN_COLLECTION_IDS, KIRA_MILAN_FILTER_KEY, GRAD_COLLECTION_IDS, GRAD_COLLECTION_FILTER_KEY, GRAD_COLLECTION_ORDER, CATALOGO_2026_IDS, CATALOGO_2026_FILTER_KEY, CATALOGO_2025_IDS, CATALOGO_2025_FILTER_KEY, CATALOGO_2023_IDS, CATALOGO_2023_FILTER_KEY, CATALOGO_2024_IDS, CATALOGO_2024_FILTER_KEY, DIA_MADRES_IDS, DIA_MADRES_FILTER_KEY, DIA_MADRES_ORDER, ENABLE_MOTHERS_DAY_CATALOG } from '../constants/promoProducts'
 import { formatMxPrice } from '../lib/productPricing'
 
 const assetModulesL1 = import.meta.glob('../assets/*/*.webp', { eager: true, import: 'default' })
@@ -329,6 +329,7 @@ function FloresMenu() {
     if (selectedFlowerType === ALL_FLOWER_TYPES) return ALL_FLOWER_TYPES
     if (selectedFlowerType === PROMO_FILTER_KEY) return PROMO_FILTER_KEY
     if (selectedFlowerType === KIRA_MILAN_FILTER_KEY) return KIRA_MILAN_FILTER_KEY
+    if (selectedFlowerType === GRAD_COLLECTION_FILTER_KEY) return GRAD_COLLECTION_FILTER_KEY
     if (ENABLE_MOTHERS_DAY_CATALOG && selectedFlowerType === DIA_MADRES_FILTER_KEY) return DIA_MADRES_FILTER_KEY
     if (selectedFlowerType === CATALOGO_2026_FILTER_KEY) return CATALOGO_2026_FILTER_KEY
     if (selectedFlowerType === CATALOGO_2025_FILTER_KEY) return CATALOGO_2025_FILTER_KEY
@@ -342,6 +343,7 @@ function FloresMenu() {
     const productsByFlowerType = products.filter((product) => {
       if (activeFlowerType === PROMO_FILTER_KEY) return PROMO_PRODUCT_IDS.has(product.id)
       if (activeFlowerType === KIRA_MILAN_FILTER_KEY) return KIRA_MILAN_COLLECTION_IDS.has(product.id)
+      if (activeFlowerType === GRAD_COLLECTION_FILTER_KEY) return GRAD_COLLECTION_IDS.has(product.id)
       if (ENABLE_MOTHERS_DAY_CATALOG && activeFlowerType === DIA_MADRES_FILTER_KEY) {
         return DIA_MADRES_IDS.has(product.id)
       }
@@ -382,6 +384,12 @@ function FloresMenu() {
     })
 
     return result.sort((a, b) => {
+      if (activeFlowerType === GRAD_COLLECTION_FILTER_KEY) {
+        const aOrder = GRAD_COLLECTION_ORDER[a.id] ?? Number.MAX_SAFE_INTEGER
+        const bOrder = GRAD_COLLECTION_ORDER[b.id] ?? Number.MAX_SAFE_INTEGER
+        return aOrder - bOrder
+      }
+
       if (!ENABLE_MOTHERS_DAY_CATALOG || activeFlowerType !== DIA_MADRES_FILTER_KEY) {
         return 0
       }
@@ -599,6 +607,9 @@ function FloresMenu() {
               )}
               {KIRA_MILAN_COLLECTION_IDS.has(product.id) && (
                 <span className="flores-menu__collection-badge" aria-label="Kira Milan Collection">✨ Collection</span>
+              )}
+              {GRAD_COLLECTION_IDS.has(product.id) && (
+                <span className="flores-menu__collection-badge flores-menu__collection-badge--grad" aria-label="Grad Collection">Grad Collection</span>
               )}
               {product.totalImages > 1 && (
                 <>

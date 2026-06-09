@@ -307,6 +307,13 @@
   font-weight: 800;
 }
 
+.navbar__mobile-drawer-link--grad {
+  background: linear-gradient(135deg, #18231d 0%, #294839 100%);
+  border-color: #d7b56d;
+  color: #f4dfb8;
+  font-weight: 800;
+}
+
 .navbar__mobile-drawer-link--catalogo2026 {
   background: linear-gradient(135deg, #1a0a0a 0%, #6e1a2c 100%);
   border-color: #e05c7a;
