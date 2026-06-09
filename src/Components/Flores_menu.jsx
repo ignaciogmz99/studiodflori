@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import './Flores_menu.css'
 import { supabase } from '../lib/supabaseClient'
 import { useCart } from '../context/CartContext'
-import { PROMO_PRODUCT_IDS, PROMO_ORIGINAL_PRICE, PROMO_FILTER_KEY, KIRA_MILAN_COLLECTION_IDS, KIRA_MILAN_FILTER_KEY, KIRA_MILAN_ORIGINAL_PRICES, CATALOGO_2026_IDS, CATALOGO_2026_FILTER_KEY, CATALOGO_2025_IDS, CATALOGO_2025_FILTER_KEY, CATALOGO_2023_IDS, CATALOGO_2023_FILTER_KEY, CATALOGO_2024_IDS, CATALOGO_2024_FILTER_KEY, DIA_MADRES_IDS, DIA_MADRES_FILTER_KEY, DIA_MADRES_ORDER, ENABLE_MOTHERS_DAY_CATALOG } from '../constants/promoProducts'
-import { formatMxPrice, HOT_SALE_BADGE_LABEL, resolveProductPriceDisplay } from '../lib/productPricing'
+import { PROMO_PRODUCT_IDS, PROMO_FILTER_KEY, KIRA_MILAN_COLLECTION_IDS, KIRA_MILAN_FILTER_KEY, CATALOGO_2026_IDS, CATALOGO_2026_FILTER_KEY, CATALOGO_2025_IDS, CATALOGO_2025_FILTER_KEY, CATALOGO_2023_IDS, CATALOGO_2023_FILTER_KEY, CATALOGO_2024_IDS, CATALOGO_2024_FILTER_KEY, DIA_MADRES_IDS, DIA_MADRES_FILTER_KEY, DIA_MADRES_ORDER, ENABLE_MOTHERS_DAY_CATALOG } from '../constants/promoProducts'
+import { formatMxPrice } from '../lib/productPricing'
 
 const assetModulesL1 = import.meta.glob('../assets/*/*.webp', { eager: true, import: 'default' })
 const assetModulesL2 = import.meta.glob('../assets/*/*/*.webp', { eager: true, import: 'default' })
@@ -577,11 +577,6 @@ function FloresMenu() {
 
       <div className="flores-menu__shelf" aria-label="Estante de productos">
         {filteredProducts.slice(0, visibleCount).map((product) => {
-          const fallbackOriginalPrice = PROMO_PRODUCT_IDS.has(product.id)
-            ? PROMO_ORIGINAL_PRICE
-            : KIRA_MILAN_ORIGINAL_PRICES[product.id] ?? null
-          const priceDisplay = resolveProductPriceDisplay(product.id, product.price, fallbackOriginalPrice, product.originalPrice)
-
           return (
             <article className="flores-menu__card" key={product.id}>
             <div
@@ -604,9 +599,6 @@ function FloresMenu() {
               )}
               {KIRA_MILAN_COLLECTION_IDS.has(product.id) && (
                 <span className="flores-menu__collection-badge" aria-label="Kira Milan Collection">✨ Collection</span>
-              )}
-              {priceDisplay.hasHotSale && (
-                <span className="flores-menu__hot-sale-badge" aria-label={HOT_SALE_BADGE_LABEL}>{HOT_SALE_BADGE_LABEL}</span>
               )}
               {product.totalImages > 1 && (
                 <>
@@ -636,17 +628,8 @@ function FloresMenu() {
             <p className="flores-menu__price flores-menu__price--clickable" onClick={() => openProduct(product)}>
               {inventoryStatus === 'loading'
                 ? 'Cargando precio...'
-                : priceDisplay.currentPrice !== null
-                  ? (
-                    <>
-                      {priceDisplay.originalPrice !== null && (
-                        <s className="flores-menu__price-original">${formatMxPrice(priceDisplay.originalPrice)} MXN</s>
-                      )}
-                      <span className={`flores-menu__price-current${priceDisplay.hasHotSale ? ' flores-menu__price-current--sale' : ''}`}>
-                        ${formatMxPrice(priceDisplay.currentPrice)} MXN
-                      </span>
-                    </>
-                  )
+                : typeof product.price === 'number'
+                  ? `$${formatMxPrice(product.price)} MXN`
                   : 'Precio no disponible'}
             </p>
             {inventoryStatus === 'loading' && (
