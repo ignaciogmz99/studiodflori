@@ -6,6 +6,7 @@ import './Top_menu.css'
 import { useCart } from '../context/CartContext'
 import { DELIVERY_CITIES } from '../constants/deliveryCities'
 import { isMothersDayCatalogLocked, isSundayDeliveryBlocked } from '../lib/mothersDayCatalog'
+import { isDeliveryDateBlocked } from '../lib/deliveryAvailability'
 import ShippingPolicyPanel from './ShippingPolicyPanel.jsx'
 import { TimeSelect } from './DeliverySchedulePicker'
 
@@ -65,7 +66,7 @@ function isBlockedMothersDayDate(dateValue, canScheduleLockedMothersDayDates) {
 }
 
 function buildTimeSlots(selectedDate, earliestDateTime, canScheduleLockedMothersDayDates = true) {
-  if (!selectedDate || isSundayDeliveryBlocked(selectedDate) || isBlockedMothersDayDate(selectedDate, canScheduleLockedMothersDayDates)) {
+  if (!selectedDate || isSundayDeliveryBlocked(selectedDate) || isDeliveryDateBlocked(selectedDate) || isBlockedMothersDayDate(selectedDate, canScheduleLockedMothersDayDates)) {
     return []
   }
 
@@ -108,7 +109,7 @@ function findNextAvailableDate(baseDate, earliestDateTime, canScheduleLockedMoth
 }
 
 function hasEnabledSlots(date, earliestDateTime, canScheduleLockedMothersDayDates = true) {
-  if (isSundayDeliveryBlocked(date) || isBlockedMothersDayDate(date, canScheduleLockedMothersDayDates)) {
+  if (isSundayDeliveryBlocked(date) || isDeliveryDateBlocked(date) || isBlockedMothersDayDate(date, canScheduleLockedMothersDayDates)) {
     return false
   }
 

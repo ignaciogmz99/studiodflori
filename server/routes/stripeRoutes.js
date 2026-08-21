@@ -12,6 +12,10 @@ import {
 } from '../services/paidOrderProcessingService.js'
 import { createStripeReceiptPdf } from '../services/receiptPdfService.js'
 import { updatePaidOrderProcessingState } from '../services/orderPersistenceService.js'
+import {
+  getDeliveryDateBlockedMessage,
+  isDeliveryDateBlocked
+} from '../../src/lib/deliveryAvailability.js'
 
 const INTENT_TTL_MS = 30 * 60 * 1000
 const COURSE_PRODUCT_ID = 'Curso'
@@ -125,6 +129,9 @@ export function createStripeRouter({ stripeSecretKey }) {
 
       cleanupExpiredIntents()
       const normalizedOrderId = validateOrderId(orderId)
+      if (isDeliveryDateBlocked(delivery?.date)) {
+        return res.status(409).json({ error: getDeliveryDateBlockedMessage() })
+      }
       // Build a server-trusted cart: prices come from Supabase, not from client payload.
       const trustedOrder = await buildTrustedOrderFromClientItems(items)
       if (!Number.isFinite(trustedOrder.amount) || trustedOrder.amount <= 0) {

@@ -13,6 +13,10 @@ import {
   processPaidOrder
 } from '../services/paidOrderProcessingService.js'
 import { updatePaidOrderProcessingState } from '../services/orderPersistenceService.js'
+import {
+  getDeliveryDateBlockedMessage,
+  isDeliveryDateBlocked
+} from '../../src/lib/deliveryAvailability.js'
 
 const ORDER_TTL_MS = 30 * 60 * 1000
 const COURSE_PRODUCT_ID = 'Curso'
@@ -193,6 +197,9 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
       } = req.body || {}
 
       const normalizedOrderId = validateOrderId(orderId)
+      if (isDeliveryDateBlocked(delivery?.date)) {
+        return res.status(409).json({ error: getDeliveryDateBlockedMessage() })
+      }
       // Prices are recalculated from trusted catalog data.
       const trustedOrder = await buildTrustedOrderFromClientItems(items)
       const mappedItems = trustedOrder.items
@@ -295,6 +302,9 @@ export function createMercadoPagoRouter({ mpClient, mercadopagoToken, mpCheckout
 
       cleanupExpiredOrders()
       const normalizedOrderId = validateOrderId(orderId)
+      if (isDeliveryDateBlocked(delivery?.date)) {
+        return res.status(409).json({ error: getDeliveryDateBlockedMessage() })
+      }
       console.log('[MP process-payment] request', {
         orderId: normalizedOrderId,
         hasToken: Boolean(token),

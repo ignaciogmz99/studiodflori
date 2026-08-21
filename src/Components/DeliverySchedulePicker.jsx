@@ -6,6 +6,7 @@ import './DeliverySchedulePicker.css'
 import { useCart } from '../context/CartContext'
 import { DELIVERY_CITIES } from '../constants/deliveryCities'
 import { isMothersDayCatalogLocked, isSundayDeliveryBlocked } from '../lib/mothersDayCatalog'
+import { isDeliveryDateBlocked } from '../lib/deliveryAvailability'
 
 const OPEN_HOUR = 10
 const CLOSE_HOUR = 19
@@ -48,7 +49,7 @@ function resolveEarliestDateTime() {
 }
 
 function buildTimeSlots(selectedDate, earliestDateTime, canScheduleLockedMothersDayDates = true) {
-  if (!selectedDate || isSundayDeliveryBlocked(selectedDate) || isBlockedMothersDayDate(selectedDate, canScheduleLockedMothersDayDates)) return []
+  if (!selectedDate || isSundayDeliveryBlocked(selectedDate) || isDeliveryDateBlocked(selectedDate) || isBlockedMothersDayDate(selectedDate, canScheduleLockedMothersDayDates)) return []
   const date = startOfDay(selectedDate)
   const isEarliestDay = startOfDay(earliestDateTime).getTime() === date.getTime()
   const earliestMinutes = (earliestDateTime.getHours() * 60) + earliestDateTime.getMinutes()
@@ -74,7 +75,7 @@ function findNextAvailableDate(baseDate, earliestDateTime, canScheduleLockedMoth
 }
 
 function hasEnabledSlots(date, earliestDateTime, canScheduleLockedMothersDayDates = true) {
-  if (isSundayDeliveryBlocked(date) || isBlockedMothersDayDate(date, canScheduleLockedMothersDayDates)) return false
+  if (isSundayDeliveryBlocked(date) || isDeliveryDateBlocked(date) || isBlockedMothersDayDate(date, canScheduleLockedMothersDayDates)) return false
   return buildTimeSlots(date, earliestDateTime, canScheduleLockedMothersDayDates).some((s) => !s.disabled)
 }
 
